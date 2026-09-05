@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.2 — 2026-09-05
+
+- Command palette (`Ctrl+K`): new chat, group, Buddy, canvas, settings, workers, notch
+- Empty-state demo chip for the hackathon concurrency prompt
+- Swarm strip shows when 2+ agents are overlapping
+
 ## 0.0.1 — 2026-09-05
 
 First public cut of Hive as a Mozaik concurrent-agent desktop companion.

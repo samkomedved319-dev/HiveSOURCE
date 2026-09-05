@@ -11,14 +11,19 @@ const AGENTS: { name: string; color: string }[] = [
 
 const LABEL: Record<SwarmStatus, string> = {
   idle: 'idle',
-  searching: 'searching…',
-  thinking: 'thinking…',
-  arguing: 'reviewing…',
+  searching: 'searching\u2026',
+  thinking: 'thinking\u2026',
+  arguing: 'reviewing\u2026',
   done: 'done',
   error: 'error',
 }
 
 export default function SwarmStrip({ status }: { status: Record<string, SwarmStatus> }) {
+  const liveCount = ['Scout', 'Hive', 'Pulse'].filter((n) => {
+    const st = status[n]
+    return st && st !== 'idle'
+  }).length
+  const overlap = liveCount >= 2
   return (
     <div
       style={{
@@ -27,8 +32,14 @@ export default function SwarmStrip({ status }: { status: Record<string, SwarmSta
         padding: '6px 16px 0',
         justifyContent: 'center',
         flexWrap: 'wrap',
+        alignItems: 'center',
       }}
     >
+      {overlap && (
+        <div style={{ fontSize: 10, color: '#F2C14E', fontWeight: 700, letterSpacing: 0.4 }}>
+          {liveCount} AGENTS OVERLAPPING
+        </div>
+      )}
       {AGENTS.map((a) => {
         const st = status[a.name] || 'idle'
         const live = st !== 'idle' && st !== 'done'
