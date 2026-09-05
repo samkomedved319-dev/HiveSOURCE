@@ -10,6 +10,9 @@ class WebGLGate extends Component<{ children: React.ReactNode; fallback: React.R
   static getDerivedStateFromError() {
     return { err: true }
   }
+  componentDidCatch() {
+    this.setState({ err: true })
+  }
   render() {
     return this.state.err ? this.props.fallback : this.props.children
   }
@@ -77,11 +80,11 @@ export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: 
   const sendTask = async () => {
     const t = task.trim()
     if (!t || busy) return
+    const agentId = activeAgent?.id
+    if (!agentId) return
     setBusy(true)
     setTask('')
     setMeeting(true)
-    const agentId = activeAgent?.id
-    if (!agentId) return
     speaker.current = pickSpeaker(t)
     addMessage(agentId, {
       id: `m-${Date.now()}`,
@@ -134,9 +137,23 @@ export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: 
   }
 
   return (
-    <div style={{ height: '100%', width: '100%', minHeight: 0, display: 'grid', gridTemplateRows: 'minmax(0,1fr) 280px', background: '#0b0c0e', overflow: 'hidden' }}>
-      <div style={{ position: 'relative', minHeight: 0 }}>
-        <WebGLGate fallback={<div style={{ height: '100%', display: 'grid', placeItems: 'center', color: 'var(--text-dim)' }}>WebGL unavailable</div>}>
+    <div style={{ height: '100%', width: '100%', minHeight: 0, display: 'grid', gridTemplateRows: 'minmax(240px, 1fr) 260px', background: '#16130e', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', minHeight: 240, height: '100%' }}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background:
+              'radial-gradient(ellipse at 50% 30%, #3a3220 0%, #16130e 70%)',
+          }}
+        />
+        <WebGLGate
+          fallback={
+            <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#e8d9a8', fontSize: 14 }}>
+              3D floor failed to start — chat below still works.
+            </div>
+          }
+        >
           <Office3D moods={moods} bubbles={{}} meeting={meeting} />
         </WebGLGate>
         {onBack && (

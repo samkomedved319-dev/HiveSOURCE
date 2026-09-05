@@ -245,12 +245,11 @@ function Building() {
       {[-12.9, 12.9].map((x) =>
         [-9.9, 9.9].map((z) => <Box key={x + z} args={[0.1, 3.6, 0.1]} position={[x, 1.8, z]} color="#9aabbc" />)
       )}
-      <Box args={[26, 0.08, 20]} position={[0, 3.72, 0]} color="#0A1628" opacity={0.55} cast={false} />
-      {[-2, -1, 0, 1, 2].map((i) =>
-        [-1, 0, 1].map((j) => (
+      <Box args={[26, 0.08, 20]} position={[0, 3.72, 0]} color="#0A1628" opacity={0.35} cast={false} />
+      {[-1, 1].map((i) =>
+        [0].map((j) => (
           <group key={`${i}${j}`}>
-            <Box args={[3, 0.04, 1]} position={[i * 4.4, 3.66, j * 4.8]} color="#F0F4FF" emissive="#F0F4FF" emissiveIntensity={0.5} cast={false} />
-            <pointLight position={[i * 4.4, 3.4, j * 4.8]} intensity={0.22} distance={9} color="#fff8e8" />
+            <Box args={[4, 0.04, 1.2]} position={[i * 6, 3.66, j]} color="#F0F4FF" emissive="#F0F4FF" emissiveIntensity={0.6} cast={false} />
           </group>
         ))
       )}
@@ -300,7 +299,7 @@ function LiveFloor({
           </React.Fragment>
         )
       })}
-      <ContactShadows position={[0, 0.01, 0]} opacity={0.35} scale={28} blur={2.4} far={8} />
+      <ContactShadows position={[0, 0.01, 0]} opacity={0.22} scale={28} blur={2.2} far={6} />
     </>
   )
 }
@@ -316,25 +315,27 @@ export default function Office3D({
   return (
     <Canvas
       shadows
-      camera={{ position: [16, 14, 18], fov: 32, near: 0.1, far: 200 }}
-      dpr={[1, 1.5]}
-      gl={{ antialias: true, alpha: false }}
-      style={{ width: '100%', height: '100%', display: 'block' }}
+      camera={{ position: [18, 16, 20], fov: 34, near: 0.1, far: 200 }}
+      dpr={[1, 1.25]}
+      gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+      onCreated={({ gl }) => {
+        gl.setClearColor('#1c1812', 1)
+      }}
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
     >
-      <color attach="background" args={['#0b0c0e']} />
-      <fog attach="fog" args={['#0b0c0e', 28, 70]} />
-      <ambientLight intensity={0.55} />
-      <hemisphereLight args={['#dde8f0', '#1a1712', 0.35]} />
+      <color attach="background" args={['#1c1812']} />
+      <ambientLight intensity={0.95} />
+      <hemisphereLight args={['#fff4d6', '#3a3226', 0.55]} />
       <directionalLight
-        position={[14, 22, 10]}
-        intensity={1.15}
-        color="#fff4d6"
+        position={[12, 20, 10]}
+        intensity={1.35}
+        color="#ffe7a8"
         castShadow
         shadow-mapSize={[1024, 1024]}
-        shadow-camera-left={-18}
-        shadow-camera-right={18}
-        shadow-camera-top={18}
-        shadow-camera-bottom={-18}
+        shadow-camera-left={-16}
+        shadow-camera-right={16}
+        shadow-camera-top={16}
+        shadow-camera-bottom={-16}
       />
       <LiveFloor moods={moods} meeting={meeting} />
       <OrbitControls
