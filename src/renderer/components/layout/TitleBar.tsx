@@ -84,6 +84,7 @@ export default function TitleBar({
         background: 'var(--bg)',
         userSelect: 'none',
         flexShrink: 0,
+        flexShrink: 0,
         position: 'relative',
       } as React.CSSProperties}
     >

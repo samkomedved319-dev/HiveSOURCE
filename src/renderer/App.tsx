@@ -357,6 +357,8 @@ export default function App() {
         height: '100vh',
         width: '100vw',
         overflow: 'hidden',
+        minHeight: 0,
+        gridTemplateRows: 'minmax(0, 1fr)',
         background: 'var(--bg)',
         position: 'relative',
         transition: 'grid-template-columns .45s var(--ease)',
@@ -423,6 +425,7 @@ export default function App() {
 
       {/* 3. Main column: chat or bots (bots open where chat lives) */}
       {mainView === 'chat' ? (
+      <div style={{ minWidth: 0, minHeight: 0, overflow: 'hidden', height: '100%', display: 'flex' }}>
       <ChatView
         isCanvasOpen={isCanvasOpen}
         onToggleCanvas={() => setIsCanvasOpen((prev) => !prev)}
@@ -460,6 +463,7 @@ export default function App() {
         isConvListOpen={isConvListOpen}
         onToggleSidebar={() => setIsConvListOpen((prev) => !prev)}
       />
+      </div>
       ) : (
       <BotsPanel
         onBack={() => {

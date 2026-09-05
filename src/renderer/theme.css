@@ -46,6 +46,8 @@ button:not(:disabled),
 #root {
   width: 100vw;
   height: 100vh;
+  overflow: hidden;
+  min-height: 0;
 }
 
 @keyframes rise {

@@ -24,9 +24,38 @@ export default React.memo(function MessageItem({
 }) {
   const isUser = message.role === 'user'
   const buddyInk = useBuddyColor()
+  const [open, setOpen] = useState(false)
+
+  const formatInline = (text: string) => {
+    const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+        return <strong key={i}>{part.slice(2, -2)}</strong>
+      }
+      if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+        return (
+          <code
+            key={i}
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              background: 'rgba(255,255,255,0.08)',
+              padding: '1px 5px',
+              borderRadius: 4,
+              fontSize: 12,
+              color: 'var(--accent)',
+            }}
+          >
+            {part.slice(1, -1)}
+          </code>
+        )
+      }
+      return <React.Fragment key={i}>{part}</React.Fragment>
+    })
+  }
 
   // Format code blocks or inline code cleanly
-  const renderContent = (content: string) => {
+  const renderContent = (raw: string) => {
+    const content = !open && raw.length > 900 ? raw.slice(0, 900) + '…' : raw
     // Check for triple backtick code blocks
     const codeBlockMatch = content.match(/```([a-zA-Z]*)\n([\s\S]*?)```/)
     if (codeBlockMatch) {
@@ -37,7 +66,7 @@ export default React.memo(function MessageItem({
 
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {beforeCode.trim() && <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{beforeCode.trim()}</p>}
+          {beforeCode.trim() && <p style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{formatInline(beforeCode.trim())}</p>}
           <div
             style={{
               background: '#0D0E11',
@@ -75,36 +104,18 @@ export default React.memo(function MessageItem({
               <code>{code}</code>
             </pre>
           </div>
-          {afterCode.trim() && <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{afterCode.trim()}</p>}
+          {afterCode.trim() && <p style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{formatInline(afterCode.trim())}</p>}
         </div>
       )
     }
 
-    // Inline formatting
-    const parts = content.split(/(`[^`]+`)/g)
+    const lines = content.split('\n')
     return (
-      <p style={{ margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>
-        {parts.map((part, i) => {
-          if (part.startsWith('`') && part.endsWith('`')) {
-            return (
-              <code
-                key={i}
-                style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  background: 'rgba(255,255,255,0.08)',
-                  padding: '2px 6px',
-                  borderRadius: 4,
-                  fontSize: 12,
-                  color: 'var(--accent)',
-                }}
-              >
-                {part.slice(1, -1)}
-              </code>
-            )
-          }
-          return part
-        })}
-      </p>
+      <div style={{ margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.55, overflowWrap: 'anywhere', userSelect: 'text' }}>
+        {lines.map((line, i) => (
+          <div key={i}>{formatInline(line.replace(/^[-*]\s+/, '• '))}</div>
+        ))}
+      </div>
     )
   }
 
@@ -197,6 +208,21 @@ export default React.memo(function MessageItem({
             fontSize: 13.8,
             lineHeight: 1.55,
             color: '#D8DAE0',
+            overflowWrap: 'anywhere',
+            userSelect: 'text',
+            maxWidth: '100%',
+          }}
+        >
+          {renderContent(message.content)}
+          {message.content.length > 900 && (
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              style={{ marginTop: 8, background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 12 }}
+            >
+              {open ? 'Show less' : 'Show more'}
+            </button>
+          )}
           }}
         >
           {renderContent(message.content)}

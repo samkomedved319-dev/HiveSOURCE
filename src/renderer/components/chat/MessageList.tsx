@@ -21,7 +21,9 @@ export default function MessageList({
   const buddyInk = useBuddyColor()
   const endRef = useRef<HTMLDivElement>(null)
   const messages = activeAgent ? getMessages(activeAgent.id) : []
-  const visible = messages.length > 50 ? messages.slice(-50) : messages
+  const visible = messages
+    .filter((m) => m.role === 'user' || !m.botName || m.botName === 'Hive')
+    .slice(-40)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' })
@@ -31,7 +33,9 @@ export default function MessageList({
     <div
       style={{
         flex: 1,
+        minHeight: 0,
         overflowY: 'auto',
+        overflowX: 'hidden',
         overflowAnchor: 'none',
         display: 'flex',
         flexDirection: 'column',

@@ -106,7 +106,7 @@ export default function ChatView({
       if (ev.type === 'hive.speak' && ev.text && window.electronAPI?.tts?.speak) {
         void window.electronAPI.tts.speak(ev.text)
       }
-      if (ev.type === 'inference.stream' && ev.text && name && name !== 'Relay' && name !== 'Buddy' && name !== 'Voice' && name !== 'Sentry' && name !== 'You') {
+      if (ev.type === 'inference.stream' && ev.text && name === 'Hive') {
         const agentId = activeIdRef.current
         if (!agentId) return
         const id = `stream-${ev.producerId}`
@@ -122,7 +122,7 @@ export default function ChatView({
           botName: name,
         })
       }
-      if (ev.type === 'model.answer' && ev.text && name && name !== 'You' && name !== 'Relay' && name !== 'Buddy' && name !== 'Voice' && name !== 'Sentry') {
+      if (ev.type === 'model.answer' && ev.text && name === 'Hive') {
         const agentId = activeIdRef.current
         if (!agentId) return
         upsertMessage(agentId, {
@@ -553,6 +553,8 @@ Followed by a brief explanation of what was run.`
         display: 'flex',
         flexDirection: 'column',
         minWidth: 0,
+        minHeight: 0,
+        overflow: 'hidden',
         background: 'var(--bg)',
         height: '100%',
         flex: 1,

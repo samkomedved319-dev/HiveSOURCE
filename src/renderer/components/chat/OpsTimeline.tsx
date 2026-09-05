@@ -26,7 +26,9 @@ export default function OpsTimeline({ events }: { events: HiveSwarmEvent[] }) {
         padding: '8px 12px',
         background: 'rgba(255,255,255,0.015)',
         fontFamily: "'JetBrains Mono', monospace",
-        fontSize: 11,
+        maxHeight: 88,
+        overflow: 'hidden',
+        flexShrink: 0,
       }}
     >
       <div style={{ color: 'var(--text-faint)', marginBottom: 6, fontWeight: 600, letterSpacing: 0.4 }}>
