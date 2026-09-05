@@ -83,6 +83,14 @@ export interface ElectronAPI {
     exec: (command: string) => Promise<any>
     swarm: (text: string) => Promise<any>
   }
+  workspace?: {
+    pick: () => Promise<{ ok: boolean; root?: string }>
+    set: (folder: string) => Promise<{ ok: boolean; root?: string; error?: string }>
+    status: () => Promise<{ ok: boolean; root?: string }>
+    list: (rel?: string) => Promise<{ ok: boolean; entries?: { name: string; dir: boolean }[]; error?: string }>
+    read: (rel: string) => Promise<{ ok: boolean; content?: string; error?: string }>
+    write: (rel: string, content: string) => Promise<{ ok: boolean; error?: string }>
+  }
   buddy?: {
     onSummon: (cb: () => void) => () => void
     click: (x: number, y: number) => Promise<{ ok: boolean; error?: string }>

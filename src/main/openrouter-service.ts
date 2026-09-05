@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import { performWebSearch } from './search-service'
-import { openRouterKey } from './keys'
+import { openRouterKey, nvidiaNimKey } from './keys'
 import { recallForPrompt, rememberTurn } from './mem0-service'
 
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions'
@@ -15,7 +15,49 @@ export const FREE_MODELS = [
   'liquid/lfm-2.5-2.6b:free',
 ]
 
-export const DEFAULT_FREE_MODEL = FREE_MODELS[0]
+export const NIM_MODELS = [
+  'nvidia/nemotron-3.5-lightning-30b-a3b',
+  'nvidia/llama-3.1-nemotron-nano-8b-v1',
+  'meta/llama-3.1-8b-instruct',
+  'google/gemma-2-9b-it',
+]
+
+function isExhausted(status: number, body: string) {
+  if ([401, 402, 403, 429, 503].includes(status)) return true
+  const t = body.toLowerCase()
+  return t.includes('rate') || t.includes('quota') || t.includes('credit') || t.includes('insufficient') || t.includes('used up') || t.includes('limit')
+}
+
+async function queryNim(
+  messages: ChatMessage[]
+): Promise<{ ok: boolean; content?: string; error?: string; model?: string }> {
+  const key = nvidiaNimKey()
+  if (!key) return { ok: false, error: 'NVIDIA NIM key missing' }
+  let last = ''
+  for (const model of NIM_MODELS) {
+    try {
+      const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`,
+        },
+        body: JSON.stringify({ model, messages, max_tokens: 1200, temperature: 0.6 }),
+      })
+      if (res.ok) {
+        const data = (await res.json()) as { choices?: { message?: { content?: string } }[] }
+        const content = data?.choices?.[0]?.message?.content
+        if (content?.trim()) return { ok: true, content: content.trim(), model: `nim:${model}` }
+      } else {
+        last = `[nim ${model}] ${res.status}: ${(await res.text()).slice(0, 200)}`
+        if (!isExhausted(res.status, last)) continue
+      }
+    } catch (e: any) {
+      last = e.message
+    }
+  }
+  return { ok: false, error: last || 'NVIDIA NIM exhausted' }
+}
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
@@ -39,12 +81,22 @@ export async function queryAIModel(
   options?: ChatOptions
 ): Promise<{ ok: boolean; content?: string; error?: string; model?: string; citations?: SearchCitation[] }> {
   const API_KEY = openRouterKey()
-  if (!API_KEY) {
+  const nimKey = nvidiaNimKey()
+  if (!API_KEY && !nimKey) {
     return {
       ok: false,
       error:
         'Missing OpenRouter key. Open Settings → Models and paste a key from openrouter.ai/keys (sk-or-v1-…), then Save. Hive will not send a request without Authorization.',
     }
+  }
+
+  if (!API_KEY && nimKey) {
+    const nim = await queryNim(messages)
+    if (nim.ok && nim.content) {
+      const userQ = [...messages].reverse().find((m) => m.role === 'user')?.content || ''
+      void rememberTurn(userQ, nim.content)
+    }
+    return nim
   }
 
   // Always restrict strictly to FREE models
@@ -180,10 +232,18 @@ export async function queryAIModel(
       } else {
         const errText = await res.text()
         lastError = `[${m}] ${res.status}: ${errText}`
+        if (!isExhausted(res.status, errText)) continue
       }
     } catch (err: any) {
       lastError = err.message
     }
+  }
+
+  const nim = await queryNim(activeMessages)
+  if (nim.ok && nim.content) {
+    const userQ = [...messages].reverse().find((m) => m.role === 'user')?.content || ''
+    void rememberTurn(userQ, nim.content)
+    return { ...nim, citations: fallbackCitations }
   }
 
   // If all OpenRouter models fail but we have fallback search citations, return the synthesized search summary!

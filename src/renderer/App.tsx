@@ -291,7 +291,8 @@ export default function App() {
     } else if (tab === 'workers') {
       setMainView('bots')
     } else if (tab === 'office') {
-      setMainView('office')
+      setMainView('chat')
+      setIsCanvasOpen(true)
       setShowSettings(false)
       setShowProjects(false)
     } else if (tab === 'voice') {

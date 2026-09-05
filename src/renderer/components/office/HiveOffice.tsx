@@ -39,7 +39,7 @@ function moodFromEvent(ev: HiveSwarmEvent): AgentMood {
   return 'idle'
 }
 
-export default function HiveOffice({ onBack }: { onBack: () => void }) {
+export default function HiveOffice({ onBack, compact = false }: { onBack?: () => void; compact?: boolean }) {
   const [moods, setMoods] = useState<Record<string, AgentMood>>({})
   const [bubbles, setBubbles] = useState<Record<string, string>>({})
   const [log, setLog] = useState<{ t: number; who: string; text: string }[]>([])
@@ -74,6 +74,7 @@ export default function HiveOffice({ onBack }: { onBack: () => void }) {
 
   return (
     <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', background: '#0b0c0e', overflow: 'hidden' }}>
+      {!compact && (
       <div style={{ height: 52, borderBottom: '1px solid var(--border-soft)', display: 'flex', alignItems: 'center', padding: '0 16px', gap: 12, flexShrink: 0 }}>
         <button type="button" onClick={onBack} style={{ background: 'transparent', border: '1px solid var(--border-soft)', color: 'var(--text-dim)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontFamily: 'inherit' }}>
           ← Chat
@@ -85,8 +86,9 @@ export default function HiveOffice({ onBack }: { onBack: () => void }) {
         <div style={{ flex: 1 }} />
         <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>desks · talk · cloud wall</span>
       </div>
+      )}
 
-      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 280px', overflow: 'hidden' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: compact ? '1fr' : '1fr 220px', overflow: 'hidden' }}>
         <div style={{ position: 'relative', overflow: 'hidden' }}>
           <div
             style={{
@@ -210,6 +212,7 @@ export default function HiveOffice({ onBack }: { onBack: () => void }) {
           })}
         </div>
 
+        {!compact && (
         <div style={{ borderLeft: '1px solid var(--border-soft)', display: 'flex', flexDirection: 'column', minHeight: 0, background: '#101114' }}>
           <div style={{ padding: 14, fontSize: 12, fontWeight: 700, letterSpacing: '.06em', color: 'var(--text-dim)' }}>FLOOR LOG</div>
           <div style={{ flex: 1, overflow: 'auto', padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -226,6 +229,7 @@ export default function HiveOffice({ onBack }: { onBack: () => void }) {
             ))}
           </div>
         </div>
+        )}
       </div>
     </div>
   )

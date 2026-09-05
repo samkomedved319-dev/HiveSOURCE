@@ -32,6 +32,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     exec: (command: string) => ipcRenderer.invoke('cloud:exec', command),
     swarm: (text: string) => ipcRenderer.invoke('cloud:swarm', text),
   },
+  workspace: {
+    pick: () => ipcRenderer.invoke('workspace:pick'),
+    set: (folder: string) => ipcRenderer.invoke('workspace:set', folder),
+    status: () => ipcRenderer.invoke('workspace:status'),
+    list: (rel?: string) => ipcRenderer.invoke('workspace:list', rel),
+    read: (rel: string) => ipcRenderer.invoke('workspace:read', rel),
+    write: (rel: string, content: string) => ipcRenderer.invoke('workspace:write', rel, content),
+  },
   buddy: {
     onSummon: (cb: () => void) => {
       const handler = () => cb()

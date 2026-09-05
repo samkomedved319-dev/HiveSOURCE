@@ -4,6 +4,8 @@ import BloubEngineAvatar from '../mascot/BloubEngineAvatar'
 import { getMascot } from '../mascot/mascotLibrary'
 import { PREMADE_BOTS } from '../bots/botLibrary'
 import CloudComputerPanel from './CloudComputerPanel'
+import HiveOffice from '../office/HiveOffice'
+import HiveWork from '../office/HiveWork'
 import type { SwarmStatus } from '../chat/SwarmStrip'
 import type { StateId } from '../../bot/states'
 
@@ -31,7 +33,7 @@ export default function CrewPanel({
   onClose: () => void
 }) {
   const { agents, addAgent } = useAgentStore()
-  const [tab, setTab] = useState<'crew' | 'desk'>('crew')
+  const [tab, setTab] = useState<'office' | 'crew' | 'work' | 'desk'>('office')
   const [picker, setPicker] = useState(false)
 
   const addFromLibrary = (id: string) => {
@@ -44,7 +46,7 @@ export default function CrewPanel({
   return (
     <aside
       style={{
-        width: 280,
+        width: 400,
         height: '100%',
         borderLeft: '1px solid var(--border-soft)',
         background: 'var(--bg)',
@@ -55,12 +57,22 @@ export default function CrewPanel({
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 12px 8px' }}>
         <div style={{ fontSize: 13, fontWeight: 700, flex: 1 }}>HiveBox</div>
+        <button type="button" onClick={() => setTab('office')} style={tabBtn(tab === 'office')}>Office</button>
         <button type="button" onClick={() => setTab('crew')} style={tabBtn(tab === 'crew')}>Crew</button>
+        <button type="button" onClick={() => setTab('work')} style={tabBtn(tab === 'work')}>Work</button>
         <button type="button" onClick={() => setTab('desk')} style={tabBtn(tab === 'desk')}>Desk</button>
         <button type="button" onClick={onClose} title="Close panel" style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 16 }}>×</button>
       </div>
 
-      {tab === 'desk' ? (
+      {tab === 'office' ? (
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <HiveOffice compact />
+        </div>
+      ) : tab === 'work' ? (
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <HiveWork />
+        </div>
+      ) : tab === 'desk' ? (
         <div style={{ flex: 1, minHeight: 0 }}>
           <CloudComputerPanel onClose={onClose} />
         </div>

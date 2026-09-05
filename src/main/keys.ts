@@ -89,6 +89,10 @@ export function mem0Key() {
   return getKey('MEM0_API_KEY')
 }
 
+export function nvidiaNimKey() {
+  return getKey('NVIDIA_API_KEY', 'NVIDIA_NIM_API_KEY', 'NGC_API_KEY')
+}
+
 export function registerKeyHandlers() {
   try {
     loadEnvFiles()
@@ -106,9 +110,12 @@ export function registerKeyHandlers() {
     if (cloudBase) process.env.MOZAIK_CLOUD_BASE_URL = cloudBase
     const mem = mem0Key()
     if (mem) process.env.MEM0_API_KEY = mem
+    const nim = nvidiaNimKey()
+    if (nim) process.env.NVIDIA_API_KEY = nim
     return {
       ok: true,
       openrouter: Boolean(openRouterKey()),
+      nim: Boolean(nvidiaNimKey()),
       mozaikCloud: Boolean(mozaikCloudKey() && mozaikCloudBase()),
       mem0: Boolean(mem0Key()),
     }
@@ -116,7 +123,7 @@ export function registerKeyHandlers() {
   ipcMain.handle('keys:status', () => ({
     ok: true,
     openrouter: Boolean(openRouterKey()),
-    mozaikCloud: Boolean(mozaikCloudKey() && mozaikCloudBase()),
+    nim: Boolean(nvidiaNimKey()),
     mem0: Boolean(mem0Key()),
     cloudBase: mozaikCloudBase() || '',
   }))
