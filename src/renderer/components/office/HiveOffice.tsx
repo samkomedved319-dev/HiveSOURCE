@@ -1,24 +1,9 @@
-import React, { Component, useEffect, useRef, useState } from 'react'
-import Office3D, { FLOOR_CREW, moodFromEvent, type AgentMood } from './Office3D'
+import React, { useEffect, useRef, useState } from 'react'
+import { FLOOR_CREW, moodFromEvent, type AgentMood } from './crew'
 import type { HiveSwarmEvent } from '../../types'
 import { useAgentStore } from '../../stores/agentStore'
 import { useChatStore } from '../../stores/chatStore'
 import { emitTitleChat } from '../../chatTitle'
-
-class WebGLGate extends Component<{ children: React.ReactNode; fallback: React.ReactNode }, { err: boolean }> {
-  state = { err: false }
-  static getDerivedStateFromError() {
-    return { err: true }
-  }
-  componentDidCatch() {
-    this.setState({ err: true })
-  }
-  render() {
-    return this.state.err ? this.props.fallback : this.props.children
-  }
-}
-
-type FloorMsg = { t: number; who: string; text: string; color?: string }
 
 function pickSpeaker(task: string) {
   const t = task.toLowerCase()
@@ -45,6 +30,105 @@ function readable(raw: string) {
   t = t.replace(/[ \t]+\n/g, '\n').trim()
   if (t.length > 900) t = t.slice(0, 900).replace(/\s+\S*$/, '') + '…'
   return t
+}
+
+function Floor2D({ moods, meeting }: { moods: Record<string, AgentMood>; meeting: boolean }) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(180deg, #2a2418 0%, #1a1712 40%, #12100c 100%)',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          inset: 24,
+          borderRadius: 16,
+          background:
+            'repeating-linear-gradient(90deg, #3d3428 0 2px, transparent 2px 48px), repeating-linear-gradient(0deg, #3d3428 0 2px, transparent 2px 48px), #c4b396',
+          boxShadow: 'inset 0 0 80px rgba(0,0,0,.35)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: 36,
+          transform: 'translateX(-50%)',
+          width: 220,
+          height: 90,
+          borderRadius: 12,
+          background: meeting ? 'rgba(242,193,78,.28)' : 'rgba(20,22,28,.7)',
+          border: '1px solid rgba(242,193,78,.45)',
+          color: '#f5e6b8',
+          display: 'grid',
+          placeItems: 'center',
+          fontSize: 13,
+          fontWeight: 650,
+        }}
+      >
+        {meeting ? 'Glass room · working' : 'Glass room'}
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          left: 40,
+          right: 40,
+          bottom: 28,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: 14,
+        }}
+      >
+        {FLOOR_CREW.map((a) => {
+          const mood = moods[a.id] || moods[a.name.toLowerCase()] || 'idle'
+          const live = meeting || mood !== 'idle'
+          return (
+            <div
+              key={a.id}
+              style={{
+                background: '#1c1a16',
+                border: `1px solid ${live ? a.color : 'var(--border-soft)'}`,
+                borderRadius: 12,
+                padding: '12px 12px 10px',
+                minHeight: 88,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    background: a.color,
+                    boxShadow: live ? `0 0 12px ${a.color}` : 'none',
+                  }}
+                />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{a.name}</div>
+                  <div style={{ fontSize: 11, color: '#b8b0a0' }}>{live ? mood : 'at desk'}</div>
+                </div>
+              </div>
+              <div style={{ marginTop: 8, height: 6, borderRadius: 4, background: '#2a2722' }}>
+                <div
+                  style={{
+                    width: live ? '70%' : '12%',
+                    height: '100%',
+                    borderRadius: 4,
+                    background: a.color,
+                    transition: 'width .4s',
+                  }}
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: boolean }) {
@@ -137,32 +221,39 @@ export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: 
   }
 
   return (
-    <div style={{ height: '100%', width: '100%', minHeight: 0, display: 'grid', gridTemplateRows: 'minmax(240px, 1fr) 260px', background: '#16130e', overflow: 'hidden' }}>
-      <div style={{ position: 'relative', minHeight: 240, height: '100%' }}>
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background:
-              'radial-gradient(ellipse at 50% 30%, #3a3220 0%, #16130e 70%)',
-          }}
-        />
-        <WebGLGate
-          fallback={
-            <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#e8d9a8', fontSize: 14 }}>
-              3D floor failed to start — chat below still works.
-            </div>
-          }
-        >
-          <Office3D moods={moods} bubbles={{}} meeting={meeting} />
-        </WebGLGate>
+    <div
+      style={{
+        height: '100%',
+        width: '100%',
+        minHeight: 0,
+        display: 'grid',
+        gridTemplateRows: 'minmax(200px, 1fr) 240px',
+        background: '#16130e',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{ position: 'relative', minHeight: 200 }}>
+        <Floor2D moods={moods} meeting={meeting} />
         {onBack && (
           <button
             type="button"
             onClick={onBack}
-            style={{ position: 'absolute', top: 10, left: 10, zIndex: 3, background: '#141414', border: '1px solid var(--border-soft)', color: 'var(--text)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13 }}
+            style={{
+              position: 'absolute',
+              top: 12,
+              left: 12,
+              zIndex: 4,
+              background: '#141414',
+              border: '1px solid var(--border)',
+              color: 'var(--text)',
+              borderRadius: 8,
+              padding: '8px 12px',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 13,
+            }}
           >
-            Chat
+            ← Chat
           </button>
         )}
       </div>
@@ -170,21 +261,19 @@ export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: 
       <div style={{ borderTop: '1px solid var(--border-soft)', display: 'flex', flexDirection: 'column', minHeight: 0, background: '#101114' }}>
         <div ref={scroller} style={{ flex: 1, overflow: 'auto', padding: '14px 18px 8px', minHeight: 0 }}>
           {thread.length === 0 && (
-            <div style={{ color: 'var(--text-dim)', fontSize: 14, lineHeight: 1.5, maxWidth: 640 }}>
-              Same thread as Chat. Messages here are saved in the sidebar and named by topic.
+            <div style={{ color: 'var(--text-dim)', fontSize: 14, lineHeight: 1.5 }}>
+              Floor chat is the same history as Chat. Named in the sidebar.
             </div>
           )}
           {thread.map((row) => {
             const who = row.role === 'user' ? 'You' : row.botName || 'Hive'
             const color = FLOOR_CREW.find((a) => a.name === who)?.color
             return (
-              <div key={row.id} style={{ marginBottom: 14, maxWidth: 720 }}>
+              <div key={row.id} style={{ marginBottom: 12, maxWidth: 720 }}>
                 <div style={{ fontSize: 12, fontWeight: 650, color: color || (row.role === 'user' ? 'var(--text)' : 'var(--accent)'), marginBottom: 4 }}>
                   {who}
                 </div>
-                <div style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                  {row.content}
-                </div>
+                <div style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{row.content}</div>
               </div>
             )
           })}
