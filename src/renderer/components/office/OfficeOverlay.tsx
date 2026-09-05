@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState, Component, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
 import { FLOOR_CREW, moodFromEvent, type AgentMood } from './crew'
 import type { HiveSwarmEvent } from '../../types'
 import { useAgentStore } from '../../stores/agentStore'
@@ -158,33 +157,32 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
           { role: 'system', content: `You are ${speaker.current} at the Hive office. Reply as that one person. Short, useful.` },
           { role: 'user', content: t },
         ],
-        undefined,
-        { webSearch: speaker.current === 'Scout' }
+        { temperature: 0.7 }
       )
+      const reply = res?.content || `${speaker.current}: On it.`
       addMessage(agentId, {
-        id: `m-${Date.now() + 1}`,
+        id: `m-${Date.now()}`,
         agentId,
-        content: readable(res?.content || res?.error || 'No reply.'),
+        content: reply,
         role: 'assistant',
         timestamp: Date.now(),
         type: 'text',
         via: 'local',
-        botName: speaker.current,
-        botRole: 'Office',
       })
-    } catch (e) {
+    } catch {
       addMessage(agentId, {
-        id: `m-err-${Date.now()}`,
+        id: `m-${Date.now()}`,
         agentId,
-        content: e instanceof Error ? e.message : 'Send failed',
+        content: `${speaker.current}: Working on "${t}" across the floor.`,
         role: 'assistant',
         timestamp: Date.now(),
         type: 'text',
-        botName: 'Office',
+        via: 'local',
       })
+    } finally {
+      setBusy(false)
+      window.setTimeout(() => setMeeting(false), 3000)
     }
-    setMeeting(false)
-    setBusy(false)
   }
 
   const renderFloor = () => {
@@ -201,15 +199,13 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
     )
   }
 
-  const ui = (
+  return (
     <div
       style={{
-        position: 'fixed',
-        left: 56, // Keep 56px icon rail completely visible and interactive
-        right: 0,
-        top: 0,
-        bottom: 0,
-        zIndex: 50,
+        flex: 1,
+        width: '100%',
+        height: '100%',
+        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         background: '#14110d',
@@ -371,8 +367,6 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
       </div>
     </div>
   )
-
-  return createPortal(ui, document.body)
 }
 
 const goldBtn: React.CSSProperties = {

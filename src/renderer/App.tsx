@@ -548,6 +548,13 @@ export default function App() {
           setActiveTab('chat')
         }}
       />
+      ) : mainView === 'office' ? (
+        <OfficeOverlay
+          onClose={() => {
+            setMainView('chat')
+            setActiveTab('chat')
+          }}
+        />
       ) : (
       <ChatView
         isCanvasOpen={isCanvasOpen}
@@ -633,14 +640,6 @@ export default function App() {
         <VoiceCall onClose={() => setShowVoiceModal(false)} />
       )}
     </div>
-    {mainView === 'office' && (
-      <OfficeOverlay
-        onClose={() => {
-          setMainView('chat')
-          setActiveTab('chat')
-        }}
-      />
-    )}
     </>
   )
 }

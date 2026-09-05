@@ -296,6 +296,51 @@ function ClawOffice({ moods, meeting }: { moods: Record<string, AgentMood>; meet
   )
 }
 
+function FallbackFurniture() {
+  return (
+    <group>
+      {/* 6 Desks */}
+      {FLOOR_CREW.map((a) => (
+        <group key={a.id}>
+          {/* Desk surface */}
+          <Box args={[1.8, 0.08, 0.9]} position={[a.desk[0], 0.72, a.desk[2]]} color="#e6be8a" />
+          {/* Legs */}
+          <Box args={[0.08, 0.72, 0.08]} position={[a.desk[0] - 0.8, 0.36, a.desk[2] - 0.35]} color="#4a4237" />
+          <Box args={[0.08, 0.72, 0.08]} position={[a.desk[0] + 0.8, 0.36, a.desk[2] - 0.35]} color="#4a4237" />
+          <Box args={[0.08, 0.72, 0.08]} position={[a.desk[0] - 0.8, 0.36, a.desk[2] + 0.35]} color="#4a4237" />
+          <Box args={[0.08, 0.72, 0.08]} position={[a.desk[0] + 0.8, 0.36, a.desk[2] + 0.35]} color="#4a4237" />
+          {/* Monitor */}
+          <Box args={[0.7, 0.45, 0.04]} position={[a.desk[0], 1.05, a.desk[2] - 0.2]} color="#1e222b" />
+          <Box args={[0.06, 0.3, 0.06]} position={[a.desk[0], 0.88, a.desk[2] - 0.2]} color="#555" />
+          {/* Chair */}
+          <Box args={[0.5, 0.08, 0.5]} position={[a.desk[0], 0.46, a.desk[2] + 0.7]} color="#2d3748" />
+          <Box args={[0.5, 0.5, 0.08]} position={[a.desk[0], 0.75, a.desk[2] + 0.92]} color="#2d3748" />
+        </group>
+      ))}
+      {/* Conference Table */}
+      <Box args={[2.4, 0.08, 2.4]} position={[7.2, 0.72, -4.2]} color="#d4a373" />
+      <Box args={[0.3, 0.72, 0.3]} position={[7.2, 0.36, -4.2]} color="#4a4237" />
+    </group>
+  )
+}
+
+function FallbackOffice({ moods, meeting }: { moods: Record<string, AgentMood>; meeting: boolean }) {
+  return (
+    <group>
+      <Box args={[22, 0.12, 16]} position={[0, -0.06, 0]} color="#b58750" receive cast={false} />
+      <Box args={[22, 3.2, 0.12]} position={[0, 1.6, -8]} color="#2d261e" />
+      <Box args={[22, 3.2, 0.12]} position={[0, 1.6, 8]} color="#2d261e" />
+      <Box args={[0.12, 3.2, 16]} position={[-11, 1.6, 0]} color="#2d261e" />
+      <Box args={[0.12, 3.2, 16]} position={[11, 1.6, 0]} color="#2d261e" />
+      <FallbackFurniture />
+      {FLOOR_CREW.map((a) => {
+        const mood = moods[a.id] || moods[a.name.toLowerCase()] || 'idle'
+        return <VoxelPerson key={a.id} agent={a} mood={mood} meeting={meeting} />
+      })}
+    </group>
+  )
+}
+
 export default function Office3D({
   moods,
   meeting,
@@ -323,7 +368,7 @@ export default function Office3D({
         castShadow
         shadow-mapSize={[1024, 1024]}
       />
-      <Suspense fallback={null}>
+      <Suspense fallback={<FallbackOffice moods={moods} meeting={meeting} />}>
         <ClawOffice moods={moods} meeting={meeting} />
       </Suspense>
       <OrbitControls enablePan={false} minPolarAngle={0.6} maxPolarAngle={1.2} minDistance={8} maxDistance={22} target={[0, 0.6, 0]} />
