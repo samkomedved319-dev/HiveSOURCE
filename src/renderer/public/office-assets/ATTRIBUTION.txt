@@ -1,0 +1,2 @@
+Office furniture GLBs copied from Claw3D (https://github.com/iamlukethedev/Claw3D)
+MIT License. Kaykit-style office pack used by Claw3D.

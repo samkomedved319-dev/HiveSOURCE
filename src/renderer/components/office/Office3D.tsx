@@ -1,32 +1,58 @@
-import React, { useRef } from 'react'
+import React, { useEffect, useMemo, useRef, Suspense } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, ContactShadows } from '@react-three/drei'
-import type { Group, Mesh } from 'three'
+import { OrbitControls, useGLTF } from '@react-three/drei'
+import type { Group, Mesh, Object3D } from 'three'
 import { FLOOR_CREW, type AgentMood, type FloorAgent } from './crew'
 
 export { FLOOR_CREW }
 export type { AgentMood, FloorAgent }
 
-function Mat({
-  color,
-  opacity = 1,
-  emissive = '#000',
-  emissiveIntensity = 0,
+function asset(file: string) {
+  const base = (import.meta.env.BASE_URL || './').replace(/\/?$/, '/')
+  return `${base}office-assets/models/furniture/${file}`
+}
+
+const MODELS = [
+  'desk.glb',
+  'chairDesk.glb',
+  'computerScreen.glb',
+  'tableRound.glb',
+  'tableCoffee.glb',
+  'loungeSofa.glb',
+  'pottedPlant.glb',
+  'plantSmall1.glb',
+  'lampRoundFloor.glb',
+  'kitchenCoffeeMachine.glb',
+  'kitchenFridgeSmall.glb',
+  'bookcaseClosed.glb',
+  'chairModernCushion.glb',
+] as const
+
+MODELS.forEach((m) => useGLTF.preload(asset(m)))
+
+function Piece({
+  file,
+  position,
+  rotation = [0, 0, 0],
+  scale = 1,
 }: {
-  color: string
-  opacity?: number
-  emissive?: string
-  emissiveIntensity?: number
+  file: (typeof MODELS)[number]
+  position: [number, number, number]
+  rotation?: [number, number, number]
+  scale?: number
 }) {
-  return (
-    <meshLambertMaterial
-      color={color}
-      transparent={opacity < 1}
-      opacity={opacity}
-      emissive={emissive}
-      emissiveIntensity={emissiveIntensity}
-    />
-  )
+  const gltf = useGLTF(asset(file))
+  const obj = useMemo(() => gltf.scene.clone(true), [gltf.scene])
+  useEffect(() => {
+    obj.traverse((n: Object3D) => {
+      const m = n as Mesh
+      if (m.isMesh) {
+        m.castShadow = true
+        m.receiveShadow = true
+      }
+    })
+  }, [obj])
+  return <primitive object={obj} position={position} rotation={rotation} scale={scale} />
 }
 
 function Box({
@@ -53,38 +79,14 @@ function Box({
   return (
     <mesh position={position} rotation={rotation} castShadow={cast} receiveShadow={receive}>
       <boxGeometry args={args} />
-      <Mat color={color} opacity={opacity} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+      <meshLambertMaterial
+        color={color}
+        transparent={opacity < 1}
+        opacity={opacity}
+        emissive={emissive || '#000'}
+        emissiveIntensity={emissiveIntensity}
+      />
     </mesh>
-  )
-}
-
-function Chair({ position, rotY = 0 }: { position: [number, number, number]; rotY?: number }) {
-  const [x, y, z] = position
-  return (
-    <group position={[x, y, z]} rotation={[0, rotY, 0]}>
-      <Box args={[0.38, 0.05, 0.38]} position={[0, 0.42, 0]} color="#2a241c" />
-      <Box args={[0.38, 0.34, 0.05]} position={[0, 0.6, 0.18]} color="#2a241c" />
-      {[-0.12, 0.12].map((ox) =>
-        [-0.12, 0.12].map((oz) => <Box key={ox + oz} args={[0.04, 0.4, 0.04]} position={[ox, 0.2, oz]} color="#6b5a2a" cast={false} />)
-      )}
-    </group>
-  )
-}
-
-function Desk({ position, accent, live }: { position: [number, number, number]; accent: string; live: boolean }) {
-  const [x, , z] = position
-  return (
-    <group>
-      <Box args={[1.7, 0.07, 0.95]} position={[x, 0.72, z]} color="#c4b59a" />
-      {[-0.72, 0.72].map((ox) =>
-        [-0.38, 0.38].map((oz) => <Box key={ox + oz} args={[0.07, 0.68, 0.07]} position={[x + ox, 0.34, z + oz]} color="#8a7a5c" />)
-      )}
-      <Box args={[0.95, 0.58, 0.05]} position={[x, 1.12, z - 0.28]} color="#111" />
-      <Box args={[0.82, 0.46, 0.02]} position={[x, 1.12, z - 0.25]} color="#0b0c0e" emissive={accent} emissiveIntensity={live ? 1.6 : 0.25} />
-      <Box args={[0.42, 0.03, 0.22]} position={[x, 0.77, z + 0.12]} color="#1b1914" />
-      <Box args={[0.12, 0.02, 0.18]} position={[x + 0.38, 0.77, z + 0.18]} color="#333" />
-      <Chair position={[x, 0, z + 0.72]} />
-    </group>
   )
 }
 
@@ -107,7 +109,7 @@ function VoxelPerson({
   const last = useRef(0)
   const sit = useRef(0)
 
-  const deskSit: [number, number, number] = [agent.desk[0], 0, agent.desk[2] + 0.52]
+  const deskSit: [number, number, number] = [agent.desk[0], 0, agent.desk[2] + 0.55]
   const target = meeting && mood !== 'idle' && mood !== 'done' ? agent.meet : deskSit
   const wantSit = mood === 'idle' || mood === 'coding' || mood === 'thinking' || mood === 'talking' || mood === 'done'
 
@@ -117,7 +119,6 @@ function VoxelPerson({
     const t = state.clock.elapsedTime
     const dt = Math.min(0.05, Math.max(0.001, t - last.current))
     last.current = t
-
     const dx = target[0] - node.position.x
     const dz = target[2] - node.position.z
     const dist = Math.hypot(dx, dz)
@@ -131,10 +132,8 @@ function VoxelPerson({
       const face = meeting && mood !== 'idle' ? 0 : Math.PI
       node.rotation.y += (face - node.rotation.y) * Math.min(1, dt * 6)
     }
-
     const sitTo = !walking && wantSit ? 1 : 0
     sit.current += (sitTo - sit.current) * Math.min(1, dt * 5)
-
     if (lLeg.current && rLeg.current) {
       if (walking) {
         const swing = Math.sin(t * 11) * 0.55
@@ -153,7 +152,6 @@ function VoxelPerson({
         lArm.current.rotation.x = 0.85
         rArm.current.rotation.x = 0.7 + Math.sin(t * 14) * 0.35
       } else if (mood === 'talking') {
-        lArm.current.rotation.x = 0.2
         rArm.current.rotation.x = 0.15 + Math.sin(t * 5) * 0.4
       } else {
         lArm.current.rotation.x = sit.current * 0.7
@@ -168,7 +166,6 @@ function VoxelPerson({
     node.position.y = walking ? Math.abs(Math.sin(t * 11)) * 0.045 : 0
   })
 
-  const skin = '#deb887'
   return (
     <group ref={g} position={deskSit}>
       <group ref={body}>
@@ -180,10 +177,7 @@ function VoxelPerson({
           <boxGeometry args={[0.1, 0.4, 0.1]} />
           <meshLambertMaterial color={agent.pants} />
         </mesh>
-        <Box args={[0.11, 0.05, 0.16]} position={[-0.08, 0.025, 0.02]} color="#1a1a1a" />
-        <Box args={[0.11, 0.05, 0.16]} position={[0.08, 0.025, 0.02]} color="#1a1a1a" />
         <Box args={[0.3, 0.34, 0.18]} position={[0, 0.58, 0]} color={agent.shirt} />
-        <Box args={[0.16, 0.04, 0.1]} position={[0, 0.76, 0.02]} color="#f4f1ea" />
         <mesh ref={lArm} position={[-0.2, 0.62, 0]} castShadow>
           <boxGeometry args={[0.08, 0.3, 0.08]} />
           <meshLambertMaterial color={agent.shirt} />
@@ -194,92 +188,56 @@ function VoxelPerson({
         </mesh>
         <mesh ref={head} position={[0, 0.92, 0]} castShadow>
           <sphereGeometry args={[0.13, 18, 16]} />
-          <meshLambertMaterial color={skin} />
+          <meshLambertMaterial color="#deb887" />
         </mesh>
         <mesh position={[0, 1.02, -0.02]} castShadow>
           <sphereGeometry args={[0.13, 14, 10]} />
           <meshLambertMaterial color={agent.hair} />
         </mesh>
-        <Box args={[0.03, 0.03, 0.012]} position={[-0.045, 0.93, 0.1]} color="#111" />
-        <Box args={[0.03, 0.03, 0.012]} position={[0.045, 0.93, 0.1]} color="#111" />
         <Box args={[0.07, 0.04, 0.07]} position={[0.16, 0.44, 0.02]} color={agent.color} emissive={agent.color} emissiveIntensity={mood === 'idle' ? 0.2 : 1.2} />
       </group>
     </group>
   )
 }
 
-function Building() {
+function ClawOffice({ moods, meeting }: { moods: Record<string, AgentMood>; meeting: boolean }) {
   return (
     <group>
-      <Box args={[26, 0.14, 20]} position={[0, -0.07, 0]} color="#d8d4cc" receive cast={false} />
-      <Box args={[12, 0.03, 10]} position={[-3.2, 0.02, 0]} color="#c9c3b8" receive cast={false} />
-      {[
-        [0, -9.9, 26, 3.6, 0.08],
-        [0, 9.9, 26, 3.6, 0.08],
-        [-12.95, 0, 0.08, 3.6, 20],
-        [12.95, 0, 0.08, 3.6, 20],
-      ].map(([x, z, w, h, d], i) => (
-        <Box key={i} args={[w, h, d]} position={[x, h / 2, z]} color="#bbccdd" opacity={0.12} cast={false} />
-      ))}
-      {[-12.9, 12.9].map((x) =>
-        [-9.9, 9.9].map((z) => <Box key={x + z} args={[0.1, 3.6, 0.1]} position={[x, 1.8, z]} color="#9aabbc" />)
-      )}
-      <Box args={[26, 0.08, 20]} position={[0, 3.72, 0]} color="#0A1628" opacity={0.35} cast={false} />
-      {[-1, 1].map((i) =>
-        [0].map((j) => (
-          <group key={`${i}${j}`}>
-            <Box args={[4, 0.04, 1.2]} position={[i * 6, 3.66, j]} color="#F0F4FF" emissive="#F0F4FF" emissiveIntensity={0.6} cast={false} />
-          </group>
-        ))
-      )}
-      <Box args={[0.08, 3.2, 5.6]} position={[5.1, 1.6, -3]} color="#bbccdd" opacity={0.14} />
-      <Box args={[1.9, 3.2, 0.08]} position={[6.1, 1.6, -0.25]} color="#bbccdd" opacity={0.14} />
-      <Box args={[1.9, 3.2, 0.08]} position={[9.5, 1.6, -0.25]} color="#bbccdd" opacity={0.14} />
-      <Box args={[3.8, 0.08, 1.55]} position={[7.4, 0.72, -3]} color="#dde4ec" />
-      {[
-        [6.0, -4.1],
-        [7.4, -4.1],
-        [8.8, -4.1],
-        [6.0, -1.9],
-        [7.4, -1.9],
-        [8.8, -1.9],
-      ].map(([x, z], i) => (
-        <Chair key={i} position={[x, 0, z]} rotY={z < -3 ? 0 : Math.PI} />
-      ))}
-      <Box args={[2.5, 1.1, 0.04]} position={[7.4, 2.15, -5.65]} color="#fafafa" />
-      <Box args={[0.55, 1.15, 0.55]} position={[-11.2, 0.58, 7.6]} color="#14532d" />
-      <Box args={[0.85, 0.35, 0.85]} position={[-11.2, 1.28, 7.6]} color="#166534" />
-      <Box args={[0.55, 1.15, 0.55]} position={[11.2, 0.58, 7.6]} color="#14532d" />
-      <Box args={[0.85, 0.35, 0.85]} position={[11.2, 1.28, 7.6]} color="#166534" />
-      <Box args={[1.8, 0.28, 0.7]} position={[8.6, 0.28, 5.4]} color="#3a3226" />
-      <Box args={[0.7, 0.55, 0.7]} position={[7.7, 0.55, 5.4]} color="#1b1914" />
-      <Box args={[0.7, 0.55, 0.7]} position={[9.5, 0.55, 5.4]} color="#1b1914" />
-      <Box args={[1.1, 1.7, 0.35]} position={[-11.4, 0.85, -7.4]} color="#2a241c" />
-    </group>
-  )
-}
+      <Box args={[22, 0.12, 16]} position={[0, -0.06, 0]} color="#cfc6b4" receive cast={false} />
+      <Box args={[22, 3.2, 0.12]} position={[0, 1.6, -8]} color="#e8dfd0" />
+      <Box args={[22, 3.2, 0.12]} position={[0, 1.6, 8]} color="#e8dfd0" />
+      <Box args={[0.12, 3.2, 16]} position={[-11, 1.6, 0]} color="#e8dfd0" />
+      <Box args={[0.12, 3.2, 16]} position={[11, 1.6, 0]} color="#e8dfd0" />
+      <Box args={[22, 0.08, 16]} position={[0, 3.24, 0]} color="#8a7a62" />
 
-function LiveFloor({
-  moods,
-  meeting,
-}: {
-  moods: Record<string, AgentMood>
-  meeting: boolean
-}) {
-  return (
-    <>
-      <Building />
+      {FLOOR_CREW.map((a) => (
+        <group key={a.id}>
+          <Piece file="desk.glb" position={a.desk} scale={1} />
+          <Piece file="chairDesk.glb" position={[a.desk[0], 0, a.desk[2] + 0.7]} rotation={[0, Math.PI, 0]} scale={1} />
+          <Piece file="computerScreen.glb" position={[a.desk[0], 0.72, a.desk[2] - 0.15]} scale={1} />
+        </group>
+      ))}
+
+      <Piece file="tableRound.glb" position={[7.2, 0, -4.2]} scale={1.15} />
+      <Piece file="chairModernCushion.glb" position={[6.2, 0, -4.9]} rotation={[0, 0.4, 0]} />
+      <Piece file="chairModernCushion.glb" position={[8.2, 0, -4.9]} rotation={[0, -0.4, 0]} />
+      <Piece file="chairModernCushion.glb" position={[6.2, 0, -3.5]} rotation={[0, 2.6, 0]} />
+      <Piece file="chairModernCushion.glb" position={[8.2, 0, -3.5]} rotation={[0, -2.6, 0]} />
+
+      <Piece file="loungeSofa.glb" position={[8.4, 0, 5.6]} rotation={[0, Math.PI, 0]} />
+      <Piece file="tableCoffee.glb" position={[8.4, 0, 4.5]} />
+      <Piece file="lampRoundFloor.glb" position={[9.8, 0, 5.8]} />
+      <Piece file="pottedPlant.glb" position={[-10.2, 0, 6.8]} />
+      <Piece file="plantSmall1.glb" position={[10.2, 0, -6.8]} />
+      <Piece file="bookcaseClosed.glb" position={[-10.3, 0, -6.4]} />
+      <Piece file="kitchenFridgeSmall.glb" position={[-10.2, 0, 4.4]} />
+      <Piece file="kitchenCoffeeMachine.glb" position={[-9.2, 0, 4.4]} />
+
       {FLOOR_CREW.map((a) => {
         const mood = moods[a.id] || moods[a.name.toLowerCase()] || 'idle'
-        return (
-          <React.Fragment key={a.id}>
-            <Desk position={a.desk} accent={a.color} live={mood !== 'idle'} />
-            <VoxelPerson agent={a} mood={mood} meeting={meeting} />
-          </React.Fragment>
-        )
+        return <VoxelPerson key={a.id} agent={a} mood={mood} meeting={meeting} />
       })}
-      <ContactShadows position={[0, 0.01, 0]} opacity={0.22} scale={28} blur={2.2} far={6} />
-    </>
+    </group>
   )
 }
 
@@ -294,37 +252,26 @@ export default function Office3D({
   return (
     <Canvas
       shadows
-      camera={{ position: [11, 9, 13], fov: 38, near: 0.1, far: 120 }}
+      camera={{ position: [10, 8, 12], fov: 40, near: 0.1, far: 80 }}
       dpr={[1, 1.25]}
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
-      onCreated={({ gl }) => {
-        gl.setClearColor('#1c1812', 1)
-      }}
+      onCreated={({ gl }) => gl.setClearColor('#1c1812', 1)}
       style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
     >
       <color attach="background" args={['#1c1812']} />
-      <ambientLight intensity={0.95} />
-      <hemisphereLight args={['#fff4d6', '#3a3226', 0.55]} />
+      <ambientLight intensity={0.9} />
+      <hemisphereLight args={['#fff4d6', '#3a3226', 0.5]} />
       <directionalLight
-        position={[12, 20, 10]}
-        intensity={1.35}
+        position={[8, 14, 6]}
+        intensity={1.2}
         color="#ffe7a8"
         castShadow
         shadow-mapSize={[1024, 1024]}
-        shadow-camera-left={-16}
-        shadow-camera-right={16}
-        shadow-camera-top={16}
-        shadow-camera-bottom={-16}
       />
-      <LiveFloor moods={moods} meeting={meeting} />
-      <OrbitControls
-        enablePan={false}
-        minPolarAngle={0.7}
-        maxPolarAngle={1.15}
-        minDistance={14}
-        maxDistance={36}
-        target={[0, 0.8, 0]}
-      />
+      <Suspense fallback={null}>
+        <ClawOffice moods={moods} meeting={meeting} />
+      </Suspense>
+      <OrbitControls enablePan={false} minPolarAngle={0.6} maxPolarAngle={1.2} minDistance={8} maxDistance={22} target={[0, 0.6, 0]} />
     </Canvas>
   )
 }
