@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import TitleBar, { ThinkingMode } from '../layout/TitleBar'
+import TitleBar, { ThinkingMode, MODE_MODELS } from '../layout/TitleBar'
 import MessageList from './MessageList'
 import ChatInput from './ChatInput'
 import VoiceCall from './VoiceCall'
@@ -69,19 +69,16 @@ export default function ChatView({
     }
   }, [])
 
-  const [currentModelId, setCurrentModelId] = useState(() => {
-    return localStorage.getItem('hive_model_free') || 'minimax/minimax-m3:free'
-  })
   const [currentMode, setCurrentMode] = useState<ThinkingMode>(() => {
-    return (localStorage.getItem('hive_mode') as ThinkingMode) || 'reasoning'
+    const saved = localStorage.getItem('hive_mode') as ThinkingMode
+    if (saved === 'reasoning' || saved === 'computer_control') return 'auto'
+    return saved || 'auto'
   })
-
-  useEffect(() => {
-    localStorage.setItem('hive_model', currentModelId)
-  }, [currentModelId])
+  const currentModelId = MODE_MODELS[currentMode] || MODE_MODELS.auto
 
   useEffect(() => {
     localStorage.setItem('hive_mode', currentMode)
+    localStorage.setItem('hive_model', MODE_MODELS[currentMode])
   }, [currentMode])
 
   useEffect(() => {
@@ -563,9 +560,7 @@ Followed by a brief explanation of what was run.`
       }}
     >
       <TitleBar
-        currentModelId={currentModelId}
         currentMode={currentMode}
-        onChangeModel={setCurrentModelId}
         onChangeMode={setCurrentMode}
         isCanvasOpen={isCanvasOpen}
         onToggleCanvas={onToggleCanvas}
@@ -574,6 +569,7 @@ Followed by a brief explanation of what was run.`
         onOpenWorkers={onOpenWorkers}
         isConvListOpen={isConvListOpen}
         onToggleSidebar={onToggleSidebar}
+        onFeedback={() => window.dispatchEvent(new CustomEvent('hive:feedback'))}
       />
       <SwarmStrip status={swarm} />
       <OpsTimeline events={ops} />

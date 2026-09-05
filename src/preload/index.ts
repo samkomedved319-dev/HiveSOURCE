@@ -27,6 +27,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     openApp: (target: string) => ipcRenderer.invoke('system:openApp', target),
     getVersion: () => ipcRenderer.invoke('system:getVersion'),
   },
+  cloud: {
+    status: () => ipcRenderer.invoke('cloud:status'),
+    exec: (command: string) => ipcRenderer.invoke('cloud:exec', command),
+    swarm: (text: string) => ipcRenderer.invoke('cloud:swarm', text),
+  },
   buddy: {
     onSummon: (cb: () => void) => {
       const handler = () => cb()

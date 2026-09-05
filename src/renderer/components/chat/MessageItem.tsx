@@ -15,7 +15,7 @@ export function extractCitationDomain(c: { domain?: string; url?: string }): str
   return domain || 'source'
 }
 
-export default function MessageItem({
+export default React.memo(function MessageItem({
   message,
   index = 0,
 }: {
@@ -342,4 +342,4 @@ export default function MessageItem({
       </div>
     </div>
   )
-}
+})

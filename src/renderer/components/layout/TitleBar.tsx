@@ -1,33 +1,30 @@
 import React, { useEffect, useState, useRef } from 'react'
 import packageJson from '../../../../package.json'
 
-export type ThinkingMode = 'fast' | 'reasoning' | 'heavy' | 'max' | 'computer_control'
+export type ThinkingMode = 'fast' | 'auto' | 'heavy' | 'max'
 
 export interface ModelOption {
   id: string
   label: string
 }
 
-export const AVAILABLE_MODELS: ModelOption[] = [
-  { id: 'minimax/minimax-m3:free', label: 'Minimax M3 (Free)' },
-  { id: 'nvidia/nemotron-3.5-lightning:free', label: 'Nemotron 3.5 Fast (Free)' },
-  { id: 'nvidia/nemotron-3-super-120b-a12b:free', label: 'Nemotron 120B Super (Free)' },
-  { id: 'nvidia/nemotron-3-ultra-550b-a55b:free', label: 'Nemotron 550B Ultra (Free)' },
-  { id: 'inclusionai/ling-3.0-flash-fin:free', label: 'Ling 3.0 Flash (Free)' },
-]
+export const MODE_MODELS: Record<ThinkingMode, string> = {
+  fast: 'nvidia/nemotron-3.5-lightning:free',
+  auto: 'minimax/minimax-m3:free',
+  heavy: 'nvidia/nemotron-3-super-120b-a12b:free',
+  max: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+}
 
 export const THINKING_MODES: { id: ThinkingMode; label: string; badge: string; desc: string }[] = [
-  { id: 'fast', label: 'Fast', badge: 'F', desc: 'Direct, lowest latency answers' },
-  { id: 'reasoning', label: 'Reasoning', badge: 'R', desc: 'Step-by-step balanced logical deduction' },
-  { id: 'heavy', label: 'Heavy Thinking', badge: 'H', desc: 'Deep multi-angle analysis and synthesis' },
-  { id: 'max', label: 'Max Thinking', badge: 'M', desc: 'Maximum reflection depth & exhaustive reasoning' },
-  { id: 'computer_control', label: 'PC Control', badge: 'PC', desc: 'Autonomous system control, terminal, apps & browser' },
+  { id: 'fast', label: 'Fast', badge: 'F', desc: 'Lowest latency answers' },
+  { id: 'auto', label: 'Auto', badge: 'A', desc: 'Balanced — Hive picks the stack' },
+  { id: 'heavy', label: 'Heavy', badge: 'H', desc: 'Deep multi-angle analysis' },
+  { id: 'max', label: 'Max', badge: 'M', desc: 'Maximum reflection depth' },
 ]
 
+
 interface TitleBarProps {
-  currentModelId?: string
   currentMode: ThinkingMode
-  onChangeModel: (modelId: string) => void
   onChangeMode: (mode: ThinkingMode) => void
   isCanvasOpen: boolean
   onToggleCanvas: () => void
@@ -36,12 +33,11 @@ interface TitleBarProps {
   onOpenWorkers?: () => void
   isConvListOpen?: boolean
   onToggleSidebar?: () => void
+  onFeedback?: () => void
 }
 
 export default function TitleBar({
-  currentModelId = 'openai/gpt-4o-mini',
-  currentMode = 'reasoning',
-  onChangeModel,
+  currentMode = 'auto',
   onChangeMode,
   isCanvasOpen,
   onToggleCanvas,
@@ -50,6 +46,7 @@ export default function TitleBar({
   onOpenWorkers,
   isConvListOpen = true,
   onToggleSidebar,
+  onFeedback,
 }: TitleBarProps) {
   const [max, setMax] = useState(false)
   const [showSelector, setShowSelector] = useState(false)
@@ -72,7 +69,6 @@ export default function TitleBar({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showSelector])
 
-  const activeModelObj = AVAILABLE_MODELS.find((m) => m.id === currentModelId) || AVAILABLE_MODELS[0]
   const activeModeObj = THINKING_MODES.find((m) => m.id === currentMode) || THINKING_MODES[1]
 
   return (
@@ -125,7 +121,8 @@ export default function TitleBar({
         <button
           type="button"
           onClick={() => setShowSelector((prev) => !prev)}
-          title="Select AI Model & Thinking Mode"
+          title="Select mode"
+
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -155,12 +152,9 @@ export default function TitleBar({
               boxShadow: '0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent)',
             }}
           />
-          <span style={{ fontWeight: 500 }}>{activeModelObj.label}</span>
+          <span style={{ fontWeight: 500 }}>{activeModeObj.label}</span>
           <span style={{ color: 'var(--text-faint)' }}>·</span>
-          <span style={{ color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span>{activeModeObj.badge}</span>
-            <span>{activeModeObj.label}</span>
-          </span>
+          <span style={{ color: 'var(--text-dim)' }}>{activeModeObj.badge}</span>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 2, color: 'var(--text-faint)' }}>
             <path d="M6 9l6 6 6-6" />
           </svg>
@@ -247,61 +241,6 @@ export default function TitleBar({
               </div>
             </div>
 
-            <div style={{ height: 1, background: 'var(--border-soft)' }} />
-
-            {/* Model selection */}
-            <div>
-              <div
-                style={{
-                  fontSize: 10.5,
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  letterSpacing: '.06em',
-                  color: 'var(--text-faint)',
-                  marginBottom: 6,
-                  paddingLeft: 4,
-                }}
-              >
-                Underlying Model
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {AVAILABLE_MODELS.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => {
-                      onChangeModel(m.id)
-                      setShowSelector(false)
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '6px 10px',
-                      borderRadius: 6,
-                      border: 'none',
-                      background: currentModelId === m.id ? 'var(--panel-2)' : 'transparent',
-                      color: currentModelId === m.id ? 'var(--accent)' : 'var(--text-dim)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontFamily: 'inherit',
-                      fontSize: 12,
-                      transition: 'background .15s',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (currentModelId !== m.id) e.currentTarget.style.background = 'var(--panel-2)'
-                    }}
-                    onMouseLeave={(e) => {
-                      if (currentModelId !== m.id) e.currentTarget.style.background = 'transparent'
-                    }}
-                  >
-                    <span>{m.label}</span>
-                    {currentModelId === m.id && <span>✓</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {onOpenWorkers && (
               <>
                 <div style={{ height: 1, background: 'var(--border-soft)' }} />
@@ -381,6 +320,26 @@ export default function TitleBar({
               <path d="M12 20h9" strokeLinecap="round" />
               <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
             </svg>
+          </button>
+        )}
+        {onFeedback && (
+          <button
+            type="button"
+            onClick={onFeedback}
+            title="Send feedback"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-faint)',
+              cursor: 'pointer',
+              padding: 4,
+              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 600,
+              WebkitAppRegion: 'no-drag',
+            } as React.CSSProperties}
+          >
+            Feedback
           </button>
         )}
         {/* Share */}

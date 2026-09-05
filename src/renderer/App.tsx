@@ -13,6 +13,8 @@ import BuddyOverlay from './components/chat/BuddyOverlay'
 import LaunchScreen from './components/launch/LaunchScreen'
 import FloatingPanel from './components/layout/FloatingPanel'
 import NewGroupModal from './components/layout/NewGroupModal'
+import FeedbackModal from './components/layout/FeedbackModal'
+import CloudComputerPanel from './components/layout/CloudComputerPanel'
 import { AnimatePresence } from 'motion/react'
 import { useChatStore } from './stores/chatStore'
 import { useAgentStore } from './stores/agentStore'
@@ -40,6 +42,12 @@ export default function App() {
     void hydrate()
   }, [hydrate])
 
+  useEffect(() => {
+    const onFb = () => setShowFeedback(true)
+    window.addEventListener('hive:feedback', onFb as EventListener)
+    return () => window.removeEventListener('hive:feedback', onFb as EventListener)
+  }, [])
+
   // Launch screen animation disabled: boot straight into the workspace.
   // (LaunchScreen component is kept for tests/preview; set this back to
   // `useState(true)` to re-enable the animated boot sequence.)
@@ -66,6 +74,7 @@ export default function App() {
   const [showProfile, setShowProfile] = useState(false)
   const [showVoiceModal, setShowVoiceModal] = useState(false)
   const [showNewGroup, setShowNewGroup] = useState(false)
+  const [showFeedback, setShowFeedback] = useState(false)
   const [buddyOn, setBuddyOn] = useState(isBuddyEnabled)
   const [canvasMode, setCanvasMode] = useState<'code' | 'browser'>('code')
   const [activeBrowserUrl, setActiveBrowserUrl] = useState('https://google.com')
@@ -129,7 +138,7 @@ export default function App() {
     const agent = useAgentStore.getState().activeAgent
     const cid = activeConvRef.current
     if (!agent || !cid) return
-    const msgs = useChatStore.getState().messages[agent.id] ?? []
+    const msgs = (useChatStore.getState().messages[agent.id] ?? []).slice(-60)
     const next = { ...convMessagesRef.current, [cid]: msgs }
     convMessagesRef.current = next
     setConvMessages(next)
@@ -138,22 +147,23 @@ export default function App() {
     } catch {}
   }
 
-  // Continuous flush: every new message lands in its conversation snapshot.
   useEffect(() => {
-    return useChatStore.subscribe((s) => {
+    let t: ReturnType<typeof setTimeout> | null = null
+    const unsub = useChatStore.subscribe((s) => {
       const agent = useAgentStore.getState().activeAgent
       const cid = activeConvRef.current
       if (!agent || !cid) return
       const msgs = s.messages[agent.id] ?? []
-      const sig = `${msgs.length}:${msgs.length ? msgs[msgs.length - 1].id : ''}`
+      const sig = `${msgs.length}:${msgs.length ? msgs[msgs.length - 1].id : ''}:${(msgs[msgs.length - 1]?.content || '').length}`
       if (sig === lastFlushSig.current) return
       lastFlushSig.current = sig
-      const next = { ...convMessagesRef.current, [cid]: msgs }
-      convMessagesRef.current = next
-      try {
-        localStorage.setItem('hive_conv_messages', JSON.stringify(next))
-      } catch {}
+      if (t) clearTimeout(t)
+      t = setTimeout(() => persistCurrent(), 700)
     })
+    return () => {
+      if (t) clearTimeout(t)
+      unsub()
+    }
   }, [])
 
   // Restore the saved transcript for the active conversation on boot.
@@ -474,19 +484,12 @@ export default function App() {
       )}
 
       {isCanvasOpen && (
-        <FloatingPanel title={canvasData.name || 'Canvas'} onClose={() => setIsCanvasOpen(false)} width={440} height={620}>
-          <CanvasPanel
-            fileName={canvasData.name}
-            cardMeta={canvasData.meta}
-            codeContent={canvasData.content}
-            mode={canvasMode}
-            browserSteps={browserSteps}
-            activeBrowserUrl={activeBrowserUrl}
-            activeTabTitle={activeTabTitle}
-            onClose={() => setIsCanvasOpen(false)}
-          />
+        <FloatingPanel title="HiveBox · live cloud" onClose={() => setIsCanvasOpen(false)} width={440} height={620}>
+          <CloudComputerPanel onClose={() => setIsCanvasOpen(false)} />
         </FloatingPanel>
       )}
+
+      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
 
       {showNewGroup && (
         <NewGroupModal onClose={() => setShowNewGroup(false)} onCreate={handleNewGroup} />

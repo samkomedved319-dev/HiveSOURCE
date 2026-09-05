@@ -7,7 +7,7 @@ interface BotsPanelProps {
   onSelectAgent: (agent: Agent) => void
 }
 
-const AVATAR_CHOICES = ['⚡', '🔬', '🤖', '👑', '🧠', '🛠️', '📊', '🎨']
+import { MASCOT_LIBRARY, mascotGlyph, BLOUB_URL } from '../mascot/mascotLibrary'
 
 /**
  * BotsPanel — the bot roster lives in the main column (where chat lives),
@@ -20,7 +20,7 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
   const [name, setName] = useState('')
   const [roleTitle, setRoleTitle] = useState('')
   const [systemPrompt, setSystemPrompt] = useState('')
-  const [avatar, setAvatar] = useState('🤖')
+  const [avatar, setAvatar] = useState('bloub')
 
   const handleCreate = () => {
     if (!name.trim()) return
@@ -35,7 +35,7 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
       roleTitle: roleTitle.trim() || 'Specialized Worker',
       isCeo: false,
       model: 'minimax/minimax-m3:free',
-      mode: 'reasoning',
+      mode: 'auto',
       createdAt: Date.now(),
     }
     addAgent(bot)
@@ -43,7 +43,7 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
     setName('')
     setRoleTitle('')
     setSystemPrompt('')
-    setAvatar('🤖')
+    setAvatar('bloub')
   }
 
   const handleChat = (agent: Agent) => {
@@ -230,25 +230,30 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
           >
             <div style={{ fontSize: 13.5, fontWeight: 600 }}>New worker bot</div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {AVATAR_CHOICES.map((a) => (
+              {MASCOT_LIBRARY.map((a) => (
                 <button
-                  key={a}
+                  key={a.id}
                   type="button"
-                  onClick={() => setAvatar(a)}
+                  title={a.hint}
+                  onClick={() => setAvatar(a.id)}
                   style={{
-                    width: 34,
-                    height: 34,
+                    minWidth: 64,
+                    height: 40,
                     borderRadius: 8,
-                    fontSize: 17,
-                    background: avatar === a ? 'var(--panel-2)' : 'transparent',
-                    border: avatar === a ? '1px solid var(--accent)' : '1px solid var(--border-soft)',
+                    fontSize: 12,
+                    background: avatar === a.id ? 'var(--panel-2)' : 'transparent',
+                    border: avatar === a.id ? '1px solid var(--accent)' : '1px solid var(--border-soft)',
                     cursor: 'pointer',
+                    color: 'var(--text)',
                   }}
                 >
-                  {a}
+                  {mascotGlyph(a.id)} {a.label}
                 </button>
               ))}
             </div>
+            {avatar === 'bloub' && (
+              <iframe title="Bloub mascot" src={BLOUB_URL} style={{ width: '100%', height: 120, border: '1px solid var(--border)', borderRadius: 8, background: '#111' }} />
+            )}
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}

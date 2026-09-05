@@ -21,9 +21,10 @@ export default function MessageList({
   const buddyInk = useBuddyColor()
   const endRef = useRef<HTMLDivElement>(null)
   const messages = activeAgent ? getMessages(activeAgent.id) : []
+  const visible = messages.length > 50 ? messages.slice(-50) : messages
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+    endRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' })
   }, [messages.length, isTyping])
 
   return (
@@ -31,6 +32,7 @@ export default function MessageList({
       style={{
         flex: 1,
         overflowY: 'auto',
+        overflowAnchor: 'none',
         display: 'flex',
         flexDirection: 'column',
         width: '100%',
@@ -142,7 +144,7 @@ export default function MessageList({
           </div>
         ) : (
           <>
-            {messages.map((m, idx) => (
+            {visible.map((m, idx) => (
               <MessageItem key={m.id} message={m} index={idx} />
             ))}
             {isTyping && (

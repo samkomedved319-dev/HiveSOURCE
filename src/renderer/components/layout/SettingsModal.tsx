@@ -247,7 +247,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               {activeTab === 'general' && 'General Preferences'}
               {activeTab === 'models' && 'Models & Thinking Behavior'}
               {activeTab === 'appearance' && 'Appearance & Tokens'}
-              {activeTab === 'integrations' && 'Google Login, Telegram PIN & Extension'}
+              {activeTab === 'integrations' && 'Cloud, datasets & extensions'}
               {activeTab === 'shortcuts' && 'Keyboard Shortcuts'}
             </span>
             <button
@@ -612,7 +612,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     border: '1px solid var(--border)',
                     borderRadius: 10,
                     padding: 14,
-                    display: 'flex',
+                    display: localStorage.getItem('hive_staff') === '1' ? 'flex' : 'none',
                     flexDirection: 'column',
                     gap: 10,
                   }}
@@ -714,7 +714,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     border: '1px solid var(--border)',
                     borderRadius: 10,
                     padding: 14,
-                    display: 'flex',
+                    display: localStorage.getItem('hive_staff') === '1' ? 'flex' : 'none',
                     flexDirection: 'column',
                     gap: 10,
                   }}

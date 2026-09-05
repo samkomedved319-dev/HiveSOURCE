@@ -5,7 +5,7 @@ export interface Agent {
   description?: string
   avatar?: string
   model?: string
-  mode?: 'fast' | 'reasoning' | 'heavy' | 'max' | 'computer_control'
+  mode?: 'fast' | 'auto' | 'heavy' | 'max'
   roleTitle?: string
   isCeo?: boolean
   createdAt?: number
@@ -77,6 +77,11 @@ export interface ElectronAPI {
     exec: (command: string) => Promise<{ ok: boolean; stdout?: string; stderr?: string; error?: string }>
     openApp: (target: string) => Promise<{ ok: boolean; message?: string; error?: string }>
     getVersion?: () => Promise<string>
+  }
+  cloud?: {
+    status: () => Promise<any>
+    exec: (command: string) => Promise<any>
+    swarm: (text: string) => Promise<any>
   }
   buddy?: {
     onSummon: (cb: () => void) => () => void
