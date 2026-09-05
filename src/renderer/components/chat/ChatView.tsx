@@ -5,7 +5,6 @@ import ChatInput from './ChatInput'
 import VoiceCall from './VoiceCall'
 import ToolsModal from './ToolsModal'
 import SwarmStrip, { type SwarmStatus } from './SwarmStrip'
-import OpsTimeline from './OpsTimeline'
 import { grokPersonality } from '../../companion/grokPersonality'
 import { useAgentStore } from '../../stores/agentStore'
 import { useChatStore } from '../../stores/chatStore'
@@ -576,7 +575,6 @@ Followed by a brief explanation of what was run.`
         onFeedback={() => window.dispatchEvent(new CustomEvent('hive:feedback'))}
       />
       <SwarmStrip status={swarm} />
-      <OpsTimeline events={ops} />
       {approval && (
         <div
           style={{

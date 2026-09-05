@@ -1,75 +1,71 @@
 import React from 'react'
+import BloubEngineAvatar from '../mascot/BloubEngineAvatar'
+import { getMascot } from '../mascot/mascotLibrary'
+import type { StateId } from '../../bot/states'
 
 export type SwarmStatus = 'idle' | 'searching' | 'thinking' | 'arguing' | 'done' | 'error'
 
-const AGENTS: { name: string; color: string }[] = [
-  { name: 'Scout', color: '#5B8DEF' },
-  { name: 'Hive', color: '#F2C14E' },
-  { name: 'Pulse', color: '#FB7185' },
-  { name: 'Critic', color: '#C084FC' },
+const AGENTS: { name: string; mascot: string }[] = [
+  { name: 'Scout', mascot: 'bloub-blue' },
+  { name: 'Hive', mascot: 'bloub-gold' },
+  { name: 'Pulse', mascot: 'bloub-rose' },
+  { name: 'Critic', mascot: 'bloub-violet' },
 ]
 
-const LABEL: Record<SwarmStatus, string> = {
+const POSE: Record<SwarmStatus, StateId> = {
   idle: 'idle',
-  searching: 'searching\u2026',
-  thinking: 'thinking\u2026',
-  arguing: 'reviewing\u2026',
+  searching: 'orbit',
+  thinking: 'thinking',
+  arguing: 'wink',
+  done: 'exclaim',
+  error: 'alert',
+}
+
+const LABEL: Record<SwarmStatus, string> = {
+  idle: '',
+  searching: 'searching',
+  thinking: 'thinking',
+  arguing: 'reviewing',
   done: 'done',
   error: 'error',
 }
 
 export default function SwarmStrip({ status }: { status: Record<string, SwarmStatus> }) {
-  const liveCount = ['Scout', 'Hive', 'Pulse'].filter((n) => {
-    const st = status[n]
+  const busy = AGENTS.some((a) => {
+    const st = status[a.name]
     return st && st !== 'idle'
-  }).length
-  const overlap = liveCount >= 2
+  })
+  if (!busy) return null
+
   return (
     <div
       style={{
         display: 'flex',
-        gap: 8,
-        padding: '6px 16px 0',
+        gap: 18,
+        padding: '8px 16px 4px',
         justifyContent: 'center',
-        flexWrap: 'wrap',
-        alignItems: 'center',
+        alignItems: 'flex-end',
+        flexShrink: 0,
       }}
     >
-      {overlap && (
-        <div style={{ fontSize: 10, color: '#F2C14E', fontWeight: 700, letterSpacing: 0.4 }}>
-          {liveCount} AGENTS OVERLAPPING
-        </div>
-      )}
       {AGENTS.map((a) => {
         const st = status[a.name] || 'idle'
-        const live = st !== 'idle' && st !== 'done'
+        const m = getMascot(a.mascot)
+        const live = st !== 'idle'
         return (
-          <div
-            key={a.name}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              border: `1px solid ${a.color}33`,
-              background: `${a.color}14`,
-              color: a.color,
-              borderRadius: 999,
-              padding: '4px 10px',
-              fontSize: 11,
-              fontWeight: 600,
-            }}
-          >
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: a.color,
-                boxShadow: live ? `0 0 8px ${a.color}` : 'none',
-              }}
+          <div key={a.name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, opacity: live ? 1 : 0.35, minWidth: 56 }}>
+            <BloubEngineAvatar
+              size={44}
+              crop={118}
+              ink={m.ink}
+              paper={m.paper}
+              shapeId={m.shape}
+              botState={POSE[st]}
+              live={live}
+              fps={30}
             />
-            {a.name}
-            <span style={{ fontWeight: 500, opacity: 0.8 }}>{LABEL[st]}</span>
+            <span style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 600 }}>{a.name}</span>
+            <span style={{ fontSize: 10, color: 'var(--text-faint)', height: 12 }}>{LABEL[st]}</span>
           </div>
         )
       })}

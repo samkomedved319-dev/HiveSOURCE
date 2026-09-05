@@ -84,7 +84,6 @@ export default function TitleBar({
         background: 'var(--bg)',
         userSelect: 'none',
         flexShrink: 0,
-        flexShrink: 0,
         position: 'relative',
       } as React.CSSProperties}
     >
@@ -153,9 +152,7 @@ export default function TitleBar({
               boxShadow: '0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent)',
             }}
           />
-          <span style={{ fontWeight: 500 }}>{activeModeObj.label}</span>
-          <span style={{ color: 'var(--text-faint)' }}>·</span>
-          <span style={{ color: 'var(--text-dim)' }}>{activeModeObj.badge}</span>
+          <span style={{ fontWeight: 600 }}>{activeModeObj.label}</span>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 2, color: 'var(--text-faint)' }}>
             <path d="M6 9l6 6 6-6" />
           </svg>
@@ -227,14 +224,11 @@ export default function TitleBar({
                       if (currentMode !== mode.id) e.currentTarget.style.background = 'transparent'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span>{mode.badge}</span>
-                      <div>
-                        <div style={{ fontSize: 12.5, fontWeight: currentMode === mode.id ? 600 : 500 }}>
+                    <div>
+                        <div style={{ fontSize: 13, fontWeight: currentMode === mode.id ? 600 : 500 }}>
                           {mode.label}
                         </div>
                         <div style={{ fontSize: 10.5, color: 'var(--text-faint)' }}>{mode.desc}</div>
-                      </div>
                     </div>
                     {currentMode === mode.id && <span style={{ fontSize: 12 }}>✓</span>}
                   </button>
