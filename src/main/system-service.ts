@@ -37,4 +37,25 @@ export function registerSystemControlHandlers() {
   ipcMain.handle('system:openApp', async (_e, target: string) => openSystemTarget(target))
   ipcMain.handle('system:getVersion', async () => app.getVersion())
   ipcMain.handle('app:getVersion', async () => app.getVersion())
+  ipcMain.handle('app:checkUpdate', async () => {
+    try {
+      const current = app.getVersion()
+      const res = await fetch('https://raw.githubusercontent.com/samkomedved319-dev/HiveSOURCE/main/package.json', {
+        cache: 'no-store',
+      })
+      if (!res.ok) return { ok: false, current, error: 'Could not reach GitHub' }
+      const json = (await res.json()) as { version?: string }
+      const latest = String(json.version || current)
+      const newer = latest.localeCompare(current, undefined, { numeric: true, sensitivity: 'base' }) > 0
+      return {
+        ok: true,
+        current,
+        latest,
+        newer,
+        url: 'https://github.com/samkomedved319-dev/HiveSOURCE/releases',
+      }
+    } catch (e) {
+      return { ok: false, current: app.getVersion(), error: e instanceof Error ? e.message : 'Update check failed' }
+    }
+  })
 }

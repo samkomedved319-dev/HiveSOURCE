@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain } from 'electron'
 import { registerApprovalIpc } from './approvals'
 import { ingestUserMessage } from './ingest'
-import { emitHiveEvent, setHiveEmitter } from './notify'
+import { emitHiveEvent, setFocusProbe, setHiveEmitter } from './notify'
 import { resolveRuntime } from './runtime'
 
 let getWindow: () => BrowserWindow | null = () => null
@@ -11,6 +11,10 @@ export function registerHiveBridge(getMain: () => BrowserWindow | null) {
   setHiveEmitter((channel, payload) => {
     const win = getWindow()
     if (win && !win.isDestroyed()) win.webContents.send(channel, payload)
+  })
+  setFocusProbe(() => {
+    const win = getWindow()
+    return Boolean(win && !win.isDestroyed() && win.isFocused() && win.isVisible())
   })
 
   ipcMain.handle('hive:send', async (_e, text: string, conversationId?: string) => {

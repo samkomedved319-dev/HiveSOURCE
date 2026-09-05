@@ -106,6 +106,14 @@ export interface ElectronAPI {
   }
   app?: {
     getVersion?: () => Promise<string>
+    checkUpdate?: () => Promise<{
+      ok: boolean
+      current?: string
+      latest?: string
+      newer?: boolean
+      url?: string
+      error?: string
+    }>
   }
   tts?: {
     speak: (text: string) => Promise<{ ok: boolean; dataUrl?: string; error?: string }>

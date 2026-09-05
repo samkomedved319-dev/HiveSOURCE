@@ -67,6 +67,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   app: {
     getVersion: () => ipcRenderer.invoke('app:getVersion'),
+    checkUpdate: () => ipcRenderer.invoke('app:checkUpdate'),
   },
   tts: {
     speak: (text: string) => ipcRenderer.invoke('tts:speak', text),

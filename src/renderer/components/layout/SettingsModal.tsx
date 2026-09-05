@@ -67,6 +67,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [recording, setRecording] = useState<ShortcutId | null>(null)
 
   // Feedback states
+  const [updateNote, setUpdateNote] = useState('')
+  const [checking, setChecking] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
 
@@ -272,7 +274,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           </div>
 
           <div style={{ padding: '0 8px', fontSize: 11, color: 'var(--text-faint)' }}>
-            Hive Desktop · v0.0.1
+            Hive Desktop · v0.0.3
           </div>
         </div>
 
@@ -337,6 +339,41 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             {/* GENERAL TAB */}
             {activeTab === 'general' && (
               <>
+                <SettingRow
+                  label="Updates"
+                  description="Compare this install with GitHub. New installers show up here."
+                >
+                  <button
+                    type="button"
+                    disabled={checking}
+                    onClick={async () => {
+                      setChecking(true)
+                      try {
+                        const res = await window.electronAPI?.app?.checkUpdate?.()
+                        if (!res?.ok) setUpdateNote(res?.error || 'Check failed')
+                        else if (res.newer) setUpdateNote(`v${res.latest} is out (you have v${res.current}).`)
+                        else setUpdateNote(`You're on v${res.current} — latest.`)
+                      } catch (e) {
+                        setUpdateNote(e instanceof Error ? e.message : 'Check failed')
+                      }
+                      setChecking(false)
+                    }}
+                    style={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text)',
+                      borderRadius: 8,
+                      padding: '6px 10px',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      fontSize: 12,
+                    }}
+                  >
+                    {checking ? 'Checking…' : 'Check now'}
+                  </button>
+                </SettingRow>
+                {updateNote && <div style={{ fontSize: 12, color: 'var(--accent)' }}>{updateNote}</div>}
+
                 <SettingRow
                   label="Enter Key Action"
                   description="Pressing Enter sends immediately; Shift+Enter creates a newline"

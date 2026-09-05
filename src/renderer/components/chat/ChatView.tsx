@@ -432,33 +432,79 @@ Followed by a brief explanation of what was run.`
 
     try {
       if (window.electronAPI?.hive?.send) {
-        void window.electronAPI.hive.send(content, activeAgent.id).then((res) => {
-          if (!res?.ok) {
-            addMessage(activeAgent.id, {
-              id: `m-err-${Date.now()}`,
-              agentId: activeAgent.id,
-              content: res?.error || 'Hive swarm failed to start. Set OPENROUTER_API_KEY in .env.',
-              role: 'assistant',
-              timestamp: Date.now(),
-              type: 'text',
-              botName: 'Hive',
-            })
-            setTyping(false)
-          }
-        })
-        window.setTimeout(() => {
-          if (gen !== sendGenRef.current) return
-          setTyping(false)
-          setSwarm((prev) => ({
-            ...prev,
-            Scout: prev.Scout === 'thinking' || prev.Scout === 'searching' ? 'done' : prev.Scout,
-            Hive: prev.Hive === 'thinking' ? 'done' : prev.Hive,
-            Pulse: prev.Pulse === 'thinking' ? 'done' : prev.Pulse,
-            Critic: prev.Critic === 'arguing' || prev.Critic === 'thinking' ? 'done' : prev.Critic,
-          }))
-        }, 16000)
-        return
+        void window.electronAPI.hive.send(content, activeAgent.id).catch(() => {})
       }
+      const history = getMessages(activeAgent.id)
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .slice(-16)
+        .map((m) => ({ role: m.role, content: m.content }))
+      const timeout = new Promise<{ ok: false; error: string }>((resolve) =>
+        setTimeout(() => resolve({ ok: false, error: 'Timed out waiting for a reply.' }), 45000)
+      )
+      const call =
+        window.electronAPI?.ai?.chat?.(
+          [
+            { role: 'system', content: (activeAgent.systemPrompt || 'You are Hive.') + modeInstruction },
+            ...history,
+            { role: 'user', content },
+          ],
+          currentModelId,
+          { webSearch: isSearch }
+        ) || Promise.resolve({ ok: false, error: 'AI bridge is not ready.' })
+      const res = await Promise.race([call, timeout])
+      if (gen !== sendGenRef.current) return
+      if (res?.ok && res.content) {
+        addMessage(activeAgent.id, {
+          id: `m-${Date.now() + 1}`,
+          agentId: activeAgent.id,
+          content: res.content,
+          role: 'assistant',
+          timestamp: Date.now(),
+          type: 'text',
+          via: 'local',
+          botName: activeAgent.name.split('(')[0].trim() || 'Hive',
+          botAvatar: activeAgent.avatar || '👑',
+          botRole: activeAgent.roleTitle,
+          isWebSearch: isSearch,
+          searchQuery: isSearch ? content : undefined,
+          citations: res.citations,
+        })
+      } else {
+        addMessage(activeAgent.id, {
+          id: `m-err-${Date.now()}`,
+          agentId: activeAgent.id,
+          content: (res && 'error' in res && res.error) || 'No reply. Check OPENROUTER_API_KEY.',
+          role: 'assistant',
+          timestamp: Date.now(),
+          type: 'text',
+          botName: 'Hive',
+        })
+      }
+    } catch (err) {
+      if (gen === sendGenRef.current) {
+        addMessage(activeAgent.id, {
+          id: `m-err-${Date.now()}`,
+          agentId: activeAgent.id,
+          content: err instanceof Error ? err.message : 'Reply failed',
+          role: 'assistant',
+          timestamp: Date.now(),
+          type: 'text',
+          botName: 'Hive',
+        })
+      }
+    } finally {
+      if (gen === sendGenRef.current) {
+        setTyping(false)
+        setSwarm((prev) => ({
+          ...prev,
+          Scout: 'done',
+          Hive: 'done',
+          Pulse: 'done',
+          Critic: prev.Critic === 'idle' ? 'idle' : 'done',
+        }))
+      }
+    }
+    return
       if (window.electronAPI?.ai?.chat) {
         const history = getMessages(activeAgent.id).map((m) => ({
           role: m.role,

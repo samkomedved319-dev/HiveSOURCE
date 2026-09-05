@@ -213,13 +213,16 @@ function VoxelPerson({
           <boxGeometry args={[0.08, 0.3, 0.08]} />
           <meshLambertMaterial color={agent.shirt} />
         </mesh>
-        <mesh ref={head} position={[0, 0.9, 0]} castShadow>
-          <boxGeometry args={[0.2, 0.2, 0.2]} />
+        <mesh ref={head} position={[0, 0.92, 0]} castShadow>
+          <sphereGeometry args={[0.13, 18, 16]} />
           <meshLambertMaterial color={skin} />
         </mesh>
-        <Box args={[0.22, 0.08, 0.22]} position={[0, 1.0, -0.01]} color={agent.hair} />
-        <Box args={[0.03, 0.03, 0.012]} position={[-0.05, 0.92, 0.1]} color="#111" />
-        <Box args={[0.03, 0.03, 0.012]} position={[0.05, 0.92, 0.1]} color="#111" />
+        <mesh position={[0, 1.02, -0.02]} castShadow>
+          <sphereGeometry args={[0.13, 14, 10]} />
+          <meshLambertMaterial color={agent.hair} />
+        </mesh>
+        <Box args={[0.03, 0.03, 0.012]} position={[-0.045, 0.93, 0.1]} color="#111" />
+        <Box args={[0.03, 0.03, 0.012]} position={[0.045, 0.93, 0.1]} color="#111" />
         <Box args={[0.07, 0.04, 0.07]} position={[0.16, 0.44, 0.02]} color={agent.color} emissive={agent.color} emissiveIntensity={mood === 'idle' ? 0.2 : 1.2} />
       </group>
     </group>

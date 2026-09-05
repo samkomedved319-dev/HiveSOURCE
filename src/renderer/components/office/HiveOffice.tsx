@@ -14,6 +14,16 @@ class WebGLGate extends Component<{ children: React.ReactNode; fallback: React.R
 
 type FloorMsg = { t: number; who: string; text: string; color?: string }
 
+function pickSpeaker(task: string) {
+  const t = task.toLowerCase()
+  if (/\b(search|web|find|news|who is|what is|lookup)\b/.test(t)) return 'Scout'
+  if (/\b(code|fix|build|bug|file|repo|script)\b/.test(t)) return 'Apollo'
+  if (/\b(review|critique|wrong|ship)\b/.test(t)) return 'Critic'
+  if (/\b(risk|assume|pulse|check)\b/.test(t)) return 'Pulse'
+  if (/\b(intel|athena)\b/.test(t)) return 'Athena'
+  return 'Hive'
+}
+
 function readable(raw: string) {
   let t = raw.replace(/\r/g, '')
   t = t.replace(/```[\s\S]*?```/g, (block) => {
@@ -39,6 +49,7 @@ export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: 
   const [busy, setBusy] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
   const drafts = useRef<Record<string, string>>({})
+  const speaker = useRef('Hive')
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight })
@@ -57,6 +68,8 @@ export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: 
         delete drafts.current[who]
         const text = readable(raw)
         if (!text) return
+        // Floor chat already writes the chosen speaker via ai.chat.
+        return
         const color = FLOOR_CREW.find((a) => a.name.toLowerCase() === key)?.color
         setLog((p) => {
           const last = p[p.length - 1]
@@ -80,13 +93,28 @@ export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: 
     setBusy(true)
     setTask('')
     setMeeting(true)
+    speaker.current = pickSpeaker(t)
     setLog((p) => [...p, { t: Date.now(), who: 'You', text: t }])
     try {
-      await window.electronAPI?.hive?.send?.(t, 'office')
+      void window.electronAPI?.hive?.send?.(t, 'office')
+      const res = await window.electronAPI?.ai?.chat?.(
+        [
+          {
+            role: 'system',
+            content: `You are ${speaker.current} at the Hive office. Reply as that one person. Short, useful, no markdown walls, no speaking as other bots.`,
+          },
+          { role: 'user', content: t },
+        ],
+        undefined,
+        { webSearch: speaker.current === 'Scout' }
+      )
+      const text = readable(res?.content || res?.error || 'No reply.')
+      const color = FLOOR_CREW.find((a) => a.name === speaker.current)?.color
+      setLog((p) => [...p, { t: Date.now(), who: speaker.current, text, color }])
     } catch (e) {
       setLog((p) => [...p, { t: Date.now(), who: 'Office', text: e instanceof Error ? e.message : 'Send failed', color: '#f87171' }])
-      setMeeting(false)
     }
+    setMeeting(false)
     setBusy(false)
   }
 
