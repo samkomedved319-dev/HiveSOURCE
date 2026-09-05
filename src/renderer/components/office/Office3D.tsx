@@ -28,11 +28,6 @@ const MODELS = [
   'chairModernCushion.glb',
 ] as const
 
-MODELS.forEach((m) => {
-  try {
-    useGLTF.preload(asset(m))
-  } catch {}
-})
 
 function Piece({
   file,
@@ -344,10 +339,12 @@ function FallbackOffice({ moods, meeting }: { moods: Record<string, AgentMood>; 
 export default function Office3D({
   moods,
   meeting,
+  onReady,
 }: {
   moods: Record<string, AgentMood>
   bubbles?: Record<string, string>
   meeting: boolean
+  onReady?: () => void
 }) {
   return (
     <Canvas
@@ -355,10 +352,13 @@ export default function Office3D({
       camera={{ position: [10, 8, 12], fov: 40, near: 0.1, far: 80 }}
       dpr={[1, 1.25]}
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
-      onCreated={({ gl }) => gl.setClearColor('#1c1812', 1)}
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
+      onCreated={({ gl }) => {
+        gl.setClearColor('#c9a66b', 1)
+        onReady?.()
+      }}
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', background: '#c9a66b' }}
     >
-      <color attach="background" args={['#1c1812']} />
+      <color attach="background" args={['#c9a66b']} />
       <ambientLight intensity={0.9} />
       <hemisphereLight args={['#fff4d6', '#3a3226', 0.5]} />
       <directionalLight

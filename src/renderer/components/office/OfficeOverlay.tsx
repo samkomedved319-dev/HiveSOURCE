@@ -1,11 +1,13 @@
-import React, { useEffect, useRef, useState, Component, type ReactNode } from 'react'
+import React, { useEffect, useRef, useState, Component, type ReactNode, lazy, Suspense } from 'react'
+import { createPortal } from 'react-dom'
 import { FLOOR_CREW, moodFromEvent, type AgentMood } from './crew'
 import type { HiveSwarmEvent } from '../../types'
 import { useAgentStore } from '../../stores/agentStore'
 import { useChatStore } from '../../stores/chatStore'
 import { emitTitleChat } from '../../chatTitle'
-import Office3D from './Office3D'
 import IsometricFloor from './IsometricFloor'
+
+const Office3D = lazy(() => import('./Office3D'))
 
 // Check if WebGL is supported in the current environment
 function checkWebGLSupport(): boolean {
@@ -76,8 +78,9 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
   const [meeting, setMeeting] = useState(false)
   const [task, setTask] = useState('')
   const [busy, setBusy] = useState(false)
-  const [viewMode, setViewMode] = useState<'3d' | 'iso'>('3d')
+  const [viewMode, setViewMode] = useState<'3d' | 'iso'>('iso')
   const [webglAvailable, setWebglAvailable] = useState<boolean>(() => checkWebGLSupport())
+  const [live3d, setLive3d] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
   const speaker = useRef('Hive')
   const { activeAgent, agents, setActiveAgent } = useAgentStore()
@@ -89,7 +92,11 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight })
   }, [thread])
 
-  // Probe WebGL and attach context loss listener
+  useEffect(() => {
+    if (!webglAvailable) return
+    const t = window.setTimeout(() => setViewMode('3d'), 400)
+    return () => window.clearTimeout(t)
+  }, [webglAvailable])
   useEffect(() => {
     const handleContextLost = (e: Event) => {
       e.preventDefault()
@@ -157,7 +164,8 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
           { role: 'system', content: `You are ${speaker.current} at the Hive office. Reply as that one person. Short, useful.` },
           { role: 'user', content: t },
         ],
-        { temperature: 0.7 }
+        undefined,
+        { webSearch: speaker.current === 'Scout' }
       )
       const reply = res?.content || `${speaker.current}: On it.`
       addMessage(agentId, {
@@ -186,30 +194,43 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
   }
 
   const renderFloor = () => {
-    if (!webglAvailable || viewMode === 'iso') {
-      return <IsometricFloor moods={moods} meeting={meeting} />
-    }
     return (
-      <WebGLErrorBoundary
-        onError={() => setWebglAvailable(false)}
-        fallback={<IsometricFloor moods={moods} meeting={meeting} />}
-      >
-        <Office3D moods={moods} meeting={meeting} />
-      </WebGLErrorBoundary>
+      <>
+        <IsometricFloor moods={moods} meeting={meeting} />
+        {webglAvailable && viewMode === '3d' && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              opacity: live3d ? 1 : 0,
+              pointerEvents: live3d ? 'auto' : 'none',
+              background: '#c9a66b',
+            }}
+          >
+            <WebGLErrorBoundary
+              onError={() => setWebglAvailable(false)}
+              fallback={null}
+            >
+              <Suspense fallback={null}>
+                <Office3D moods={moods} meeting={meeting} onReady={() => setLive3d(true)} />
+              </Suspense>
+            </WebGLErrorBoundary>
+          </div>
+        )}
+      </>
     )
   }
 
-  return (
+  const ui = (
     <div
       style={{
-        flex: 1,
-        width: '100%',
-        height: '100%',
-        position: 'relative',
+        position: 'fixed',
+        inset: 0,
+        zIndex: 2147483647,
         display: 'flex',
         flexDirection: 'column',
-        background: '#14110d',
-        color: '#f3eee4',
+        background: '#F2C14E',
+        color: '#111',
         fontFamily: 'inherit',
         overflow: 'hidden',
       }}
@@ -278,8 +299,8 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
         style={{
           position: 'relative',
           flex: 1,
-          minHeight: 220,
-          background: '#1a1612',
+          minHeight: 280,
+          background: '#F2C14E',
           overflow: 'hidden',
         }}
       >
@@ -367,6 +388,8 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
       </div>
     </div>
   )
+
+  return createPortal(ui, document.body)
 }
 
 const goldBtn: React.CSSProperties = {
