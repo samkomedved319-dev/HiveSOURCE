@@ -7,8 +7,10 @@ import {
   hiveOnMessage,
   hiveOnScout,
   operatorOnMessage,
+  pulseOnMessage,
   relayLifecycle,
   scoutOnMessage,
+  sentryOnCall,
   voiceOnShip,
 } from './handlers'
 import { execCommandTool, getCitationsTool, openAppTool, webSearchTool } from './tools'
@@ -48,6 +50,15 @@ export function joinHiveSwarm() {
     handlers: [criticOnHive],
   })
 
+  const pulse = createAgent({
+    name: 'Pulse',
+    capabilities: ['inference'],
+    instruction:
+      'You are Pulse. You run at the same time as Scout and Hive. List assumptions, risks, and falsifiers. Never the final user-facing essay. No tools.',
+    tools: [],
+    handlers: [pulseOnMessage],
+  })
+
   const operator = createAgent({
     name: 'Operator',
     capabilities: ['system'],
@@ -55,6 +66,12 @@ export function joinHiveSwarm() {
       'You are Operator. Only act when the user clearly asked to open an app or run a command on their Windows machine. Otherwise reply SKIP. Never destructive commands.',
     tools: [openAppTool, execCommandTool],
     handlers: [operatorOnMessage],
+  })
+
+  const sentry = createHuman({
+    name: 'Sentry',
+    capabilities: ['observe'],
+    handlers: [sentryOnCall],
   })
 
   const buddy = createHuman({
@@ -78,8 +95,10 @@ export function joinHiveSwarm() {
   join(human)
   join(scout)
   join(hive)
+  join(pulse)
   join(critic)
   join(operator)
+  join(sentry)
   join(buddy)
   join(voice)
   join(relay)
@@ -90,8 +109,10 @@ export function joinHiveSwarm() {
   state.hiveId = hive.getId()
   state.criticId = critic.getId()
   state.operatorId = operator.getId()
+  state.pulseId = pulse.getId()
+  state.sentryId = sentry.getId()
   state.buddyId = buddy.getId()
   state.voiceId = voice.getId()
 
-  return { human, scout, hive, critic, operator }
+  return { human, scout, hive, critic, operator, pulse }
 }

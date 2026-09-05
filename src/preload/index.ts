@@ -74,6 +74,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   hive: {
     send: (text: string) => ipcRenderer.invoke('hive:send', text),
     status: () => ipcRenderer.invoke('hive:status'),
+    decide: (id: string, ok: boolean) => ipcRenderer.invoke('hive:decide', id, ok),
     onEvent: (cb: (ev: HiveSwarmEvent) => void) => {
       const handler = (_e: unknown, ev: HiveSwarmEvent) => cb(ev)
       ipcRenderer.on('hive:event', handler)
@@ -93,6 +94,9 @@ type HiveSwarmEvent = {
   producerName: string
   text?: string
   occurredAt: number
+  approvalId?: string
+  tool?: string
+  args?: unknown
 }
 
 type HiveSwarmState = {

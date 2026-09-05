@@ -27,6 +27,8 @@ export class HiveState extends RuntimeState {
   hiveId = ''
   criticId = ''
   operatorId = ''
+  pulseId = ''
+  sentryId = ''
   buddyId = ''
   voiceId = ''
   hiveRevisedFromScout = false
@@ -55,6 +57,7 @@ export class HiveState extends RuntimeState {
         hive: this.hiveId,
         critic: this.criticId,
         operator: this.operatorId,
+        pulse: this.pulseId,
       },
     }
   }
@@ -138,3 +141,4 @@ export function inferenceInputFor(agent: { getMemory: () => { getContext: () => 
     tools: agent.getTools(),
   }
 }
+

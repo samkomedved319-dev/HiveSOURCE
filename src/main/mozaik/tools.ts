@@ -2,6 +2,7 @@ import type { Tool } from '@mozaik-ai/core'
 import { performWebSearch } from '../search-service'
 import { openSystemTarget, runSystemCommand } from '../system-service'
 import { resolveRuntime } from './runtime'
+import { requestApproval } from './approvals'
 import { emitHiveState } from './notify'
 
 export const webSearchTool: Tool = {
@@ -68,7 +69,12 @@ export const openAppTool: Tool = {
     additionalProperties: false,
   },
   strict: false,
-  invoke: async (args: { target?: string }) => openSystemTarget(String(args?.target || '')),
+  invoke: async (args: { target?: string }) => {
+    const target = String(args?.target || '')
+    const ok = await requestApproval('open_app', { target })
+    if (!ok) return { ok: false, error: 'User denied' }
+    return openSystemTarget(target)
+  },
 }
 
 export const execCommandTool: Tool = {
@@ -84,5 +90,10 @@ export const execCommandTool: Tool = {
     additionalProperties: false,
   },
   strict: false,
-  invoke: async (args: { command?: string }) => runSystemCommand(String(args?.command || '')),
+  invoke: async (args: { command?: string }) => {
+    const command = String(args?.command || '')
+    const ok = await requestApproval('exec_command', { command })
+    if (!ok) return { ok: false, error: 'User denied' }
+    return runSystemCommand(command)
+  },
 }

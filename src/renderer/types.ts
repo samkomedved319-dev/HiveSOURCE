@@ -122,6 +122,7 @@ export interface ElectronAPI {
   hive?: {
     send: (text: string) => Promise<{ ok: boolean; error?: string }>
     status: () => Promise<{ ok: boolean; state?: HiveSwarmState; error?: string }>
+    decide?: (id: string, ok: boolean) => Promise<{ ok: boolean }>
     onEvent: (cb: (ev: HiveSwarmEvent) => void) => () => void
     onState: (cb: (state: HiveSwarmState) => void) => () => void
   }
@@ -133,6 +134,9 @@ export type HiveSwarmEvent = {
   producerName: string
   text?: string
   occurredAt: number
+  approvalId?: string
+  tool?: string
+  args?: unknown
 }
 
 export type HiveSwarmState = {

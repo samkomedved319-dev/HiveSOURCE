@@ -5,6 +5,7 @@ import ChatInput from './ChatInput'
 import VoiceCall from './VoiceCall'
 import ToolsModal from './ToolsModal'
 import SwarmStrip, { type SwarmStatus } from './SwarmStrip'
+import OpsTimeline from './OpsTimeline'
 import { grokPersonality } from '../../companion/grokPersonality'
 import { useAgentStore } from '../../stores/agentStore'
 import { useChatStore } from '../../stores/chatStore'
@@ -44,8 +45,11 @@ export default function ChatView({
   const [swarm, setSwarm] = useState<Record<string, SwarmStatus>>({
     Scout: 'idle',
     Hive: 'idle',
+    Pulse: 'idle',
     Critic: 'idle',
   })
+  const [ops, setOps] = useState<HiveSwarmEvent[]>([])
+  const [approval, setApproval] = useState<{ id: string; text: string } | null>(null)
   const latestCitations = useRef<HiveSwarmState['citations']>([])
   const activeIdRef = useRef<string | undefined>(undefined)
 
@@ -90,9 +94,14 @@ export default function ChatView({
     }
     const offEvent = window.electronAPI?.hive?.onEvent?.((ev: HiveSwarmEvent) => {
       const name = ev.producerName
-      if (ev.type === 'inference.started') mark(name, 'thinking')
-      if (ev.type === 'function_call.started') mark(name, 'searching')
+      setOps((prev) => [...prev.slice(-40), ev])
+      if (ev.type === 'inference.started') mark(name, name === 'Scout' ? 'searching' : 'thinking')
+      if (ev.type === 'function_call.started') mark(name === 'Sentry' ? 'Scout' : name, 'searching')
       if (ev.type === 'model.answer') mark(name, name === 'Critic' ? 'arguing' : 'done')
+      if (ev.type === 'interception.started') mark('Hive', 'thinking')
+      if (ev.type === 'hive.approve' && ev.approvalId) {
+        setApproval({ id: ev.approvalId, text: ev.text || 'Allow machine action?' })
+      }
       if (ev.type === 'hive.error') {
         mark('Hive', 'error')
         setTyping(false)
@@ -100,7 +109,7 @@ export default function ChatView({
       if (ev.type === 'hive.speak' && ev.text && window.electronAPI?.tts?.speak) {
         void window.electronAPI.tts.speak(ev.text)
       }
-      if (ev.type === 'model.answer' && ev.text && name && name !== 'You' && name !== 'Relay' && name !== 'Buddy' && name !== 'Voice') {
+      if (ev.type === 'model.answer' && ev.text && name && name !== 'You' && name !== 'Relay' && name !== 'Buddy' && name !== 'Voice' && name !== 'Sentry') {
         const agentId = activeIdRef.current
         if (!agentId) return
         addMessage(agentId, {
@@ -112,7 +121,16 @@ export default function ChatView({
           type: 'text',
           via: 'local',
           botName: name,
-          botRole: name === 'Scout' ? 'Researcher' : name === 'Critic' ? 'Critic' : name === 'Operator' ? 'Operator' : 'Companion',
+          botRole:
+            name === 'Scout'
+              ? 'Researcher'
+              : name === 'Critic'
+                ? 'Critic'
+                : name === 'Pulse'
+                  ? 'Skeptic'
+                  : name === 'Operator'
+                    ? 'Operator'
+                    : 'Companion',
           citations: name === 'Scout' || name === 'Hive' ? latestCitations.current : undefined,
         })
         if (name === 'Hive') setTyping(false)
@@ -184,6 +202,8 @@ export default function ChatView({
     }
     addMessage(activeAgent.id, userMsg)
     setTyping(true)
+    setOps([])
+    setSwarm({ Scout: 'thinking', Hive: 'thinking', Pulse: 'thinking', Critic: 'idle' })
 
     // Map intent to Grok personality commentary & Hex mascot state
     const lowerContent = content.toLowerCase()
@@ -540,6 +560,44 @@ Followed by a brief explanation of what was run.`
         onToggleSidebar={onToggleSidebar}
       />
       <SwarmStrip status={swarm} />
+      <OpsTimeline events={ops} />
+      {approval && (
+        <div
+          style={{
+            margin: '8px 16px 0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            border: '1px solid #F97316',
+            background: 'rgba(249,115,22,0.1)',
+            borderRadius: 10,
+            padding: '8px 12px',
+            fontSize: 12,
+          }}
+        >
+          <span style={{ flex: 1, color: '#FDBA74' }}>Operator wants: {approval.text}</span>
+          <button
+            type="button"
+            onClick={() => {
+              void window.electronAPI.hive?.decide?.(approval.id, false)
+              setApproval(null)
+            }}
+            style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-dim)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer' }}
+          >
+            Deny
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              void window.electronAPI.hive?.decide?.(approval.id, true)
+              setApproval(null)
+            }}
+            style={{ background: '#F97316', border: 'none', color: '#111', fontWeight: 650, borderRadius: 8, padding: '4px 10px', cursor: 'pointer' }}
+          >
+            Allow
+          </button>
+        </div>
+      )}
 
       {shareStatus && (
         <div

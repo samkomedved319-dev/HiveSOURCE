@@ -11,7 +11,7 @@ Hive is a Windows Electron companion (chat, Buddy mascot, search, TTS, Telegram)
 
 One `defineRuntime()` + `initializeRuntime({ state: new HiveState() })` lives in the main process. `You` (human), **Scout**, **Hive**, and **Critic** all `join()` that runtime and stay joined. A chat send is `sendMessage(text, humanId)`, which publishes `message.sent`.
 
-Scout’s and Hive’s situation processors both match `message.sent` from someone else and each call `runLoop` **without awaiting it**. Those two loops start together. A slow search does not block Hive’s first draft. Critic does **not** sit in a step list — its processor matches Hive’s `model.answer` and only then starts its own `runLoop`. If Scout later answers, Hive may fire a second `runLoop` to revise (still fire-and-forget, capped at one revision). Coordination is semantic events + mutable `HiveState` (citations, mood, transcript), never `await agentA(); await agentB()`.
+Scout’s, Hive’s, and **Pulse’s** situation processors all match `message.sent` from someone else and each call `runLoop` **without awaiting it**. Those three loops start together. A slow search does not block Hive’s first draft or Pulse’s risk list. Critic does **not** sit in a step list — its processor matches Hive’s `model.answer` and only then starts its own `runLoop`. Sentry is an observer: it reacts to `function_call.started` and `InterceptionHandler` rewrites Hive/Operator loops when citations are faked or a command is destructive. Operator tools wait on a human Allow/Deny without blocking Scout/Hive. Coordination is semantic events + mutable `HiveState`, never `await agentA(); await agentB()`.
 
 Buddy and Voice are observers: they never call `runLoop` or `sendMessage`. They only react (mascot mood / TTS).
 
@@ -22,8 +22,10 @@ Buddy and Voice are observers: they never call `runLoop` or `sendMessage`. They 
 | **You** | `createHuman` | never — renderer `hive.send` → `sendMessage` |
 | **Scout** | `createAgent` + `web_search` tool | `message.sent` from someone else |
 | **Hive** | `createAgent` + `get_citations` | `message.sent` from someone else **and** Scout `model.answer` (revise once) **and** Critic `model.answer` if not `SHIP` (revise once) |
+| **Pulse** | `createAgent` | `message.sent` from someone else — **same instant as Scout and Hive** |
 | **Critic** | `createAgent`, no search | Hive `model.answer` |
 | **Operator** | `createAgent` + system tools | `message.sent` that clearly asks to open/run something |
+| **Sentry** | observer + `InterceptionHandler` | `function_call.*`; rewrites fake citations / destructive commands |
 | **Buddy** | observer human | `inference.started` / `function_call.started` / `model.answer` → mood |
 | **Voice** | observer human | Critic `model.answer` containing `SHIP` → TTS |
 | **Relay** | observer human | forwards lifecycle events to the renderer |
@@ -34,11 +36,13 @@ sequenceDiagram
   participant Runtime
   participant Scout
   participant Hive
+  participant Pulse
   participant Critic
   You->>Runtime: sendMessage
   Runtime->>Scout: message.sent → runLoop (search)
   Runtime->>Hive: message.sent → runLoop (draft)
-  Note over Scout,Hive: both loops start without awaiting each other
+  Runtime->>Pulse: message.sent → runLoop (risks)
+  Note over Scout,Pulse: three loops start without awaiting each other
   Scout-->>Runtime: model.answer + citations on HiveState
   Runtime->>Hive: optional second runLoop (revise)
   Hive-->>Runtime: model.answer
@@ -64,11 +68,10 @@ Mozaik’s OpenAI-compatible runner is pointed at `https://openrouter.ai/api/v1`
 
 1. Open Hive, sign in if asked, start a chat.
 2. Type: **What is the JigJoy Mozaik hackathon deadline and main rule?**
-3. Point at the swarm strip: **Scout** and **Hive** go live together (searching / thinking).
-4. Scout’s row appears with sources; citations land on shared state.
-5. Hive’s draft shows in Hive’s name/color, then **Critic** lights up off Hive’s `model.answer` (not a hardcoded “step 3”).
-6. Critic either `SHIP`s or lists gaps; Buddy’s mood follows `HiveState.mood`.
-7. Optional: ask “open notepad” — Operator may run in parallel without blocking Scout/Hive.
+3. Point at the swarm strip **and** the LIVE OPS log: **Scout, Hive, and Pulse** `runLoop` within milliseconds (`+0ms / +2ms / +4ms`).
+4. Scout’s row appears with sources; Sentry logs the `web_search` tool call.
+5. Hive’s draft shows, then **Critic** lights up off Hive’s `model.answer` (not a hardcoded “step 3”).
+6. Optional: ask “open notepad” — Operator waits for Allow/Deny while the others keep going.
 
 ## Submission checklist
 

@@ -1,4 +1,5 @@
 import { BrowserWindow, ipcMain } from 'electron'
+import { registerApprovalIpc } from './approvals'
 import { emitHiveEvent, emitHiveState, setHiveEmitter } from './notify'
 import { resolveRuntime, sendMessage } from './runtime'
 
@@ -56,4 +57,6 @@ export function registerHiveBridge(getMain: () => BrowserWindow | null) {
       return { ok: false, error: err instanceof Error ? err.message : 'Runtime down' }
     }
   })
+
+  registerApprovalIpc()
 }

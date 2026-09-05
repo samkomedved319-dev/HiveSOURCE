@@ -31,8 +31,8 @@
   - Grok-inspired humorous and witty personality engine.
 
 - 🧠 **Mozaik concurrent swarm** (`@mozaik-ai/core`):
-  - Scout, Hive, and Critic join one runtime and overlap `runLoop`s on a single user message.
-  - Shared `HiveState` + semantic events — not a sequential pipeline. Details in [HACKATHON.md](HACKATHON.md).
+  - Scout, Hive, and Pulse `runLoop` together on one message; Critic reacts to Hive; Sentry intercepts fake citations / destructive commands.
+  - Live ops timeline shows overlapping start times. Details in [HACKATHON.md](HACKATHON.md).
 
 - 🧠 **Multi-Model AI Intelligence (OpenRouter)**:
   - Zero-friction access to top free-tier models (Minimax M3, Nvidia Nemotron 3.5, Ling Flash, etc.).

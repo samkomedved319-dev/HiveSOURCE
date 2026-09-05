@@ -7,6 +7,14 @@ import {
 import { inferenceInputFor, resolveRuntime, runLoop } from './runtime'
 import { emitHiveEvent, emitHiveState } from './notify'
 import { setBuddyMood } from '../buddy-service'
+import { CitationGuard, CommandGuard } from './interception'
+
+function startAgent(participant: Agent, prompt: string, guard?: 'hive' | 'operator') {
+  const input = inferenceInputFor(participant)
+  if (guard === 'hive') runLoop(participant.getId(), prompt, input, new CitationGuard(input))
+  else if (guard === 'operator') runLoop(participant.getId(), prompt, input, new CommandGuard(input))
+  else runLoop(participant.getId(), prompt, input)
+}
 
 function answerText(event: { payload: unknown }): string {
   const payload = event.payload as { answer?: { content?: { text?: string } }; message?: string }
@@ -78,6 +86,12 @@ class WhenAnyoneAnswers extends SituationSpecification {
   }
 }
 
+class WhenFunctionCall extends SituationSpecification {
+  isSatisfiedBy({ event }: SituationContext): boolean {
+    return event.type === 'function_call.started' || event.type === 'function_call.completed'
+  }
+}
+
 class WhenLoopLifecycle extends SituationSpecification {
   isSatisfiedBy({ event }: SituationContext): boolean {
     return (
@@ -88,7 +102,9 @@ class WhenLoopLifecycle extends SituationSpecification {
       event.type === 'function_call.started' ||
       event.type === 'function_call.completed' ||
       event.type === 'model.answer' ||
-      event.type === 'participant.joined'
+      event.type === 'participant.joined' ||
+      event.type === 'interception.started' ||
+      event.type === 'interception.finished'
     )
   }
 }
@@ -110,10 +126,9 @@ export const scoutOnMessage: SituationHandler = {
       const runtime = resolveRuntime()
       runtime.state.mood = 'searching'
       emitHiveState(runtime.state.snapshot())
-      runLoop(
-        participant.getId(),
-        `User question:\n${message}\n\nSearch if needed. Return a short source brief, not the final essay.`,
-        inferenceInputFor(participant)
+      startAgent(
+        participant,
+        `User question:\n${message}\n\nSearch if needed. Return a short source brief, not the final essay.`
       )
     },
   },
@@ -132,10 +147,10 @@ export const hiveOnMessage: SituationHandler = {
       const citeNote = cites.length
         ? `\nCitations already in shared state:\n${cites.map((c) => `- ${c.title} (${c.url})`).join('\n')}`
         : '\nNo citations in shared state yet. Do not pretend you searched.'
-      runLoop(
-        participant.getId(),
+      startAgent(
+        participant,
         `User:\n${message}${citeNote}\n\nWrite the user-facing Hive reply.`,
-        inferenceInputFor(participant)
+        'hive'
       )
     },
   },
@@ -150,10 +165,10 @@ export const hiveOnScout: SituationHandler = {
       if (runtime.state.hiveRevisedFromScout) return
       runtime.state.hiveRevisedFromScout = true
       const brief = answerText(event)
-      runLoop(
-        participant.getId(),
+      startAgent(
+        participant,
         `Scout just published this research brief:\n${brief}\n\nRevise your user-facing answer using these sources. Keep Hive's voice.`,
-        inferenceInputFor(participant)
+        'hive'
       )
     },
   },
@@ -168,10 +183,9 @@ export const criticOnHive: SituationHandler = {
       runtime.state.mood = 'arguing'
       emitHiveState(runtime.state.snapshot())
       const draft = answerText(event)
-      runLoop(
-        participant.getId(),
-        `Hive's draft:\n${draft}\n\nCitations in state: ${runtime.state.citations.length}. Critique it. If good enough, reply SHIP plus one-line reason. Otherwise list gaps.`,
-        inferenceInputFor(participant)
+      startAgent(
+        participant,
+        `Hive's draft:\n${draft}\n\nCitations in state: ${runtime.state.citations.length}. Critique it. If good enough, reply SHIP plus one-line reason. Otherwise list gaps.`
       )
     },
   },
@@ -191,10 +205,10 @@ export const hiveOnCritic: SituationHandler = {
       }
       if (runtime.state.hiveRevisedFromCritic) return
       runtime.state.hiveRevisedFromCritic = true
-      runLoop(
-        participant.getId(),
+      startAgent(
+        participant,
         `Critic rejected the draft:\n${critique}\n\nRevise once. Address the gaps. This is the last pass.`,
-        inferenceInputFor(participant)
+        'hive'
       )
     },
   },
@@ -206,11 +220,48 @@ export const operatorOnMessage: SituationHandler = {
     apply({ event, participant }) {
       if (!(participant instanceof Agent)) return
       const { message } = event.payload as { message: string }
-      runLoop(
-        participant.getId(),
+      startAgent(
+        participant,
         `User asked for a machine action:\n${message}\nUse tools only if the request is explicit. Otherwise reply SKIP.`,
-        inferenceInputFor(participant)
+        'operator'
       )
+    },
+  },
+}
+
+export const pulseOnMessage: SituationHandler = {
+  specification: new WhenOthersSendAMessage(),
+  processor: {
+    apply({ event, participant }) {
+      if (!(participant instanceof Agent)) return
+      const { message } = event.payload as { message: string }
+      startAgent(
+        participant,
+        `User:\n${message}\n\nYou are Pulse. In parallel with Scout and Hive, list assumptions, risks, and what would falsify a glib answer. 5–8 sharp bullets. Do not search. Do not write the final essay.`
+      )
+    },
+  },
+}
+
+export const sentryOnCall: SituationHandler = {
+  specification: new WhenFunctionCall(),
+  processor: {
+    apply({ event }) {
+      const runtime = resolveRuntime()
+      runtime.state.mood = event.type === 'function_call.started' ? 'searching' : runtime.state.mood
+      setBuddyMood(runtime.state.mood)
+      let producerName = event.producerId
+      try {
+        producerName = runtime.getParticipant(event.producerId)?.getManifest().name || event.producerId
+      } catch {}
+      emitHiveEvent({
+        type: event.type,
+        producerId: event.producerId,
+        producerName: 'Sentry',
+        text: `${producerName} ${event.type === 'function_call.started' ? 'called a tool' : 'got a tool result'}`,
+        occurredAt: Date.now(),
+      })
+      emitHiveState(runtime.state.snapshot())
     },
   },
 }
@@ -246,7 +297,13 @@ export const relayLifecycle: SituationHandler = {
       try {
         producerName = resolveRuntime().getParticipant(event.producerId)?.getManifest().name || event.producerId
       } catch {}
-      const text = event.type === 'message.sent' || event.type === 'model.answer' ? answerText(event) : ''
+      let text = event.type === 'message.sent' || event.type === 'model.answer' ? answerText(event) : ''
+      if (event.type === 'inference.started') text = 'runLoop started'
+      if (event.type === 'inference.stream') {
+        const p = event.payload as { delta?: string; text?: string; content?: string }
+        text = p?.delta || p?.text || p?.content || ''
+      }
+      if (event.type === 'interception.started') text = text || 'loop intercepted'
       if (event.type === 'model.answer' && text) {
         const role = producerName === 'You' ? 'user' : 'assistant'
         pushTranscript(event.producerId, producerName, role, text)

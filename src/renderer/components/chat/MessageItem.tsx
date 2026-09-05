@@ -116,11 +116,15 @@ export default function MessageItem({
       ? '#5B8DEF'
       : authorName === 'Critic'
         ? '#C084FC'
-        : authorName === 'Operator'
-          ? '#34D399'
-          : authorName === 'Hive'
-            ? 'var(--accent)'
-            : 'var(--text-dim)'
+        : authorName === 'Pulse'
+          ? '#FB7185'
+          : authorName === 'Operator'
+            ? '#34D399'
+            : authorName === 'Sentry'
+              ? '#F97316'
+              : authorName === 'Hive'
+                ? 'var(--accent)'
+                : 'var(--text-dim)'
 
   if (isUser) {
     return (

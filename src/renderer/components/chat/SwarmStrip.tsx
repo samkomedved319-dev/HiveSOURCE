@@ -5,6 +5,7 @@ export type SwarmStatus = 'idle' | 'searching' | 'thinking' | 'arguing' | 'done'
 const AGENTS: { name: string; color: string }[] = [
   { name: 'Scout', color: '#5B8DEF' },
   { name: 'Hive', color: '#F2C14E' },
+  { name: 'Pulse', color: '#FB7185' },
   { name: 'Critic', color: '#C084FC' },
 ]
 
