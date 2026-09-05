@@ -1,6 +1,9 @@
 import React, { Component, useEffect, useRef, useState } from 'react'
 import Office3D, { FLOOR_CREW, moodFromEvent, type AgentMood } from './Office3D'
 import type { HiveSwarmEvent } from '../../types'
+import { useAgentStore } from '../../stores/agentStore'
+import { useChatStore } from '../../stores/chatStore'
+import { emitTitleChat } from '../../chatTitle'
 
 class WebGLGate extends Component<{ children: React.ReactNode; fallback: React.ReactNode }, { err: boolean }> {
   state = { err: false }
@@ -43,40 +46,24 @@ function readable(raw: string) {
 
 export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: boolean }) {
   const [moods, setMoods] = useState<Record<string, AgentMood>>({})
-  const [log, setLog] = useState<FloorMsg[]>([])
   const [meeting, setMeeting] = useState(false)
   const [task, setTask] = useState('')
   const [busy, setBusy] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
-  const drafts = useRef<Record<string, string>>({})
   const speaker = useRef('Hive')
+  const { activeAgent } = useAgentStore()
+  const addMessage = useChatStore((s) => s.addMessage)
+  const thread = useChatStore((s) => (activeAgent ? s.messages[activeAgent.id] : []) || [])
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight })
-  }, [log])
+  }, [thread])
 
   useEffect(() => {
     const off = window.electronAPI?.hive?.onEvent?.((ev: HiveSwarmEvent) => {
       const who = ev.producerName || 'Hive'
       const key = who.toLowerCase()
       setMoods((p) => ({ ...p, [key]: moodFromEvent(ev) }))
-      if (ev.type === 'inference.stream' && ev.text) {
-        drafts.current[who] = (drafts.current[who] || '') + ev.text
-      }
-      if (ev.type === 'model.answer') {
-        const raw = (ev.text || drafts.current[who] || '').trim()
-        delete drafts.current[who]
-        const text = readable(raw)
-        if (!text) return
-        // Floor chat already writes the chosen speaker via ai.chat.
-        return
-        const color = FLOOR_CREW.find((a) => a.name.toLowerCase() === key)?.color
-        setLog((p) => {
-          const last = p[p.length - 1]
-          if (last && last.who === who && last.text === text) return p
-          return [...p, { t: Date.now(), who, text, color }].slice(-24)
-        })
-      }
       if (ev.type === 'inference.started' || ev.type === 'function_call.started') setMeeting(true)
       if (ev.type === 'model.answer' && who === 'Hive') window.setTimeout(() => setMeeting(false), 2800)
     })
@@ -93,8 +80,19 @@ export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: 
     setBusy(true)
     setTask('')
     setMeeting(true)
+    const agentId = activeAgent?.id
+    if (!agentId) return
     speaker.current = pickSpeaker(t)
-    setLog((p) => [...p, { t: Date.now(), who: 'You', text: t }])
+    addMessage(agentId, {
+      id: `m-${Date.now()}`,
+      agentId,
+      content: t,
+      role: 'user',
+      timestamp: Date.now(),
+      type: 'text',
+      via: 'local',
+    })
+    emitTitleChat(t)
     try {
       void window.electronAPI?.hive?.send?.(t, 'office')
       const res = await window.electronAPI?.ai?.chat?.(
@@ -109,10 +107,27 @@ export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: 
         { webSearch: speaker.current === 'Scout' }
       )
       const text = readable(res?.content || res?.error || 'No reply.')
-      const color = FLOOR_CREW.find((a) => a.name === speaker.current)?.color
-      setLog((p) => [...p, { t: Date.now(), who: speaker.current, text, color }])
+      addMessage(agentId, {
+        id: `m-${Date.now() + 1}`,
+        agentId,
+        content: text,
+        role: 'assistant',
+        timestamp: Date.now(),
+        type: 'text',
+        via: 'local',
+        botName: speaker.current,
+        botRole: 'Office',
+      })
     } catch (e) {
-      setLog((p) => [...p, { t: Date.now(), who: 'Office', text: e instanceof Error ? e.message : 'Send failed', color: '#f87171' }])
+      addMessage(agentId, {
+        id: `m-err-${Date.now()}`,
+        agentId,
+        content: e instanceof Error ? e.message : 'Send failed',
+        role: 'assistant',
+        timestamp: Date.now(),
+        type: 'text',
+        botName: 'Office',
+      })
     }
     setMeeting(false)
     setBusy(false)
@@ -137,30 +152,25 @@ export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: 
 
       <div style={{ borderTop: '1px solid var(--border-soft)', display: 'flex', flexDirection: 'column', minHeight: 0, background: '#101114' }}>
         <div ref={scroller} style={{ flex: 1, overflow: 'auto', padding: '14px 18px 8px', minHeight: 0 }}>
-          {log.length === 0 && (
+          {thread.length === 0 && (
             <div style={{ color: 'var(--text-dim)', fontSize: 14, lineHeight: 1.5, maxWidth: 640 }}>
-              Floor chat. Idle they sit. A task sends them to the glass room. Replies land here, not in the main thread.
+              Same thread as Chat. Messages here are saved in the sidebar and named by topic.
             </div>
           )}
-          {log.map((row) => (
-            <div key={row.t + row.who} style={{ marginBottom: 14, maxWidth: 720 }}>
-              <div style={{ fontSize: 12, fontWeight: 650, letterSpacing: '.02em', color: row.color || (row.who === 'You' ? 'var(--text)' : 'var(--accent)'), marginBottom: 4 }}>
-                {row.who}
+          {thread.map((row) => {
+            const who = row.role === 'user' ? 'You' : row.botName || 'Hive'
+            const color = FLOOR_CREW.find((a) => a.name === who)?.color
+            return (
+              <div key={row.id} style={{ marginBottom: 14, maxWidth: 720 }}>
+                <div style={{ fontSize: 12, fontWeight: 650, color: color || (row.role === 'user' ? 'var(--text)' : 'var(--accent)'), marginBottom: 4 }}>
+                  {who}
+                </div>
+                <div style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                  {row.content}
+                </div>
               </div>
-              <div
-                style={{
-                  fontSize: 15,
-                  color: 'var(--text)',
-                  lineHeight: 1.55,
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                  overflowWrap: 'anywhere',
-                }}
-              >
-                {row.text}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
         <form
           onSubmit={(e) => {

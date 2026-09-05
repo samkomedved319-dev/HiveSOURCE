@@ -12,6 +12,7 @@ import { useChatStore } from '../../stores/chatStore'
 import type { HiveSwarmEvent, HiveSwarmState, Message, Agent } from '../../types'
 import { mentionHandle } from '../bots/botLibrary'
 import type { Conversation } from '../layout/ConversationList'
+import { emitTitleChat } from '../../chatTitle'
 
 function parseMentionedAgents(content: string, list: Agent[]): Agent[] {
   const tags = [...content.matchAll(/@([A-Za-z0-9_-]+)/g)].map((m) => m[1].toLowerCase())
@@ -250,6 +251,7 @@ export default function ChatView({
       via: 'local',
     }
     addMessage(activeAgent.id, userMsg)
+    emitTitleChat(content)
     setTyping(true)
     const gen = ++sendGenRef.current
 

@@ -19,6 +19,7 @@ import CommandPalette from './components/layout/CommandPalette'
 import CloudComputerPanel from './components/layout/CloudComputerPanel'
 import { AnimatePresence } from 'motion/react'
 import { loadShortcuts, matchesBinding, toAccelerator } from './shortcuts'
+import { TITLE_EVENT, isPlaceholderTitle, localTitle, refineTitle } from './chatTitle'
 import { useChatStore } from './stores/chatStore'
 import { useAgentStore } from './stores/agentStore'
 import { BUDDY_SETTINGS_EVENT, isBuddyEnabled } from './components/mascot/CursorBuddy'
@@ -158,6 +159,37 @@ export default function App() {
       localStorage.setItem('hive_active_conv', activeConvId)
     }
   }, [conversations, activeConvId])
+
+  useEffect(() => {
+    const onTitle = (e: Event) => {
+      const text = String((e as CustomEvent<string>).detail || '').trim()
+      if (!text) return
+      let cid = activeConvRef.current
+      if (!cid) {
+        cid = `c-${Date.now()}`
+        const conv: Conversation = {
+          id: cid,
+          title: localTitle(text),
+          group: 'Today',
+          agentId: useAgentStore.getState().activeAgent?.id,
+        }
+        setConversations((prev) => [conv, ...prev])
+        activeConvRef.current = cid
+        setActiveConvId(cid)
+      } else {
+        setConversations((prev) =>
+          prev.map((c) => (c.id === cid && isPlaceholderTitle(c.title) ? { ...c, title: localTitle(text) } : c))
+        )
+      }
+      const locked = cid
+      void refineTitle(text).then((named) => {
+        if (!named || activeConvRef.current !== locked) return
+        setConversations((prev) => prev.map((c) => (c.id === locked ? { ...c, title: named } : c)))
+      })
+    }
+    window.addEventListener(TITLE_EVENT, onTitle as EventListener)
+    return () => window.removeEventListener(TITLE_EVENT, onTitle as EventListener)
+  }, [])
 
   // Flush the live store into the active conversation snapshot (change-guarded).
   const persistCurrent = () => {
