@@ -242,6 +242,15 @@ export function registerBuddyHandlers(getWindow: () => BrowserWindow | null) {
   })
 }
 
+export function setBuddyMood(mood: string) {
+  try {
+    if (buddyWin && !buddyWin.isDestroyed()) buddyWin.webContents.send('buddy:phase', mood)
+    if (notchWin && !notchWin.isDestroyed()) notchWin.webContents.send('buddy:phase', mood)
+    const win = getMainWindow?.()
+    if (win && !win.isDestroyed()) win.webContents.send('buddy:phase', mood)
+  } catch {}
+}
+
 /** Tear down every buddy surface so nothing outlives the app. */
 export function destroyBuddyWindows() {
   try {

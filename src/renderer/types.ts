@@ -119,6 +119,29 @@ export interface ElectronAPI {
     openWebLogin: () => void
     onSession: (cb: (tokens: { access_token: string; refresh_token: string }) => void) => () => void
   }
+  hive?: {
+    send: (text: string) => Promise<{ ok: boolean; error?: string }>
+    status: () => Promise<{ ok: boolean; state?: HiveSwarmState; error?: string }>
+    onEvent: (cb: (ev: HiveSwarmEvent) => void) => () => void
+    onState: (cb: (state: HiveSwarmState) => void) => () => void
+  }
+}
+
+export type HiveSwarmEvent = {
+  type: string
+  producerId: string
+  producerName: string
+  text?: string
+  occurredAt: number
+}
+
+export type HiveSwarmState = {
+  mood?: string
+  goal?: string
+  lastUserMessage?: string
+  citations?: SearchCitation[]
+  transcript?: { fromId: string; fromName: string; role: string; text: string; at: number }[]
+  ids?: { human?: string; scout?: string; hive?: string; critic?: string; operator?: string }
 }
 
 declare global {

@@ -71,4 +71,32 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => ipcRenderer.removeListener('auth:session', handler)
     },
   },
+  hive: {
+    send: (text: string) => ipcRenderer.invoke('hive:send', text),
+    status: () => ipcRenderer.invoke('hive:status'),
+    onEvent: (cb: (ev: HiveSwarmEvent) => void) => {
+      const handler = (_e: unknown, ev: HiveSwarmEvent) => cb(ev)
+      ipcRenderer.on('hive:event', handler)
+      return () => ipcRenderer.removeListener('hive:event', handler)
+    },
+    onState: (cb: (state: HiveSwarmState) => void) => {
+      const handler = (_e: unknown, state: HiveSwarmState) => cb(state)
+      ipcRenderer.on('hive:state', handler)
+      return () => ipcRenderer.removeListener('hive:state', handler)
+    },
+  },
 })
+
+type HiveSwarmEvent = {
+  type: string
+  producerId: string
+  producerName: string
+  text?: string
+  occurredAt: number
+}
+
+type HiveSwarmState = {
+  mood: string
+  citations?: { url: string; title: string; content?: string; domain?: string }[]
+  ids?: Record<string, string>
+}

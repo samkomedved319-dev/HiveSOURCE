@@ -1,0 +1,140 @@
+import {
+  defineRuntime,
+  OpenAIChatCompletions,
+  RuntimeState,
+  type InferenceRunnerConfig,
+} from '@mozaik-ai/core'
+import type { SearchCitation } from '../search-service'
+
+export type HiveMood = 'idle' | 'searching' | 'thinking' | 'arguing' | 'done' | 'error'
+
+export type HiveTranscriptItem = {
+  fromId: string
+  fromName: string
+  role: string
+  text: string
+  at: number
+}
+
+export class HiveState extends RuntimeState {
+  goal?: string
+  transcript: HiveTranscriptItem[] = []
+  citations: SearchCitation[] = []
+  mood: HiveMood = 'idle'
+  lastUserMessage?: string
+  humanId = ''
+  scoutId = ''
+  hiveId = ''
+  criticId = ''
+  operatorId = ''
+  buddyId = ''
+  voiceId = ''
+  hiveRevisedFromScout = false
+  hiveRevisedFromCritic = false
+  voiceSpoken = false
+
+  resetTurn(userText: string) {
+    this.lastUserMessage = userText
+    this.goal = userText
+    this.hiveRevisedFromScout = false
+    this.hiveRevisedFromCritic = false
+    this.voiceSpoken = false
+    this.mood = 'thinking'
+  }
+
+  snapshot() {
+    return {
+      goal: this.goal,
+      mood: this.mood,
+      lastUserMessage: this.lastUserMessage,
+      transcript: this.transcript.slice(-48),
+      citations: this.citations,
+      ids: {
+        human: this.humanId,
+        scout: this.scoutId,
+        hive: this.hiveId,
+        critic: this.criticId,
+        operator: this.operatorId,
+      },
+    }
+  }
+}
+
+const CONTEXT_TYPES = [
+  'user_message',
+  'system_message',
+  'developer_message',
+  'function_call',
+  'function_call_output',
+  'model_message',
+]
+
+function openRouterSpec(name: string) {
+  return {
+    name,
+    provider: 'openrouter',
+    supportsReasoningEffort: false,
+    supportedReasoningEfforts: [] as string[],
+    supportsStreaming: true,
+    contextWindowSize: 128000,
+    supportedContextItemTypes: CONTEXT_TYPES,
+    maxOutputTokens: 1400,
+    supportsFunctionCalling: true,
+    supportsStructuredOutput: false,
+  }
+}
+
+export const HIVE_MODEL = 'minimax/minimax-m3:free'
+
+export const {
+  initializeRuntime,
+  resolveRuntime,
+  resolveParticipant,
+  join,
+  leave,
+  sendMessage,
+  sendEvent,
+  runLoop,
+} = defineRuntime<HiveState>()
+
+export function startMozaikRuntime() {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('dotenv').config()
+  } catch {}
+
+  const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || ''
+  if (apiKey && !process.env.OPENAI_API_KEY) process.env.OPENAI_API_KEY = apiKey
+  if (!process.env.OPENAI_BASE_URL) process.env.OPENAI_BASE_URL = 'https://openrouter.ai/api/v1'
+
+  const endpoint = new OpenAIChatCompletions(undefined, {
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKey,
+    extraBody: {
+      max_tokens: 1400,
+    },
+  })
+
+  const models: NonNullable<InferenceRunnerConfig['supportedModels']> = [
+    HIVE_MODEL,
+    'nvidia/nemotron-3.5-lightning:free',
+    'inclusionai/ling-3.0-flash-fin:free',
+    'openai/gpt-4o-mini',
+    'gpt-4o-mini',
+  ].map((name) => ({ endpoint, specification: openRouterSpec(name) }))
+
+  initializeRuntime({
+    state: new HiveState(),
+    inferenceRunnerConfig: { supportedModels: models },
+  })
+}
+
+export function inferenceInputFor(agent: { getMemory: () => { getContext: () => any }; getTools: () => any[] }) {
+  return {
+    model: HIVE_MODEL,
+    streaming: true,
+    maxOutputTokens: 900,
+    context: agent.getMemory().getContext(),
+    tools: agent.getTools(),
+  }
+}

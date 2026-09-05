@@ -4,10 +4,11 @@ import MessageList from './MessageList'
 import ChatInput from './ChatInput'
 import VoiceCall from './VoiceCall'
 import ToolsModal from './ToolsModal'
+import SwarmStrip, { type SwarmStatus } from './SwarmStrip'
 import { grokPersonality } from '../../companion/grokPersonality'
 import { useAgentStore } from '../../stores/agentStore'
 import { useChatStore } from '../../stores/chatStore'
-import type { Message } from '../../types'
+import type { HiveSwarmEvent, HiveSwarmState, Message } from '../../types'
 
 interface ChatViewProps {
   isCanvasOpen: boolean
@@ -40,6 +41,13 @@ export default function ChatView({
   const [mascotState, setMascotState] = useState<'idle' | 'thinking' | 'searching' | 'coding' | 'working' | 'done' | 'error' | 'sleep'>('idle')
   const [mascotSpeech, setMascotSpeech] = useState<string | null>(null)
   const [mascotFace, setMascotFace] = useState<any>('happy')
+  const [swarm, setSwarm] = useState<Record<string, SwarmStatus>>({
+    Scout: 'idle',
+    Hive: 'idle',
+    Critic: 'idle',
+  })
+  const latestCitations = useRef<HiveSwarmState['citations']>([])
+  const activeIdRef = useRef<string | undefined>(undefined)
 
   // Idle reset timer: a stale reset from an earlier message must never
   // clobber the state of a newer one, so each send clears the previous.
@@ -71,6 +79,78 @@ export default function ChatView({
   useEffect(() => {
     localStorage.setItem('hive_mode', currentMode)
   }, [currentMode])
+
+  useEffect(() => {
+    activeIdRef.current = activeAgent?.id
+  }, [activeAgent?.id])
+
+  useEffect(() => {
+    const mark = (name: string, st: SwarmStatus) => {
+      setSwarm((prev) => ({ ...prev, [name]: st }))
+    }
+    const offEvent = window.electronAPI?.hive?.onEvent?.((ev: HiveSwarmEvent) => {
+      const name = ev.producerName
+      if (ev.type === 'inference.started') mark(name, 'thinking')
+      if (ev.type === 'function_call.started') mark(name, 'searching')
+      if (ev.type === 'model.answer') mark(name, name === 'Critic' ? 'arguing' : 'done')
+      if (ev.type === 'hive.error') {
+        mark('Hive', 'error')
+        setTyping(false)
+      }
+      if (ev.type === 'hive.speak' && ev.text && window.electronAPI?.tts?.speak) {
+        void window.electronAPI.tts.speak(ev.text)
+      }
+      if (ev.type === 'model.answer' && ev.text && name && name !== 'You' && name !== 'Relay' && name !== 'Buddy' && name !== 'Voice') {
+        const agentId = activeIdRef.current
+        if (!agentId) return
+        addMessage(agentId, {
+          id: `m-${ev.producerId}-${ev.occurredAt}`,
+          agentId,
+          content: ev.text,
+          role: 'assistant',
+          timestamp: ev.occurredAt || Date.now(),
+          type: 'text',
+          via: 'local',
+          botName: name,
+          botRole: name === 'Scout' ? 'Researcher' : name === 'Critic' ? 'Critic' : name === 'Operator' ? 'Operator' : 'Companion',
+          citations: name === 'Scout' || name === 'Hive' ? latestCitations.current : undefined,
+        })
+        if (name === 'Hive') setTyping(false)
+      }
+    })
+    const offState = window.electronAPI?.hive?.onState?.((state: HiveSwarmState) => {
+      if (state.citations) latestCitations.current = state.citations
+      if (state.mood === 'searching') mark('Scout', 'searching')
+      if (state.mood === 'thinking') mark('Hive', 'thinking')
+      if (state.mood === 'arguing') mark('Critic', 'arguing')
+      if (state.mood === 'done') {
+        mark('Scout', 'done')
+        mark('Hive', 'done')
+        mark('Critic', 'done')
+        setTyping(false)
+        scheduleIdleReset(4500)
+      }
+      if (state.mood === 'searching') {
+        setMascotState('searching')
+        setMascotFace('cool')
+      } else if (state.mood === 'thinking' || state.mood === 'arguing') {
+        setMascotState('thinking')
+        setMascotFace('think')
+      } else if (state.mood === 'done') {
+        setMascotState('done')
+        setMascotFace('happy')
+      } else if (state.mood === 'error') {
+        setMascotState('error')
+        setMascotFace('sad')
+      }
+    })
+    return () => {
+      try {
+        offEvent?.()
+        offState?.()
+      } catch {}
+    }
+  }, [addMessage, setTyping])
 
   const getThinkingLabel = () => {
     switch (currentMode) {
@@ -167,6 +247,22 @@ Followed by a brief explanation of what was run.`
     }
 
     try {
+      if (window.electronAPI?.hive?.send) {
+        const res = await window.electronAPI.hive.send(content)
+        if (!res.ok) {
+          addMessage(activeAgent.id, {
+            id: `m-err-${Date.now()}`,
+            agentId: activeAgent.id,
+            content: res.error || 'Hive swarm failed to start. Set OPENROUTER_API_KEY in .env.',
+            role: 'assistant',
+            timestamp: Date.now(),
+            type: 'text',
+            botName: 'Hive',
+          })
+          setTyping(false)
+        }
+        return
+      }
       if (window.electronAPI?.ai?.chat) {
         const history = getMessages(activeAgent.id).map((m) => ({
           role: m.role,
@@ -443,6 +539,7 @@ Followed by a brief explanation of what was run.`
         isConvListOpen={isConvListOpen}
         onToggleSidebar={onToggleSidebar}
       />
+      <SwarmStrip status={swarm} />
 
       {shareStatus && (
         <div

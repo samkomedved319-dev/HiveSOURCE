@@ -125,6 +125,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return false
       }
       const user = r.data.user
+      if (!user) throw new Error('No user from sign up')
       const profile = await ensureProfile(user, name)
       applyLocalName(profile, user)
       set({ session: r.data.session, user, profile, loading: false })

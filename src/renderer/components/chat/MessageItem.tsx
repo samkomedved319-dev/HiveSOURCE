@@ -110,7 +110,17 @@ export default function MessageItem({
 
   // Grok-clean rows: user = right-aligned bubble, assistant = plain
   // full-width text with the house avatar. No badge chrome.
-  const authorName = isUser ? 'Samuel' : (message.botName || 'Hive (CEO)')
+  const authorName = isUser ? 'You' : (message.botName || 'Hive')
+  const authorColor =
+    authorName === 'Scout'
+      ? '#5B8DEF'
+      : authorName === 'Critic'
+        ? '#C084FC'
+        : authorName === 'Operator'
+          ? '#34D399'
+          : authorName === 'Hive'
+            ? 'var(--accent)'
+            : 'var(--text-dim)'
 
   if (isUser) {
     return (
@@ -169,7 +179,7 @@ export default function MessageItem({
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* Quiet header: name + time only */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dim)' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: authorColor }}>
             {authorName}
           </span>
           <span style={{ fontSize: 10.5, color: 'var(--text-faint)' }}>

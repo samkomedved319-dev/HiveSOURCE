@@ -10,6 +10,10 @@
 </p>
 
 <p align="center">
+  Built with <a href="https://github.com/jigjoy-ai/mozaik"><code>@mozaik-ai/core</code></a> for the <a href="https://build.jigjoy.ai">JigJoy concurrent-agents hackathon</a> — see <a href="HACKATHON.md">HACKATHON.md</a>.
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Electron-34+-47848F?style=for-the-badge&logo=electron&logoColor=white"  alt="" />
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black"  alt="" />
   <img src="https://img.shields.io/badge/TypeScript-5+-3178C6?style=for-the-badge&logo=typescript&logoColor=white"  alt="" />
@@ -25,6 +29,10 @@
   - Physics-driven cursor following, dynamic facial expressions, eye-tracking, and responsive mood changes.
   - Floating Buddy mode (`BuddyOuter`), dynamic Notch docking (`BuddyNotch`), and speech bubble notifications.
   - Grok-inspired humorous and witty personality engine.
+
+- 🧠 **Mozaik concurrent swarm** (`@mozaik-ai/core`):
+  - Scout, Hive, and Critic join one runtime and overlap `runLoop`s on a single user message.
+  - Shared `HiveState` + semantic events — not a sequential pipeline. Details in [HACKATHON.md](HACKATHON.md).
 
 - 🧠 **Multi-Model AI Intelligence (OpenRouter)**:
   - Zero-friction access to top free-tier models (Minimax M3, Nvidia Nemotron 3.5, Ling Flash, etc.).
@@ -101,6 +109,7 @@
    ```
    Provide your `OPENROUTER_API_KEY` and `TELEGRAM_BOT_TOKEN` if you wish to use your own credentials.
    `VITE_SUPABASE_*` defaults to the Hive website project so one login works on web and desktop.
+   Set `OPENROUTER_API_KEY` so the Mozaik swarm can infer (OpenRouter free models).
 
 4. Start development mode:
    ```bash

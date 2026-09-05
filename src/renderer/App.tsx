@@ -20,6 +20,7 @@ import { BUDDY_SETTINGS_EVENT, isBuddyEnabled } from './components/mascot/Cursor
 import AuthGate from './components/auth/AuthGate'
 import DeniedScreen from './components/auth/DeniedScreen'
 import { useAuthStore } from './stores/authStore'
+import type { Message } from './types'
 
 function loadConvMessages(): Record<string, Message[]> {
   try {
