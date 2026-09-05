@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 interface ProjectsModalProps {
   onClose: () => void
   onSelectProject?: (name: string) => void
+  embedded?: boolean
 }
 
 interface ProjectItem {
@@ -12,7 +13,7 @@ interface ProjectItem {
   updatedAt: string
 }
 
-export default function ProjectsModal({ onClose, onSelectProject }: ProjectsModalProps) {
+export default function ProjectsModal({ onClose, onSelectProject, embedded }: ProjectsModalProps) {
   const [projects, setProjects] = useState<ProjectItem[]>(() => {
     const saved = localStorage.getItem('hive_projects')
     if (saved) {
@@ -51,37 +52,23 @@ export default function ProjectsModal({ onClose, onSelectProject }: ProjectsModa
     localStorage.setItem('hive_projects', JSON.stringify(updated))
   }
 
-  return (
+  const inner = (
     <div
       style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.7)',
-        backdropFilter: 'blur(6px)',
-        zIndex: 100,
+        width: '100%',
+        height: embedded ? '100%' : undefined,
+        maxWidth: embedded ? 'none' : 720,
+        background: 'var(--panel)',
+        border: embedded ? 'none' : '1px solid var(--border)',
+        borderRadius: embedded ? 0 : 12,
+        padding: '20px 24px',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 20,
+        flexDirection: 'column',
+        gap: 16,
+        maxHeight: embedded ? 'none' : '80vh',
+        minHeight: 0,
       }}
-      onClick={onClose}
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '100%',
-          maxWidth: 520,
-          background: 'var(--panel)',
-          border: '1px solid var(--border)',
-          borderRadius: 12,
-          padding: '20px 24px',
-          boxShadow: '0 12px 36px rgba(0,0,0,0.5)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16,
-          maxHeight: '80vh',
-        }}
-      >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>Projects</h3>
@@ -257,7 +244,29 @@ export default function ProjectsModal({ onClose, onSelectProject }: ProjectsModa
             </div>
           ))}
         </div>
-      </div>
+    </div>
+  )
+
+  if (embedded) {
+    return <div style={{ height: '100%', minHeight: 0, overflow: 'auto', background: 'var(--bg)' }}>{inner}</div>
+  }
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.7)',
+        backdropFilter: 'blur(6px)',
+        zIndex: 100,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+      }}
+      onClick={onClose}
+    >
+      <div onClick={(e) => e.stopPropagation()}>{inner}</div>
     </div>
   )
 }

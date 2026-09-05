@@ -9,6 +9,7 @@ interface IconRailProps {
   userInitial?: string
   buddyOn?: boolean
   onToggleBuddy?: () => void
+  chatOpen?: boolean
 }
 
 function RailBtn({
@@ -88,6 +89,7 @@ export default function IconRail({
   userInitial = 'A',
   buddyOn = false,
   onToggleBuddy,
+  chatOpen = false,
 }: IconRailProps) {
   return (
     <div
@@ -109,13 +111,13 @@ export default function IconRail({
         style={{ width: 28, height: 28, marginBottom: 8, cursor: 'pointer', color: 'var(--accent)' }}
         viewBox="0 0 32 32"
         fill="none"
-        onClick={() => onSelectTab('chat')}
+        onClick={() => onSelectTab('office')}
       >
         <path d="M16 3.4 28.2 10.3v11.4L16 28.6 3.8 21.7V10.3L16 3.4Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
         <path d="M16 10.6 22.4 14.2v7.2L16 24.9 9.6 21.4v-7.2L16 10.6Z" fill="currentColor" />
       </svg>
 
-      <RailBtn title="Chat" active={activeTab === 'chat'} onClick={() => onSelectTab('chat')}>
+      <RailBtn title="Chat" active={chatOpen || activeTab === 'chat'} onClick={() => onSelectTab('chat')}>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>

@@ -76,7 +76,7 @@ export default function App() {
   // (LaunchScreen component is kept for tests/preview; set this back to
   // `useState(true)` to re-enable the animated boot sequence.)
   const [isLaunching, setIsLaunching] = useState(false)
-  const [activeTab, setActiveTab] = useState<NavTab>('chat')
+  const [activeTab, setActiveTab] = useState<NavTab>('office')
   const [conversations, setConversations] = useState<Conversation[]>(() => {
     const saved = localStorage.getItem('hive_conversations')
     if (saved) {
@@ -90,11 +90,11 @@ export default function App() {
     return localStorage.getItem('hive_active_conv') || ''
   })
   const [searchQuery, setSearchQuery] = useState('')
-  const [isCanvasOpen, setIsCanvasOpen] = useState(false)
+  const [isChatOpen, setIsChatOpen] = useState(true)
   const [isConvListOpen, setIsConvListOpen] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
   const [showProjects, setShowProjects] = useState(false)
-  const [mainView, setMainView] = useState<'chat' | 'bots' | 'office'>('chat')
+  const [mainView, setMainView] = useState<'office' | 'bots' | 'projects'>('office')
   const [showProfile, setShowProfile] = useState(false)
   const [showVoiceModal, setShowVoiceModal] = useState(false)
   const [showNewGroup, setShowNewGroup] = useState(false)
@@ -238,13 +238,12 @@ export default function App() {
       }
       if (k === 'h' && e.shiftKey) {
         e.preventDefault()
-        setIsCanvasOpen((prev) => !prev)
+        setIsChatOpen((prev) => !prev)
       }
       if (e.shiftKey && k === 'j') {
         e.preventDefault()
         setIsConvListOpen((prev) => !prev)
-        setMainView('chat')
-        setActiveTab('chat')
+        setIsChatOpen(true)
       }
     }
     window.addEventListener('keydown', handleKeyDown, true)
@@ -254,8 +253,7 @@ export default function App() {
   useEffect(() => {
     const off = window.electronAPI?.buddy?.onSummon?.(() => {
       setIsConvListOpen(true)
-      setMainView('chat')
-      setActiveTab('chat')
+      setIsChatOpen(true)
     })
     return () => {
       try {
@@ -277,24 +275,23 @@ export default function App() {
   }, [])
 
   const handleNavTab = (tab: NavTab) => {
-    setActiveTab(tab)
     if (tab === 'chat') {
-      setMainView('chat')
+      setIsChatOpen((v) => !v)
       setShowSettings(false)
-      setShowProjects(false)
-      setShowProfile(false)
-      setShowVoiceModal(false)
-    } else if (tab === 'settings') {
+      return
+    }
+    setActiveTab(tab)
+    if (tab === 'settings') {
       setShowSettings(true)
     } else if (tab === 'projects') {
-      setShowProjects(true)
+      setMainView('projects')
+      setShowSettings(false)
     } else if (tab === 'workers') {
       setMainView('bots')
+      setShowSettings(false)
     } else if (tab === 'office') {
       setMainView('office')
-      setIsCanvasOpen(false)
       setShowSettings(false)
-      setShowProjects(false)
     } else if (tab === 'voice') {
       setShowVoiceModal(true)
     }
@@ -376,9 +373,6 @@ export default function App() {
     }
   }
 
-  // Calculate 4-column grid template: Rail (56px) | Conv (240px or 0px) | Main (1fr) | Canvas (400px or 0px)
-  const convWidth = isConvListOpen ? '240px' : '0px'
-  const canvasWidth = '0px'
   const displayName = profile?.display_name || localStorage.getItem('hive_user_name') || 'H'
   const userInitial = displayName.charAt(0).toUpperCase()
 
@@ -406,7 +400,7 @@ export default function App() {
       <div
       style={{
         display: 'grid',
-        gridTemplateColumns: `56px ${convWidth} 1fr ${canvasWidth}`,
+        gridTemplateColumns: '56px minmax(0, 1fr) auto',
         height: '100vh',
         width: '100vw',
         overflow: 'hidden',
@@ -445,93 +439,36 @@ export default function App() {
         userInitial={userInitial}
         buddyOn={buddyOn}
         onToggleBuddy={toggleBuddy}
+        chatOpen={isChatOpen}
       />
 
-      {/* 2. Conversation list panel (animated slide open/close) */}
-      <div
-        style={{
-          width: isConvListOpen ? 240 : 0,
-          opacity: isConvListOpen ? 1 : 0,
-          visibility: isConvListOpen ? 'visible' : 'hidden',
-          height: '100%',
-          overflow: 'hidden',
-          flexShrink: 0,
-          transition: 'width .45s var(--ease), opacity .3s var(--ease), visibility 0s',
-          transitionDelay: isConvListOpen ? '0s, 0s, 0s' : '0s, 0s, .45s',
-        }}
-      >
-        <div style={{ width: 240, height: '100%' }}>
-          <ConversationList
-            conversations={conversations}
-            activeId={activeConvId}
-            onSelect={handleSelectConv}
-            onNewChat={handleNewChat}
-            onNewGroup={() => setShowNewGroup(true)}
-            onDeleteChat={handleDeleteChat}
-            onOpenWorkers={() => setMainView('bots')}
-            onToggleSidebar={() => setIsConvListOpen((prev) => !prev)}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-          />
-        </div>
-      </div>
-
-      {/* 3. Main column: chat or bots (bots open where chat lives) */}
-      {mainView === 'chat' ? (
+      {/* 2. Main stage: 3D office / projects / workers */}
       <div style={{ minWidth: 0, minHeight: 0, overflow: 'hidden', height: '100%', display: 'flex' }}>
-      <ChatView
-        isCanvasOpen={isCanvasOpen}
-        onToggleCanvas={() => setIsCanvasOpen((prev) => !prev)}
-        onUpdateCanvas={(data) => {
-          setCanvasData(data)
-          setCanvasMode('code')
-          setIsCanvasOpen(true)
-        }}
-        onOpenBrowserCanvas={(url, title) => {
-          setActiveBrowserUrl(url)
-          if (title) setActiveTabTitle(title)
-          setCanvasMode('browser')
-          setBrowserSteps([
-            {
-              id: `step-${Date.now()}-1`,
-              action: 'navigate',
-              target: url,
-              status: 'completed',
-              timestamp: Date.now() - 1000,
-              detail: `Navigated to ${url}`,
-            },
-            {
-              id: `step-${Date.now()}-2`,
-              action: 'extract',
-              target: 'DOM page content & text',
-              status: 'running',
-              timestamp: Date.now(),
-              detail: 'Extracting live page data with Hive Browser Bridge...',
-            },
-          ])
-          setIsCanvasOpen(true)
-        }}
-        onNewChat={handleNewChat}
-        onOpenWorkers={() => setMainView('bots')}
-        isConvListOpen={isConvListOpen}
-        onToggleSidebar={() => setIsConvListOpen((prev) => !prev)}
-        conversation={conversations.find((c) => c.id === activeConvId) || null}
-      />
-      </div>
-      ) : mainView === 'office' ? (
-      <div style={{ minWidth: 0, minHeight: 0, overflow: 'hidden', height: '100%', display: 'flex', flex: 1 }}>
-      <HiveOffice
-        onBack={() => {
-          setMainView('chat')
-          setActiveTab('chat')
-        }}
-      />
-      </div>
-      ) : (
+      {mainView === 'projects' ? (
+        <ProjectsModal
+          embedded
+          onClose={() => {
+            setMainView('office')
+            setActiveTab('office')
+          }}
+          onSelectProject={(projName) => {
+            const newId = `c-${Date.now()}`
+            const newConv: Conversation = {
+              id: newId,
+              title: `${projName} discussion`,
+              group: 'Today',
+            }
+            setConversations([newConv, ...conversations])
+            setActiveConvId(newId)
+            if (activeAgent) clearMessages(activeAgent.id)
+            setIsChatOpen(true)
+          }}
+        />
+      ) : mainView === 'bots' ? (
       <BotsPanel
         onBack={() => {
-          setMainView('chat')
-          setActiveTab('chat')
+          setMainView('office')
+          setActiveTab('office')
         }}
         onSelectAgent={(agent) => {
           useAgentStore.getState().setActiveAgent(agent)
@@ -546,18 +483,69 @@ export default function App() {
           activeConvRef.current = newId
           setActiveConvId(newId)
           clearMessages(agent.id)
-          setMainView('chat')
-          setActiveTab('chat')
+          setIsChatOpen(true)
         }}
       />
+      ) : (
+      <HiveOffice />
       )}
+      </div>
 
-      {false && isCanvasOpen && (
-        <FloatingPanel title="HiveBox · live cloud" onClose={() => setIsCanvasOpen(false)} width={440} height={620}>
-          <CloudComputerPanel onClose={() => setIsCanvasOpen(false)} />
-        </FloatingPanel>
-      )}
-
+      {/* 3. Chat dock on the right (where office used to live) */}
+      <div
+        style={{
+          width: isChatOpen ? (isConvListOpen ? 640 : 400) : 0,
+          opacity: isChatOpen ? 1 : 0,
+          visibility: isChatOpen ? 'visible' : 'hidden',
+          height: '100%',
+          overflow: 'hidden',
+          flexShrink: 0,
+          display: 'flex',
+          borderLeft: isChatOpen ? '1px solid var(--border-soft)' : 'none',
+          transition: 'width .35s var(--ease), opacity .25s var(--ease)',
+        }}
+      >
+        <div
+          style={{
+            width: isConvListOpen ? 240 : 0,
+            overflow: 'hidden',
+            flexShrink: 0,
+            height: '100%',
+            transition: 'width .35s var(--ease)',
+          }}
+        >
+          <div style={{ width: 240, height: '100%' }}>
+            <ConversationList
+              conversations={conversations}
+              activeId={activeConvId}
+              onSelect={handleSelectConv}
+              onNewChat={handleNewChat}
+              onNewGroup={() => setShowNewGroup(true)}
+              onDeleteChat={handleDeleteChat}
+              onOpenWorkers={() => setMainView('bots')}
+              onToggleSidebar={() => setIsConvListOpen((prev) => !prev)}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
+          </div>
+        </div>
+        <div style={{ width: 400, height: '100%', minWidth: 400, display: 'flex' }}>
+          <ChatView
+            isCanvasOpen={false}
+            onToggleCanvas={() => setIsChatOpen(false)}
+            onUpdateCanvas={() => setIsChatOpen(true)}
+            onOpenBrowserCanvas={(url) => {
+              setActiveBrowserUrl(url)
+              setIsChatOpen(true)
+            }}
+            onNewChat={handleNewChat}
+            onOpenWorkers={() => setMainView('bots')}
+            isConvListOpen={isConvListOpen}
+            onToggleSidebar={() => setIsConvListOpen((prev) => !prev)}
+            conversation={conversations.find((c) => c.id === activeConvId) || null}
+          />
+        </div>
+      </div>
       {showPalette && (
         <CommandPalette
           open={showPalette}
@@ -565,9 +553,9 @@ export default function App() {
           actions={[
             { id: 'new', label: 'New chat', hint: 'Ctrl+N', run: () => { setShowPalette(false); handleNewChat() } },
             { id: 'group', label: 'New group', run: () => { setShowPalette(false); setShowNewGroup(true) } },
-            { id: 'hivebox', label: 'Toggle HiveBox', hint: 'Ctrl+Shift+H', run: () => { setShowPalette(false); setIsCanvasOpen((v) => !v) } },
+            { id: 'chat', label: 'Toggle chat panel', hint: 'Ctrl+Shift+H', run: () => { setShowPalette(false); setIsChatOpen((v) => !v) } },
             { id: 'sidebar', label: 'Toggle sidebar', hint: 'Ctrl+B', run: () => { setShowPalette(false); setIsConvListOpen((v) => !v) } },
-            { id: 'workers', label: 'AI Workers', run: () => { setShowPalette(false); setMainView('bots') } },
+            { id: 'projects', label: 'Projects', run: () => { setShowPalette(false); setMainView('projects'); setActiveTab('projects') } },
             { id: 'office', label: 'Hive Office', run: () => { setShowPalette(false); setMainView('office'); setActiveTab('office') } },
             { id: 'settings', label: 'Settings', hint: 'Ctrl+,', run: () => { setShowPalette(false); setShowSettings(true) } },
           ]}
@@ -596,7 +584,7 @@ export default function App() {
       )}
 
       {/* Projects Modal */}
-      {showProjects && (
+      {false && showProjects && (
         <ProjectsModal
           onClose={() => setShowProjects(false)}
           onSelectProject={(projName) => {
