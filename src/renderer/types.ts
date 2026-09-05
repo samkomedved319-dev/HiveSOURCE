@@ -120,7 +120,7 @@ export interface ElectronAPI {
     onSession: (cb: (tokens: { access_token: string; refresh_token: string }) => void) => () => void
   }
   hive?: {
-    send: (text: string) => Promise<{ ok: boolean; error?: string }>
+    send: (text: string, conversationId?: string) => Promise<{ ok: boolean; error?: string }>
     status: () => Promise<{ ok: boolean; state?: HiveSwarmState; error?: string }>
     decide?: (id: string, ok: boolean) => Promise<{ ok: boolean }>
     onEvent: (cb: (ev: HiveSwarmEvent) => void) => () => void

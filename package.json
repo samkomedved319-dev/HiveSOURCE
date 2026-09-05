@@ -1,6 +1,6 @@
 {
   "name": "hive",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Hive - AI Agent Bot Desktop Application",
   "main": "dist/main/index.js",
   "author": "ProjectHive",

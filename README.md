@@ -8,6 +8,7 @@
   <strong>Next-generation Windows-native AI Agent Bot & Desktop Companion.</strong><br/>
   Featuring interactive physics-based mascot companions, multi-model OpenRouter LLM orchestration, live web retrieval with citations, real-time voice calling, and Telegram integration.
 </p>
+<p align="center"><code>v0.0.1</code></p>
 
 <p align="center">
   Built with <a href="https://github.com/jigjoy-ai/mozaik"><code>@mozaik-ai/core</code></a> for the <a href="https://build.jigjoy.ai">JigJoy concurrent-agents hackathon</a> — see <a href="HACKATHON.md">HACKATHON.md</a>.

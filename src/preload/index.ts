@@ -72,7 +72,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
   hive: {
-    send: (text: string) => ipcRenderer.invoke('hive:send', text),
+    send: (text: string, conversationId?: string) => ipcRenderer.invoke('hive:send', text, conversationId),
     status: () => ipcRenderer.invoke('hive:status'),
     decide: (id: string, ok: boolean) => ipcRenderer.invoke('hive:decide', id, ok),
     onEvent: (cb: (ev: HiveSwarmEvent) => void) => {

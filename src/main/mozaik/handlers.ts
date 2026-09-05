@@ -6,6 +6,7 @@ import {
 } from '@mozaik-ai/core'
 import { inferenceInputFor, resolveRuntime, runLoop } from './runtime'
 import { emitHiveEvent, emitHiveState } from './notify'
+import { stashRoom } from './persist'
 import { setBuddyMood } from '../buddy-service'
 import { CitationGuard, CommandGuard } from './interception'
 
@@ -307,6 +308,14 @@ export const relayLifecycle: SituationHandler = {
       if (event.type === 'model.answer' && text) {
         const role = producerName === 'You' ? 'user' : 'assistant'
         pushTranscript(event.producerId, producerName, role, text)
+        const st = resolveRuntime().state
+        stashRoom(st.conversationId || 'default', { transcript: st.transcript, citations: st.citations })
+        if (producerName === 'Hive' && st.lastVia === 'telegram' && st.lastTelegramChatId) {
+          try {
+            const { sendTelegramTextMessage } = require('../telegram-service') as typeof import('../telegram-service')
+            void sendTelegramTextMessage(st.lastTelegramChatId, text)
+          } catch {}
+        }
       }
       emitHiveEvent({
         type: event.type,

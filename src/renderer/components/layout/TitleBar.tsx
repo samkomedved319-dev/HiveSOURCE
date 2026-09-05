@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
+import packageJson from '../../../../package.json'
 
 export type ThinkingMode = 'fast' | 'reasoning' | 'heavy' | 'max' | 'computer_control'
 
@@ -352,6 +353,9 @@ export default function TitleBar({
           WebkitAppRegion: 'no-drag',
         } as React.CSSProperties}
       >
+        <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: "'JetBrains Mono', monospace" }}>
+          v{packageJson.version}
+        </span>
         {/* New chat */}
         {onNewChat && (
           <button

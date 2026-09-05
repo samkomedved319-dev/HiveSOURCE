@@ -1,7 +1,8 @@
 import { BrowserWindow, ipcMain } from 'electron'
 import { registerApprovalIpc } from './approvals'
-import { emitHiveEvent, emitHiveState, setHiveEmitter } from './notify'
-import { resolveRuntime, sendMessage } from './runtime'
+import { ingestUserMessage } from './ingest'
+import { emitHiveEvent, setHiveEmitter } from './notify'
+import { resolveRuntime } from './runtime'
 
 let getWindow: () => BrowserWindow | null = () => null
 
@@ -12,30 +13,9 @@ export function registerHiveBridge(getMain: () => BrowserWindow | null) {
     if (win && !win.isDestroyed()) win.webContents.send(channel, payload)
   })
 
-  ipcMain.handle('hive:send', async (_e, text: string) => {
-    const message = String(text || '').trim()
-    if (!message) return { ok: false, error: 'Empty message' }
+  ipcMain.handle('hive:send', async (_e, text: string, conversationId?: string) => {
     try {
-      const runtime = resolveRuntime()
-      const humanId = runtime.state.humanId
-      if (!humanId) return { ok: false, error: 'Human participant missing' }
-      runtime.state.resetTurn(message)
-      runtime.state.transcript.push({
-        fromId: humanId,
-        fromName: 'You',
-        role: 'user',
-        text: message,
-        at: Date.now(),
-      })
-      emitHiveState(runtime.state.snapshot())
-      emitHiveEvent({
-        type: 'message.sent',
-        producerId: humanId,
-        producerName: 'You',
-        text: message,
-        occurredAt: Date.now(),
-      })
-      sendMessage(message, humanId)
+      ingestUserMessage(String(text || ''), { conversationId: conversationId || 'default', via: 'local' })
       return { ok: true }
     } catch (err: unknown) {
       const error = err instanceof Error ? err.message : 'Hive swarm failed'

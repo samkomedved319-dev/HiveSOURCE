@@ -19,7 +19,7 @@ describe('Tier 4 — Real-World End-to-End Application Scenarios', () => {
     // 2. Read dynamic version from package.json
     const pkg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8'))
     const versionStr = `v${pkg.version}`
-    expect(versionStr).toBe('v1.0.0')
+    expect(versionStr).toBe('v0.0.1')
 
     // 3. Verify launch screen component logic
     let workspaceRevealed = false

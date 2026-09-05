@@ -185,7 +185,7 @@ describe('Tier 5 Adversarial — Launch Screen Lifecycle, Timers & Transitions',
   it('adv-06: missing/corrupted version fallback handles undefined API safely', async () => {
     // Vector A: package.json version fallback
     const fallbackVersion = `v${packageJson.version || '1.0.0'}`
-    expect(fallbackVersion).toBe('v1.0.0')
+    expect(fallbackVersion).toBe('v0.0.1')
 
     const emptyPackageJson: any = {}
     const defaultFallback = `v${emptyPackageJson.version || '1.0.0'}`

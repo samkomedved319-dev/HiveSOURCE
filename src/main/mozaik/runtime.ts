@@ -34,6 +34,9 @@ export class HiveState extends RuntimeState {
   hiveRevisedFromScout = false
   hiveRevisedFromCritic = false
   voiceSpoken = false
+  conversationId = 'default'
+  lastVia: 'local' | 'telegram' = 'local'
+  lastTelegramChatId = ''
 
   resetTurn(userText: string) {
     this.lastUserMessage = userText
@@ -49,6 +52,7 @@ export class HiveState extends RuntimeState {
       goal: this.goal,
       mood: this.mood,
       lastUserMessage: this.lastUserMessage,
+      conversationId: this.conversationId,
       transcript: this.transcript.slice(-48),
       citations: this.citations,
       ids: {

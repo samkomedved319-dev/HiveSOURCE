@@ -3,6 +3,7 @@
 **Project:** Hive  
 **Repo:** https://github.com/samkomedved319-dev/HiveSOURCE  
 **Runtime:** [`@mozaik-ai/core`](https://github.com/jigjoy-ai/mozaik) `4.0.5`  
+**App version:** `0.0.1`  
 **Hackathon:** https://build.jigjoy.ai
 
 Hive is a Windows Electron companion (chat, Buddy mascot, search, TTS, Telegram). Mozaik is the **brain**: one runtime in the Electron **main process** where Scout, Hive, and Critic stay joined, share `HiveState`, and think at the same time.

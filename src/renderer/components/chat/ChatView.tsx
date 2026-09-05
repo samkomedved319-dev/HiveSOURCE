@@ -33,7 +33,7 @@ export default function ChatView({
   onToggleSidebar,
 }: ChatViewProps) {
   const { activeAgent, agents, addAgent } = useAgentStore()
-  const { addMessage, getMessages, clearMessages, setTyping } = useChatStore()
+  const { addMessage, upsertMessage, getMessages, clearMessages, setTyping } = useChatStore()
   const [showVoice, setShowVoice] = useState(false)
   const [showTools, setShowTools] = useState(false)
   const [shareStatus, setShareStatus] = useState<string | null>(null)
@@ -109,11 +109,27 @@ export default function ChatView({
       if (ev.type === 'hive.speak' && ev.text && window.electronAPI?.tts?.speak) {
         void window.electronAPI.tts.speak(ev.text)
       }
+      if (ev.type === 'inference.stream' && ev.text && name && name !== 'Relay' && name !== 'Buddy' && name !== 'Voice' && name !== 'Sentry' && name !== 'You') {
+        const agentId = activeIdRef.current
+        if (!agentId) return
+        const id = `stream-${ev.producerId}`
+        const prev = getMessages(agentId).find((m) => m.id === id)
+        upsertMessage(agentId, {
+          id,
+          agentId,
+          content: (prev?.content || '') + ev.text,
+          role: 'assistant',
+          timestamp: ev.occurredAt || Date.now(),
+          type: 'text',
+          via: 'local',
+          botName: name,
+        })
+      }
       if (ev.type === 'model.answer' && ev.text && name && name !== 'You' && name !== 'Relay' && name !== 'Buddy' && name !== 'Voice' && name !== 'Sentry') {
         const agentId = activeIdRef.current
         if (!agentId) return
-        addMessage(agentId, {
-          id: `m-${ev.producerId}-${ev.occurredAt}`,
+        upsertMessage(agentId, {
+          id: `stream-${ev.producerId}`,
           agentId,
           content: ev.text,
           role: 'assistant',
@@ -268,7 +284,7 @@ Followed by a brief explanation of what was run.`
 
     try {
       if (window.electronAPI?.hive?.send) {
-        const res = await window.electronAPI.hive.send(content)
+        const res = await window.electronAPI.hive.send(content, activeAgent.id)
         if (!res.ok) {
           addMessage(activeAgent.id, {
             id: `m-err-${Date.now()}`,

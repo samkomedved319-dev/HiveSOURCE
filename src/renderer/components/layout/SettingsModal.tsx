@@ -218,7 +218,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           </div>
 
           <div style={{ padding: '0 8px', fontSize: 11, color: 'var(--text-faint)' }}>
-            Hive Desktop · v1.0.0
+            Hive Desktop · v0.0.1
           </div>
         </div>
 

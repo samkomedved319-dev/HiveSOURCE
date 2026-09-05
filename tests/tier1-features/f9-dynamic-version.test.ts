@@ -13,7 +13,7 @@ describe('Tier 1 — F9: Dynamic Version Tag Display', () => {
   it('f9-01: package.json specifies a valid semver version string', () => {
     expect(typeof pkg.version).toBe('string')
     expect(/^\d+\.\d+\.\d+/.test(pkg.version)).toBe(true)
-    expect(pkg.version).toBe('1.0.0')
+    expect(pkg.version).toBe('0.0.1')
   })
 
   it('f9-02: LaunchScreen imports package.json for dynamic version resolution', () => {

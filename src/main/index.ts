@@ -157,6 +157,7 @@ function createTray() {
   tray.setToolTip('Hive')
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Show Hive', click: () => { mainWindow?.show(); mainWindow?.focus() } },
+    { label: 'Ask Hive', click: () => { try { showNotch() } catch {} } },
     { type: 'separator' },
     { label: 'Quit', click: () => { isQuitting = true; app.quit() } },
   ]))

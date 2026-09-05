@@ -2,7 +2,6 @@ import { ipcMain } from 'electron'
 import https from 'https'
 import fs from 'fs'
 import { synthesizeMicrosoftVoice } from './tts-service'
-import { queryAIModel } from './openrouter-service'
 
 const DEFAULT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 let botToken: string = DEFAULT_TOKEN
@@ -169,40 +168,23 @@ function startTelegramPoller() {
               role: 'user',
               content: userText,
             })
-
-            // Keep conversation history relevant (last 8 turns)
             if (telegramConversationHistory.length > 8) {
               telegramConversationHistory = telegramConversationHistory.slice(-8)
             }
 
-            // 3. Grok-inspired persona: direct, witty, smart, zero AI slop
-            const systemPrompt = `You are Hive, Samuel's sharp, witty, internet-native AI engineer and partner (inspired by the direct, irreverent intelligence of Grok).
-Rules of interaction:
-- Keep it simple, punchy, and direct. Don't yap or lecture.
-- Never use fake corporate politeness, disclaimers, or generic AI templates ("Certainly!", "As an AI language model...", "I hope this helps!").
-- When asked to write code, solve problems, or give plans, give clean, working solutions with brief commentary.
-- Be funny, clever, and grounded like a real friend or hacker coworker.`
-
-            const aiMessages = [
-              { role: 'system' as const, content: systemPrompt },
-              ...telegramConversationHistory,
-            ]
-
-            const aiResult = await queryAIModel(aiMessages, 'minimax/minimax-m2.7:free')
-            const responseText = aiResult.ok && aiResult.content
-              ? aiResult.content
-              : "On it. Give me a second."
-
-            telegramConversationHistory.push({
-              role: 'assistant',
-              content: responseText,
-            })
-
-            // 4. Send reply back to Telegram
-            await tgFetch('sendMessage', {
-              chat_id: cId,
-              text: responseText,
-            })
+            try {
+              const { ingestUserMessage } = require('./mozaik/ingest') as typeof import('./mozaik/ingest')
+              ingestUserMessage(userText, {
+                conversationId: `tg-${cId}`,
+                via: 'telegram',
+                telegramChatId: cId,
+              })
+            } catch (err: any) {
+              await tgFetch('sendMessage', {
+                chat_id: cId,
+                text: err?.message || 'Hive swarm is offline.',
+              })
+            }
           }
         }
       }
