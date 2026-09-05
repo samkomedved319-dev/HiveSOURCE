@@ -548,15 +548,6 @@ export default function App() {
           setActiveTab('chat')
         }}
       />
-      ) : mainView === 'office' ? (
-      <div style={{ flex: 1, minWidth: 0, minHeight: 0, height: '100%', width: '100%', display: 'flex' }}>
-      <HiveOffice
-        onBack={() => {
-          setMainView('chat')
-          setActiveTab('chat')
-        }}
-      />
-      </div>
       ) : (
       <ChatView
         isCanvasOpen={isCanvasOpen}
@@ -580,6 +571,26 @@ export default function App() {
       />
       )}
       </div>
+      {mainView === 'office' && (
+        <div
+          style={{
+            position: 'fixed',
+            left: 56,
+            top: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 80,
+            background: '#d7b57a',
+          }}
+        >
+          <HiveOffice
+            onBack={() => {
+              setMainView('chat')
+              setActiveTab('chat')
+            }}
+          />
+        </div>
+      )}
       {showPalette && (
         <CommandPalette
           open={showPalette}
