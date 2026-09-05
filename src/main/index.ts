@@ -7,6 +7,7 @@ import { registerSystemControlHandlers } from './system-service'
 import { registerBuddyHandlers, syncBuddyWithMain, showNotch } from './buddy-service'
 import { registerSearchHandlers } from './search-service'
 import { startHiveRuntime } from './mozaik'
+import { registerCloudComputerHandlers } from './cloud-computer'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -174,6 +175,7 @@ app.whenReady().then(() => {
   registerSystemControlHandlers()
   registerBuddyHandlers(() => mainWindow)
   registerSearchHandlers()
+  registerCloudComputerHandlers()
   try {
     startHiveRuntime(() => mainWindow)
   } catch (err) {
