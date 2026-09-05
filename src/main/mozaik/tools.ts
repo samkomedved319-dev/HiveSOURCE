@@ -10,6 +10,7 @@ import {
   mozaikCloudStatus,
   previewAdaptionDataset,
 } from '../adaption-service'
+import { cloudExec, cloudStatus, cloudSwarm, cloudWrite } from '../cloud-computer'
 
 export const webSearchTool: Tool = {
   type: 'function',
@@ -154,4 +155,59 @@ export const mozaikCloudStatusTool: Tool = {
   parameters: { type: 'object', properties: {}, additionalProperties: false },
   strict: false,
   invoke: async () => mozaikCloudStatus(),
+}
+
+export const hiveCloudStatusTool: Tool = {
+  type: 'function',
+  name: 'hive_cloud_status',
+  description: 'Status of the Hive cloud computer (Cloudflare HiveBox).',
+  parameters: { type: 'object', properties: {}, additionalProperties: false },
+  strict: false,
+  invoke: async () => cloudStatus(),
+}
+
+export const hiveCloudExecTool: Tool = {
+  type: 'function',
+  name: 'hive_cloud_exec',
+  description: 'Run a command on the Hive cloud computer. Cloudflare allows ls, cat, echo, pwd, uname.',
+  parameters: {
+    type: 'object',
+    properties: { command: { type: 'string' } },
+    required: ['command'],
+    additionalProperties: false,
+  },
+  strict: false,
+  invoke: async (args: { command?: string }) => cloudExec(String(args?.command || '')),
+}
+
+export const hiveCloudSwarmTool: Tool = {
+  type: 'function',
+  name: 'hive_cloud_swarm',
+  description: 'Run Scout+Hive+Pulse concurrently on the remote Hive cloud computer.',
+  parameters: {
+    type: 'object',
+    properties: { text: { type: 'string' } },
+    required: ['text'],
+    additionalProperties: false,
+  },
+  strict: false,
+  invoke: async (args: { text?: string }) => cloudSwarm(String(args?.text || '')),
+}
+
+export const hiveCloudWriteTool: Tool = {
+  type: 'function',
+  name: 'hive_cloud_write',
+  description: 'Write a file onto the Hive cloud computer disk.',
+  parameters: {
+    type: 'object',
+    properties: {
+      path: { type: 'string' },
+      content: { type: 'string' },
+    },
+    required: ['path', 'content'],
+    additionalProperties: false,
+  },
+  strict: false,
+  invoke: async (args: { path?: string; content?: string }) =>
+    cloudWrite(String(args?.path || ''), String(args?.content || '')),
 }
