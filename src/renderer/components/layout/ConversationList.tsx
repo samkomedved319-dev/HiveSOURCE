@@ -4,6 +4,8 @@ export interface Conversation {
   id: string
   title: string
   group: 'Today' | 'Previous 7 Days' | 'Older'
+  kind?: 'chat' | 'group'
+  agentIds?: string[]
 }
 
 interface ConversationListProps {
@@ -11,6 +13,7 @@ interface ConversationListProps {
   activeId: string
   onSelect: (id: string) => void
   onNewChat: () => void
+  onNewGroup?: () => void
   onDeleteChat?: (id: string) => void
   onOpenWorkers?: () => void
   onToggleSidebar?: () => void
@@ -23,6 +26,7 @@ export default function ConversationList({
   activeId,
   onSelect,
   onNewChat,
+  onNewGroup,
   onDeleteChat,
   searchQuery,
   onSearchChange,
@@ -89,6 +93,37 @@ export default function ConversationList({
           </svg>
           New chat
         </button>
+        {onNewGroup && (
+          <button
+            type="button"
+            onClick={onNewGroup}
+            title="Add new group"
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 12px',
+              marginTop: 8,
+              borderRadius: 9,
+              border: '1px solid var(--border-soft)',
+              background: 'transparent',
+              color: 'var(--text-dim)',
+              fontSize: 12.5,
+              fontWeight: 600,
+              cursor: 'pointer',
+              outline: 'none',
+              fontFamily: 'inherit',
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            Add new group
+          </button>
+        )}
       </div>
 
       {/* Search */}

@@ -11,9 +11,12 @@ import VoiceCall from './components/chat/VoiceCall'
 import CursorBuddy from './components/mascot/CursorBuddy'
 import BuddyOverlay from './components/chat/BuddyOverlay'
 import LaunchScreen from './components/launch/LaunchScreen'
+import FloatingPanel from './components/layout/FloatingPanel'
+import NewGroupModal from './components/layout/NewGroupModal'
 import { AnimatePresence } from 'motion/react'
 import { useChatStore } from './stores/chatStore'
 import { useAgentStore } from './stores/agentStore'
+import { BUDDY_SETTINGS_EVENT, isBuddyEnabled } from './components/mascot/CursorBuddy'
 import type { Message } from './types'
 
 function loadConvMessages(): Record<string, Message[]> {
@@ -50,6 +53,8 @@ export default function App() {
   const [mainView, setMainView] = useState<'chat' | 'bots'>('chat')
   const [showProfile, setShowProfile] = useState(false)
   const [showVoiceModal, setShowVoiceModal] = useState(false)
+  const [showNewGroup, setShowNewGroup] = useState(false)
+  const [buddyOn, setBuddyOn] = useState(isBuddyEnabled)
   const [canvasMode, setCanvasMode] = useState<'code' | 'browser'>('code')
   const [activeBrowserUrl, setActiveBrowserUrl] = useState('https://google.com')
   const [activeTabTitle, setActiveTabTitle] = useState('Google Search')
@@ -152,16 +157,45 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Keyboard shortcut: Cmd/Ctrl + B to toggle conversation list
+  const toggleBuddy = () => {
+    const next = !buddyOn
+    setBuddyOn(next)
+    try {
+      localStorage.setItem('hive_buddy_enabled', next ? 'true' : 'false')
+      window.dispatchEvent(new Event(BUDDY_SETTINGS_EVENT))
+      window.electronAPI?.buddy?.setOuterEnabled?.(next)
+    } catch {}
+  }
+
+  // Keyboard shortcut: Cmd/Ctrl + B conversation list
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b' && !e.shiftKey) {
         e.preventDefault()
         setIsConvListOpen((prev) => !prev)
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'j') {
+        e.preventDefault()
+        setIsConvListOpen((prev) => !prev)
+        setMainView('chat')
+        setActiveTab('chat')
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  useEffect(() => {
+    const off = window.electronAPI?.buddy?.onSummon?.(() => {
+      setIsConvListOpen(true)
+      setMainView('chat')
+      setActiveTab('chat')
+    })
+    return () => {
+      try {
+        off?.()
+      } catch {}
+    }
   }, [])
 
   // Responsive: collapse conv list under 900px
@@ -210,6 +244,23 @@ export default function App() {
     }
   }
 
+  const handleNewGroup = (name: string, agentIds: string[]) => {
+    persistCurrent()
+    const newId = `g-${Date.now()}`
+    const newConv: Conversation = {
+      id: newId,
+      title: name,
+      group: 'Today',
+      kind: 'group',
+      agentIds,
+    }
+    setConversations([newConv, ...conversations])
+    activeConvRef.current = newId
+    setActiveConvId(newId)
+    if (activeAgent) clearMessages(activeAgent.id)
+    setShowNewGroup(false)
+  }
+
   const handleNewChat = () => {
     persistCurrent()
     const newId = `c-${Date.now()}`
@@ -252,7 +303,7 @@ export default function App() {
 
   // Calculate 4-column grid template: Rail (56px) | Conv (240px or 0px) | Main (1fr) | Canvas (400px or 0px)
   const convWidth = isConvListOpen ? '240px' : '0px'
-  const canvasWidth = isCanvasOpen ? '400px' : '0px'
+  const canvasWidth = '0px'
 
   return (
     <>
@@ -284,6 +335,8 @@ export default function App() {
         onSelectTab={handleNavTab}
         onOpenProfile={() => setShowProfile(true)}
         userInitial={(localStorage.getItem('hive_user_name') || 'Samko').charAt(0).toUpperCase()}
+        buddyOn={buddyOn}
+        onToggleBuddy={toggleBuddy}
       />
 
       {/* 2. Conversation list panel (animated slide open/close) */}
@@ -305,6 +358,7 @@ export default function App() {
             activeId={activeConvId}
             onSelect={handleSelectConv}
             onNewChat={handleNewChat}
+            onNewGroup={() => setShowNewGroup(true)}
             onDeleteChat={handleDeleteChat}
             onOpenWorkers={() => setMainView('bots')}
             onToggleSidebar={() => setIsConvListOpen((prev) => !prev)}
@@ -376,26 +430,24 @@ export default function App() {
       />
       )}
 
-      {/* 4. Canvas panel */}
-      <div
-        style={{
-          width: 400,
-          height: '100%',
-          overflow: 'hidden',
-          visibility: isCanvasOpen ? 'visible' : 'hidden',
-        }}
-      >
-        <CanvasPanel
-          fileName={canvasData.name}
-          cardMeta={canvasData.meta}
-          codeContent={canvasData.content}
-          mode={canvasMode}
-          browserSteps={browserSteps}
-          activeBrowserUrl={activeBrowserUrl}
-          activeTabTitle={activeTabTitle}
-          onClose={() => setIsCanvasOpen(false)}
-        />
-      </div>
+      {isCanvasOpen && (
+        <FloatingPanel title={canvasData.name || 'Canvas'} onClose={() => setIsCanvasOpen(false)} width={440} height={620}>
+          <CanvasPanel
+            fileName={canvasData.name}
+            cardMeta={canvasData.meta}
+            codeContent={canvasData.content}
+            mode={canvasMode}
+            browserSteps={browserSteps}
+            activeBrowserUrl={activeBrowserUrl}
+            activeTabTitle={activeTabTitle}
+            onClose={() => setIsCanvasOpen(false)}
+          />
+        </FloatingPanel>
+      )}
+
+      {showNewGroup && (
+        <NewGroupModal onClose={() => setShowNewGroup(false)} onCreate={handleNewGroup} />
+      )}
 
       {/* Hive Buddy: cursor companion + push-to-talk overlay */}
       <CursorBuddy />

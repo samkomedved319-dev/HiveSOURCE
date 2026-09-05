@@ -7,6 +7,8 @@ interface IconRailProps {
   onSelectTab: (tab: NavTab) => void
   onOpenProfile?: () => void
   userInitial?: string
+  buddyOn?: boolean
+  onToggleBuddy?: () => void
 }
 
 function RailBtn({
@@ -84,6 +86,8 @@ export default function IconRail({
   onSelectTab,
   onOpenProfile,
   userInitial = 'A',
+  buddyOn = false,
+  onToggleBuddy,
 }: IconRailProps) {
   return (
     <div
@@ -138,6 +142,19 @@ export default function IconRail({
           <path d="M21.2 16.7v2.6a1.7 1.7 0 0 1-1.9 1.7 16.8 16.8 0 0 1-7.3-2.5 16.5 16.5 0 0 1-5.1-5.1A16.8 16.8 0 0 1 4.4 6.1 1.7 1.7 0 0 1 6.1 4.2h2.5a1.7 1.7 0 0 1 1.7 1.4c.1.9.3 1.7.5 2.5a1.7 1.7 0 0 1-.4 1.8L9.2 11a13.6 13.6 0 0 0 5.1 5.1l1.1-1.1a1.7 1.7 0 0 1 1.8-.4c.8.2 1.6.4 2.5.5a1.7 1.7 0 0 1 1.5 1.6z" />
         </svg>
       </RailBtn>
+
+      {onToggleBuddy && (
+        <RailBtn
+          title={buddyOn ? 'Buddy on — follows your cursor' : 'Enable Buddy'}
+          active={buddyOn}
+          onClick={onToggleBuddy}
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+            <circle cx="12" cy="10" r="4" />
+            <path d="M6 20c1.4-3.2 3.6-5 6-5s4.6 1.8 6 5" />
+          </svg>
+        </RailBtn>
+      )}
 
       <div style={{ flex: 1 }} />
 

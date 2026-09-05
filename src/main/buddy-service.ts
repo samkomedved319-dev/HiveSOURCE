@@ -59,14 +59,13 @@ function startFollow() {
   }, 30)
 }
 
-/** Buddy follows the main window: hidden app = hidden buddy. */
+/** Buddy stays on after enable, even if Hive is hidden. */
 let buddyEnabledSetting = false
 let getMainWindow: () => BrowserWindow | null = () => null
 
 export function syncBuddyWithMain() {
   try {
-    const main = getMainWindow()
-    syncBuddy(buddyEnabledSetting && !!main && !main.isDestroyed() && main.isVisible())
+    syncBuddy(buddyEnabledSetting)
   } catch {}
 }
 
@@ -362,7 +361,7 @@ function ensureNotchWindow() {
   return notchWin
 }
 
-function showNotch() {
+export function showNotch() {
   const win = ensureNotchWindow()
   if (notchExpandTimer) {
     clearTimeout(notchExpandTimer)
