@@ -291,8 +291,8 @@ export default function App() {
     } else if (tab === 'workers') {
       setMainView('bots')
     } else if (tab === 'office') {
-      setMainView('chat')
-      setIsCanvasOpen(true)
+      setMainView('office')
+      setIsCanvasOpen(false)
       setShowSettings(false)
       setShowProjects(false)
     } else if (tab === 'voice') {
@@ -305,6 +305,11 @@ export default function App() {
     persistCurrent()
     activeConvRef.current = id
     setActiveConvId(id)
+    const conv = conversations.find((c) => c.id === id)
+    if (conv?.agentId) {
+      const bot = useAgentStore.getState().agents.find((a) => a.id === conv.agentId)
+      if (bot) useAgentStore.getState().setActiveAgent(bot)
+    }
     const agent = useAgentStore.getState().activeAgent
     if (agent) {
       const saved = convMessagesRef.current[id] ?? []
@@ -336,8 +341,9 @@ export default function App() {
     const workerName = activeAgent ? activeAgent.name : 'Hive'
     const newConv: Conversation = {
       id: newId,
-      title: `${workerName} Chat ${conversations.length + 1}`,
+      title: `${workerName.split('(')[0].trim()} Chat ${conversations.length + 1}`,
       group: 'Today',
+      agentId: activeAgent?.id,
     }
     const updated = [newConv, ...conversations]
     setConversations(updated)
@@ -513,12 +519,14 @@ export default function App() {
       />
       </div>
       ) : mainView === 'office' ? (
+      <div style={{ minWidth: 0, minHeight: 0, overflow: 'hidden', height: '100%', display: 'flex', flex: 1 }}>
       <HiveOffice
         onBack={() => {
           setMainView('chat')
           setActiveTab('chat')
         }}
       />
+      </div>
       ) : (
       <BotsPanel
         onBack={() => {
@@ -526,11 +534,13 @@ export default function App() {
           setActiveTab('chat')
         }}
         onSelectAgent={(agent) => {
+          useAgentStore.getState().setActiveAgent(agent)
           const newId = `c-${Date.now()}`
           const newConv: Conversation = {
             id: newId,
-            title: `${agent.name} Session`,
+            title: `${agent.name.split('(')[0].trim()}`,
             group: 'Today',
+            agentId: agent.id,
           }
           setConversations([newConv, ...conversations])
           activeConvRef.current = newId

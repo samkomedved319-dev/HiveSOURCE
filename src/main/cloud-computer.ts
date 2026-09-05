@@ -11,8 +11,8 @@ async function cloud(path: string, init?: RequestInit) {
     headers.authorization = `Bearer ${process.env.HIVE_CLOUD_TOKEN || TOKEN}`
   }
   const res = await fetch(`${base.replace(/\/$/, '')}${path}`, { ...init, headers: { ...headers, ...(init?.headers || {}) } })
-  const data = await res.json().catch(() => ({}))
-  return { ok: res.ok && (data as { ok?: boolean }).ok !== false, status: res.status, ...data }
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
+  return { ok: res.ok && data.ok !== false, status: res.status, ...data }
 }
 
 export async function cloudStatus() {

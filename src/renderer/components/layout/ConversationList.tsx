@@ -6,6 +6,7 @@ export interface Conversation {
   group: 'Today' | 'Previous 7 Days' | 'Older'
   kind?: 'chat' | 'group'
   agentIds?: string[]
+  agentId?: string
 }
 
 interface ConversationListProps {

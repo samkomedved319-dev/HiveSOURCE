@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import type { Message } from '../../types'
 import BloubEngineAvatar from '../mascot/BloubEngineAvatar'
 import { getMascot } from '../mascot/mascotLibrary'
@@ -25,9 +25,23 @@ export default React.memo(function MessageItem({
   const isUser = message.role === 'user'
   const mascot = getMascot(message.botAvatar)
   const [open, setOpen] = useState(false)
+  const fresh = Date.now() - message.timestamp < 8000 && !isUser
+  const [shown, setShown] = useState(fresh ? Math.min(48, message.content.length) : message.content.length)
+
+  useEffect(() => {
+    if (!fresh) return
+    const id = window.setInterval(() => {
+      setShown((n) => {
+        const next = Math.min(message.content.length, n + Math.max(3, Math.ceil(message.content.length / 90)))
+        if (next >= message.content.length) window.clearInterval(id)
+        return next
+      })
+    }, 16)
+    return () => window.clearInterval(id)
+  }, [fresh, message.content, message.content.length])
 
   const formatInline = (text: string) => {
-    const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
+    const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g)
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
         return <strong key={i}>{part.slice(2, -2)}</strong>
@@ -41,12 +55,20 @@ export default React.memo(function MessageItem({
               background: 'rgba(255,255,255,0.08)',
               padding: '1px 5px',
               borderRadius: 4,
-              fontSize: 12,
+              fontSize: 13,
               color: 'var(--accent)',
             }}
           >
             {part.slice(1, -1)}
           </code>
+        )
+      }
+      const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
+      if (link) {
+        return (
+          <a key={i} href={link[2]} onClick={(e) => { e.preventDefault(); window.electronAPI?.system?.openApp?.(link[2]) }} style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+            {link[1]}
+          </a>
         )
       }
       return <React.Fragment key={i}>{part}</React.Fragment>
@@ -55,14 +77,15 @@ export default React.memo(function MessageItem({
 
   // Format code blocks or inline code cleanly
   const renderContent = (raw: string) => {
-    const content = !open && raw.length > 900 ? raw.slice(0, 900) + '…' : raw
+    const content = !open && raw.length > 1400 ? raw.slice(0, 1400) + '…' : raw
+    const writing = shown < message.content.length ? content.slice(0, shown) : content
     // Check for triple backtick code blocks
-    const codeBlockMatch = content.match(/```([a-zA-Z]*)\n([\s\S]*?)```/)
+    const codeBlockMatch = writing.match(/```([a-zA-Z]*)\n?([\s\S]*?)```/)
     if (codeBlockMatch) {
       const lang = codeBlockMatch[1] || 'code'
       const code = codeBlockMatch[2]
-      const beforeCode = content.split('```')[0]
-      const afterCode = content.split('```').slice(2).join('```')
+      const beforeCode = writing.split('```')[0]
+      const afterCode = writing.split('```').slice(2).join('```')
 
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -95,7 +118,7 @@ export default React.memo(function MessageItem({
                 margin: 0,
                 padding: 12,
                 fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 12.5,
+                fontSize: 13.5,
                 color: '#D8DAE0',
                 lineHeight: 1.6,
                 overflowX: 'auto',
@@ -109,12 +132,22 @@ export default React.memo(function MessageItem({
       )
     }
 
-    const lines = content.split('\n')
+    const lines = writing.split('\n')
     return (
-      <div style={{ margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.55, overflowWrap: 'anywhere', userSelect: 'text' }}>
-        {lines.map((line, i) => (
-          <div key={i}>{formatInline(line.replace(/^[-*]\s+/, '• '))}</div>
-        ))}
+      <div style={{ margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.65, overflowWrap: 'anywhere', userSelect: 'text' }}>
+        {lines.map((line, i) => {
+          if (/^#{1,3}\s/.test(line)) {
+            return (
+              <div key={i} style={{ fontWeight: 700, fontSize: 16.5, margin: '10px 0 4px', color: 'var(--text)' }}>
+                {formatInline(line.replace(/^#{1,3}\s/, ''))}
+              </div>
+            )
+          }
+          return <div key={i}>{formatInline(line.replace(/^[-*]\s+/, '• ').replace(/^\d+\.\s+/, (m) => m))}</div>
+        })}
+        {shown < message.content.length && (
+          <span style={{ display: 'inline-block', width: 7, height: 14, marginLeft: 2, background: 'var(--accent)', animation: 'office-type .7s steps(1) infinite', verticalAlign: 'text-bottom' }} />
+        )}
       </div>
     )
   }
@@ -148,8 +181,8 @@ export default React.memo(function MessageItem({
             padding: '12px 16px',
             borderRadius: 20,
             borderBottomRightRadius: 6,
-            fontSize: 13.8,
-            lineHeight: 1.55,
+            fontSize: 15,
+            lineHeight: 1.6,
             whiteSpace: 'pre-wrap',
           }}
         >
@@ -213,8 +246,8 @@ export default React.memo(function MessageItem({
         {/* Message Text */}
         <div
           style={{
-            fontSize: 13.8,
-            lineHeight: 1.55,
+            fontSize: 15,
+            lineHeight: 1.65,
             color: '#D8DAE0',
             overflowWrap: 'anywhere',
             userSelect: 'text',
@@ -222,7 +255,7 @@ export default React.memo(function MessageItem({
           }}
         >
           {renderContent(message.content)}
-          {message.content.length > 900 && (
+          {message.content.length > 1400 && (
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
@@ -264,19 +297,20 @@ export default React.memo(function MessageItem({
                 }}
               >
                 <span>🌐</span>
-                <span>Verified Sources Cited ({message.citations.length})</span>
+                <span>Sources</span>
               </div>
             </div>
 
             <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                display: 'flex',
+                flexWrap: 'wrap',
                 gap: 8,
               }}
             >
               {message.citations.map((c, idx) => {
                 const domain = extractCitationDomain(c)
+                const fav = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`
                 return (
                   <a
                     key={idx}
@@ -290,80 +324,24 @@ export default React.memo(function MessageItem({
                       }
                     }}
                     style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 4,
-                      padding: '8px 10px',
-                      borderRadius: 6,
-                      background: 'rgba(255, 255, 255, 0.03)',
-                      border: '1px solid rgba(255, 255, 255, 0.07)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '7px 10px',
+                      borderRadius: 999,
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
                       textDecoration: 'none',
                       color: 'inherit',
-                      transition: 'all 0.15s ease',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(242, 193, 78, 0.10)'
-                      e.currentTarget.style.borderColor = 'rgba(242, 193, 78, 0.45)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.07)'
+                      maxWidth: 280,
                     }}
                     title={c.url}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.04em',
-                          color: 'var(--accent)',
-                          background: 'rgba(242, 193, 78, 0.14)',
-                          padding: '1px 6px',
-                          borderRadius: 3,
-                          maxWidth: '80%',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {domain}
-                      </span>
-                      <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>↗</span>
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: '#E4E6EB',
-                        lineHeight: 1.35,
-                        overflow: 'hidden',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                      }}
-                    >
+                    <img src={fav} alt="" width={14} height={14} style={{ borderRadius: 3 }} />
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: '#E4E6EB', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {c.title || domain}
-                    </div>
-
-                    {c.content && (
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: '#9CA3AF',
-                          lineHeight: 1.35,
-                          overflow: 'hidden',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                        }}
-                      >
-                        {c.content}
-                      </div>
-                    )}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{domain}</span>
                   </a>
                 )
               })}

@@ -4,24 +4,25 @@ import { getMascot } from '../mascot/mascotLibrary'
 import type { StateId } from '../../bot/states'
 import type { HiveSwarmEvent } from '../../types'
 
-type AgentMood = 'idle' | 'thinking' | 'searching' | 'talking' | 'done'
+type AgentMood = 'idle' | 'thinking' | 'searching' | 'talking' | 'coding' | 'done'
 
 type DeskAgent = {
   id: string
   name: string
   mascot: string
   job: string
+  room: 'search' | 'talk' | 'code' | 'review'
   desk: { x: number; y: number }
   meet: { x: number; y: number }
 }
 
 const CREW: DeskAgent[] = [
-  { id: 'scout', name: 'Scout', mascot: 'bloub-blue', job: 'research', desk: { x: 14, y: 38 }, meet: { x: 42, y: 52 } },
-  { id: 'hive', name: 'Hive', mascot: 'bloub-gold', job: 'answer', desk: { x: 42, y: 28 }, meet: { x: 50, y: 48 } },
-  { id: 'pulse', name: 'Pulse', mascot: 'bloub-rose', job: 'check', desk: { x: 70, y: 38 }, meet: { x: 58, y: 52 } },
-  { id: 'critic', name: 'Critic', mascot: 'bloub-violet', job: 'review', desk: { x: 78, y: 62 }, meet: { x: 54, y: 60 } },
-  { id: 'apollo', name: 'Apollo', mascot: 'bloub-orange', job: 'code', desk: { x: 22, y: 64 }, meet: { x: 46, y: 60 } },
-  { id: 'athena', name: 'Athena', mascot: 'bloub-blue', job: 'intel', desk: { x: 8, y: 58 }, meet: { x: 40, y: 58 } },
+  { id: 'scout', name: 'Scout', mascot: 'bloub-blue', job: 'search the web', room: 'search', desk: { x: 14, y: 42 }, meet: { x: 46, y: 50 } },
+  { id: 'athena', name: 'Athena', mascot: 'bloub-blue', job: 'intel', room: 'search', desk: { x: 22, y: 62 }, meet: { x: 42, y: 56 } },
+  { id: 'hive', name: 'Hive', mascot: 'bloub-gold', job: 'lead', room: 'talk', desk: { x: 50, y: 28 }, meet: { x: 50, y: 48 } },
+  { id: 'pulse', name: 'Pulse', mascot: 'bloub-rose', job: 'check facts', room: 'talk', desk: { x: 62, y: 38 }, meet: { x: 56, y: 52 } },
+  { id: 'apollo', name: 'Apollo', mascot: 'bloub-orange', job: 'write code', room: 'code', desk: { x: 82, y: 36 }, meet: { x: 58, y: 48 } },
+  { id: 'critic', name: 'Critic', mascot: 'bloub-violet', job: 'review', room: 'review', desk: { x: 78, y: 72 }, meet: { x: 54, y: 60 } },
 ]
 
 const POSE: Record<AgentMood, StateId> = {
@@ -29,14 +30,102 @@ const POSE: Record<AgentMood, StateId> = {
   thinking: 'thinking',
   searching: 'orbit',
   talking: 'exclaim',
+  coding: 'thinking',
   done: 'idle',
 }
 
 function moodFromEvent(ev: HiveSwarmEvent): AgentMood {
   if (ev.type === 'function_call.started') return 'searching'
-  if (ev.type === 'inference.started' || ev.type === 'inference.stream') return 'thinking'
+  if (ev.type === 'inference.started' || ev.type === 'inference.stream') {
+    return ev.producerName === 'Apollo' ? 'coding' : 'thinking'
+  }
   if (ev.type === 'model.answer') return 'talking'
   return 'idle'
+}
+
+function Room({
+  label,
+  left,
+  top,
+  width,
+  height,
+  live,
+}: {
+  label: string
+  left: string
+  top: string
+  width: string
+  height: string
+  live?: boolean
+}) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left,
+        top,
+        width,
+        height,
+        border: `1px solid ${live ? 'rgba(242,193,78,0.45)' : 'rgba(242,193,78,0.16)'}`,
+        background: live ? 'rgba(242,193,78,0.06)' : 'rgba(10,10,12,0.35)',
+        borderRadius: 12,
+        animation: live ? 'office-glow 2.4s ease-in-out infinite' : undefined,
+      }}
+    >
+      <div style={{ position: 'absolute', top: 8, left: 12, fontSize: 11, letterSpacing: '.12em', color: 'var(--accent)', fontWeight: 700 }}>
+        {label}
+      </div>
+    </div>
+  )
+}
+
+function Monitor({ mood }: { mood: AgentMood }) {
+  const coding = mood === 'coding' || mood === 'thinking'
+  const searching = mood === 'searching'
+  return (
+    <div
+      style={{
+        width: 54,
+        height: 36,
+        margin: '0 auto 4px',
+        background: '#0a0b0d',
+        border: '1px solid rgba(242,193,78,0.35)',
+        borderRadius: 4,
+        overflow: 'hidden',
+        position: 'relative',
+        boxShadow: '0 8px 16px rgba(0,0,0,.4)',
+      }}
+    >
+      <div style={{ height: 8, background: '#1a1814', fontSize: 7, color: 'var(--accent)', padding: '0 4px' }}>
+        {searching ? 'search' : coding ? 'editor' : 'idle'}
+      </div>
+      <div
+        style={{
+          height: '100%',
+          backgroundImage: coding
+            ? 'repeating-linear-gradient(180deg, rgba(242,193,78,0.25) 0 2px, transparent 2px 8px)'
+            : searching
+              ? 'radial-gradient(circle at 30% 40%, rgba(91,141,239,.5), transparent 55%)'
+              : 'linear-gradient(#14120e, #0d0e11)',
+          backgroundSize: '100% 48px',
+          animation: coding ? 'office-screen 1.2s linear infinite' : undefined,
+        }}
+      />
+      {(coding || mood === 'talking') && (
+        <span
+          style={{
+            position: 'absolute',
+            bottom: 4,
+            left: 6,
+            width: 6,
+            height: 10,
+            background: 'var(--accent)',
+            animation: 'office-type .7s steps(1) infinite',
+          }}
+        />
+      )}
+    </div>
+  )
 }
 
 export default function HiveOffice({ onBack, compact = false }: { onBack?: () => void; compact?: boolean }) {
@@ -45,6 +134,8 @@ export default function HiveOffice({ onBack, compact = false }: { onBack?: () =>
   const [log, setLog] = useState<{ t: number; who: string; text: string }[]>([])
   const [focus, setFocus] = useState<string | null>(null)
   const [meeting, setMeeting] = useState(false)
+  const [task, setTask] = useState('')
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     const off = window.electronAPI?.hive?.onEvent?.((ev: HiveSwarmEvent) => {
@@ -52,15 +143,15 @@ export default function HiveOffice({ onBack, compact = false }: { onBack?: () =>
       const key = who.toLowerCase()
       setMoods((p) => ({ ...p, [key]: moodFromEvent(ev) }))
       if (ev.text && (ev.type === 'model.answer' || ev.type === 'inference.stream')) {
-        const snippet = ev.text.slice(0, 90)
+        const snippet = ev.text.replace(/\s+/g, ' ').slice(0, 110)
         setBubbles((p) => ({ ...p, [key]: snippet }))
         if (ev.type === 'model.answer') {
-          setLog((p) => [{ t: Date.now(), who, text: snippet }, ...p].slice(0, 24))
+          setLog((p) => [{ t: Date.now(), who, text: snippet }, ...p].slice(0, 30))
         }
       }
-      if (ev.type === 'inference.started') setMeeting(true)
+      if (ev.type === 'inference.started' || ev.type === 'function_call.started') setMeeting(true)
       if (ev.type === 'model.answer' && who === 'Hive') {
-        window.setTimeout(() => setMeeting(false), 1800)
+        window.setTimeout(() => setMeeting(false), 2200)
       }
     })
     return () => {
@@ -71,72 +162,86 @@ export default function HiveOffice({ onBack, compact = false }: { onBack?: () =>
   }, [])
 
   const live = useMemo(() => Object.values(moods).some((m) => m !== 'idle' && m !== 'done'), [moods])
+  const roomLive = (room: DeskAgent['room']) =>
+    CREW.some((a) => a.room === room && (moods[a.name.toLowerCase()] || moods[a.id] || 'idle') !== 'idle')
+
+  const sendTask = async () => {
+    const t = task.trim()
+    if (!t || busy) return
+    setBusy(true)
+    setTask('')
+    setMeeting(true)
+    setLog((p) => [{ t: Date.now(), who: 'You', text: t }, ...p])
+    try {
+      await window.electronAPI?.hive?.send?.(t, 'office')
+    } catch {}
+    setBusy(false)
+  }
 
   return (
-    <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', background: '#0b0c0e', overflow: 'hidden' }}>
-      {!compact && (
-      <div style={{ height: 52, borderBottom: '1px solid var(--border-soft)', display: 'flex', alignItems: 'center', padding: '0 16px', gap: 12, flexShrink: 0 }}>
-        <button type="button" onClick={onBack} style={{ background: 'transparent', border: '1px solid var(--border-soft)', color: 'var(--text-dim)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontFamily: 'inherit' }}>
-          ← Chat
-        </button>
-        <div style={{ fontWeight: 700, letterSpacing: '.04em' }}>HIVE OFFICE</div>
+    <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', background: '#0b0c0e', overflow: 'hidden', flex: 1 }}>
+      <div style={{ height: 48, borderBottom: '1px solid var(--border-soft)', display: 'flex', alignItems: 'center', padding: '0 16px', gap: 12, flexShrink: 0 }}>
+        {onBack && (
+          <button type="button" onClick={onBack} style={{ background: 'transparent', border: '1px solid var(--border-soft)', color: 'var(--text-dim)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontFamily: 'inherit' }}>
+            ← Chat
+          </button>
+        )}
+        <div style={{ fontWeight: 700, letterSpacing: '.06em' }}>HIVE OFFICE</div>
         <div style={{ fontSize: 12, color: live ? 'var(--accent)' : 'var(--text-faint)' }}>
-          {live ? 'live floor · agents moving' : 'floor idle · waiting on a task'}
+          {live ? 'live floor · walking · talking · typing' : 'floor idle · give them a task'}
         </div>
         <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>desks · talk · cloud wall</span>
+        <span style={{ width: 8, height: 8, borderRadius: 99, background: live ? '#10b981' : 'var(--text-faint)' }} />
       </div>
-      )}
 
-      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: compact ? '1fr' : '1fr 220px', overflow: 'hidden' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: compact ? '1fr' : '1fr 280px', overflow: 'hidden' }}>
         <div style={{ position: 'relative', overflow: 'hidden' }}>
           <div
             style={{
               position: 'absolute',
               inset: 0,
               background: `
-                radial-gradient(ellipse at 50% 0%, rgba(242,193,78,0.14), transparent 55%),
-                linear-gradient(180deg, #14120e 0%, #0b0c0e 70%)
+                radial-gradient(ellipse at 50% 0%, rgba(242,193,78,0.12), transparent 50%),
+                linear-gradient(180deg, #16140f 0%, #0b0c0e 75%)
               `,
             }}
           />
           <div
             style={{
               position: 'absolute',
-              left: '8%',
-              right: '8%',
-              top: '18%',
-              bottom: '10%',
-              border: '1px solid rgba(242,193,78,0.18)',
-              background: `
-                repeating-linear-gradient(90deg, transparent 0 47px, rgba(242,193,78,0.05) 47px 48px),
-                repeating-linear-gradient(0deg, transparent 0 47px, rgba(242,193,78,0.05) 47px 48px),
-                linear-gradient(180deg, #1a1814, #12110e)
-              `,
-              boxShadow: '0 40px 80px rgba(0,0,0,.45), inset 0 0 80px rgba(242,193,78,0.04)',
-              transform: 'perspective(1200px) rotateX(18deg)',
-              transformOrigin: 'center top',
-              borderRadius: 8,
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              left: '28%',
-              right: '28%',
+              left: '4%',
+              right: '4%',
               top: '8%',
-              height: 88,
-              border: '1px solid rgba(242,193,78,0.25)',
-              background: '#111',
-              borderRadius: 6,
-              overflow: 'hidden',
-              boxShadow: '0 0 24px rgba(242,193,78,0.15)',
+              bottom: compact ? '8%' : '16%',
+              background: `
+                repeating-linear-gradient(90deg, transparent 0 39px, rgba(242,193,78,0.04) 39px 40px),
+                repeating-linear-gradient(0deg, transparent 0 39px, rgba(242,193,78,0.04) 39px 40px),
+                linear-gradient(180deg, #1c1914, #12110e)
+              `,
+              transform: 'perspective(1400px) rotateX(14deg)',
+              transformOrigin: 'center top',
+              borderRadius: 14,
+              border: '1px solid rgba(242,193,78,0.14)',
             }}
           >
-            <div style={{ fontSize: 10, color: 'var(--accent)', padding: '6px 10px', letterSpacing: '.12em' }}>CLOUD WALL</div>
-            <div style={{ padding: '0 10px', fontSize: 12, color: '#cfc8b8', fontFamily: 'IBM Plex Mono, monospace' }}>
-              {(log[0]?.who || 'Hive')} · {log[0]?.text || 'waiting for a concurrent run…'}
-            </div>
+            <Room label="SEARCH LAB" left="3%" top="10%" width="28%" height="52%" live={roomLive('search')} />
+            <Room label="TALK TABLE" left="34%" top="12%" width="32%" height="48%" live={roomLive('talk') || meeting} />
+            <Room label="DEV DESKS" left="69%" top="10%" width="28%" height="52%" live={roomLive('code')} />
+            <Room label="REVIEW" left="52%" top="66%" width="44%" height="28%" live={roomLive('review')} />
+            {roomLive('search') && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '12%',
+                  top: '28%',
+                  width: 70,
+                  height: 70,
+                  border: '1px dashed rgba(91,141,239,.6)',
+                  borderRadius: '50%',
+                  animation: 'office-scan 4s linear infinite',
+                }}
+              />
+            )}
           </div>
 
           {CREW.map((a) => {
@@ -150,32 +255,22 @@ export default function HiveOffice({ onBack, compact = false }: { onBack?: () =>
                 key={a.id}
                 type="button"
                 onClick={() => setFocus(a.id === focus ? null : a.id)}
-                title={a.name}
+                title={`${a.name} · ${a.job}`}
                 style={{
                   position: 'absolute',
                   left: `${pos.x}%`,
                   top: `${pos.y}%`,
                   transform: 'translate(-50%, -50%)',
-                  transition: 'left .9s cubic-bezier(.22,1,.36,1), top .9s cubic-bezier(.22,1,.36,1)',
+                  transition: 'left .85s cubic-bezier(.22,1,.36,1), top .85s cubic-bezier(.22,1,.36,1)',
                   background: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
-                  zIndex: on ? 5 : 2,
+                  zIndex: on ? 6 : 3,
                 }}
               >
-                <div
-                  style={{
-                    width: 86,
-                    height: 54,
-                    margin: '0 auto 4px',
-                    background: 'rgba(20,18,14,.9)',
-                    border: `1px solid ${on ? 'var(--accent)' : 'rgba(242,193,78,0.22)'}`,
-                    borderRadius: 8,
-                    boxShadow: '0 10px 18px rgba(0,0,0,.35)',
-                  }}
-                />
+                <Monitor mood={mood} />
                 <BloubEngineAvatar
-                  size={64}
+                  size={compact ? 52 : 62}
                   crop={118}
                   ink={m.ink}
                   paper={m.paper}
@@ -184,51 +279,108 @@ export default function HiveOffice({ onBack, compact = false }: { onBack?: () =>
                   live
                   fps={mood === 'idle' ? 16 : 32}
                 />
-                <div style={{ color: 'var(--text)', fontSize: 12, fontWeight: 650, marginTop: 2 }}>{a.name}</div>
-                <div style={{ color: mood === 'idle' ? 'var(--text-faint)' : 'var(--accent)', fontSize: 10 }}>{mood === 'idle' ? a.job : mood}</div>
+                <div style={{ color: 'var(--text)', fontSize: 13, fontWeight: 650, marginTop: 2 }}>{a.name}</div>
+                <div style={{ color: mood === 'idle' ? 'var(--text-faint)' : 'var(--accent)', fontSize: 11 }}>
+                  {mood === 'idle' ? a.job : mood}
+                </div>
                 {bubble && mood !== 'idle' && (
                   <div
+                    className="hive-write"
                     style={{
                       position: 'absolute',
                       left: '50%',
                       bottom: '100%',
                       transform: 'translateX(-50%)',
-                      width: 160,
+                      width: 180,
                       background: '#1b1914',
                       border: '1px solid var(--accent-dim)',
                       color: 'var(--text)',
-                      fontSize: 11,
-                      padding: '6px 8px',
-                      borderRadius: 8,
+                      fontSize: 12,
+                      lineHeight: 1.4,
+                      padding: '8px 10px',
+                      borderRadius: 10,
                       textAlign: 'left',
                       boxShadow: '0 8px 20px rgba(0,0,0,.4)',
                     }}
                   >
                     {bubble}
+                    {(mood === 'thinking' || mood === 'coding' || mood === 'talking') && (
+                      <span style={{ display: 'inline-block', width: 7, height: 12, marginLeft: 4, background: 'var(--accent)', animation: 'office-type .7s steps(1) infinite', verticalAlign: 'text-bottom' }} />
+                    )}
                   </div>
                 )}
               </button>
             )
           })}
+
+          {!compact && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                void sendTask()
+              }}
+              style={{
+                position: 'absolute',
+                left: '6%',
+                right: '6%',
+                bottom: 12,
+                display: 'flex',
+                gap: 8,
+                zIndex: 8,
+              }}
+            >
+              <input
+                value={task}
+                onChange={(e) => setTask(e.target.value)}
+                placeholder="Give the floor a task — they walk, search, type, and talk it out"
+                style={{
+                  flex: 1,
+                  background: 'rgba(20,18,14,.92)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text)',
+                  borderRadius: 10,
+                  padding: '10px 14px',
+                  fontFamily: 'inherit',
+                  fontSize: 14,
+                }}
+              />
+              <button
+                type="submit"
+                disabled={busy}
+                style={{
+                  background: 'var(--accent)',
+                  color: 'var(--accent-fg)',
+                  border: 'none',
+                  borderRadius: 10,
+                  padding: '10px 16px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                Send
+              </button>
+            </form>
+          )}
         </div>
 
         {!compact && (
-        <div style={{ borderLeft: '1px solid var(--border-soft)', display: 'flex', flexDirection: 'column', minHeight: 0, background: '#101114' }}>
-          <div style={{ padding: 14, fontSize: 12, fontWeight: 700, letterSpacing: '.06em', color: 'var(--text-dim)' }}>FLOOR LOG</div>
-          <div style={{ flex: 1, overflow: 'auto', padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {log.length === 0 && (
-              <div style={{ color: 'var(--text-faint)', fontSize: 12.5, lineHeight: 1.5 }}>
-                Send a message in chat. Scout, Hive, Pulse and Critic walk to the table and talk here — live, not a queue.
-              </div>
-            )}
-            {log.map((row) => (
-              <div key={row.t + row.who} style={{ fontSize: 12, borderBottom: '1px solid var(--border-soft)', paddingBottom: 8 }}>
-                <div style={{ color: 'var(--accent)', fontWeight: 650 }}>{row.who}</div>
-                <div style={{ color: 'var(--text-dim)', marginTop: 3 }}>{row.text}</div>
-              </div>
-            ))}
+          <div style={{ borderLeft: '1px solid var(--border-soft)', display: 'flex', flexDirection: 'column', minHeight: 0, background: '#101114' }}>
+            <div style={{ padding: 14, fontSize: 12, fontWeight: 700, letterSpacing: '.08em', color: 'var(--text-dim)' }}>FLOOR LOG</div>
+            <div style={{ flex: 1, overflow: 'auto', padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {log.length === 0 && (
+                <div style={{ color: 'var(--text-faint)', fontSize: 13.5, lineHeight: 1.55 }}>
+                  Search lab on the left. Talk table in the middle. Dev desks with live PCs on the right. Review at the back. Agents walk when a task starts.
+                </div>
+              )}
+              {log.map((row) => (
+                <div key={row.t + row.who} className="hive-write" style={{ fontSize: 13.5, borderBottom: '1px solid var(--border-soft)', paddingBottom: 8 }}>
+                  <div style={{ color: 'var(--accent)', fontWeight: 650 }}>{row.who}</div>
+                  <div style={{ color: 'var(--text)', marginTop: 4, lineHeight: 1.5 }}>{row.text}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
         )}
       </div>
     </div>

@@ -19,8 +19,19 @@ function parseMentionedAgents(content: string, list: Agent[]): Agent[] {
   return list.filter((a) => {
     const handle = mentionHandle(a.name).toLowerCase()
     const first = (a.name.split(/[\s(/]/)[0] || '').toLowerCase()
-    const idBit = a.id.replace(/^agent-/, '').toLowerCase()
-    return tags.some((t) => t === handle || t === first || idBit.startsWith(t) || handle.startsWith(t))
+    const role = (a.roleTitle || '').toLowerCase().replace(/\s+/g, '')
+    const idBit = a.id.replace(/^agent-|^lib-/, '').toLowerCase()
+    return tags.some(
+      (t) =>
+        t === handle ||
+        t === first ||
+        handle.startsWith(t) ||
+        first.startsWith(t) ||
+        idBit.startsWith(t) ||
+        role.startsWith(t) ||
+        t.startsWith(handle) ||
+        t.startsWith(first)
+    )
   })
 }
 
@@ -72,6 +83,8 @@ export default function ChatView({
   // clobber the state of a newer one, so each send clears the previous.
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const directModeRef = useRef(false)
+  const stickyAgentsRef = useRef<Agent[]>([])
+  const sendGenRef = useRef(0)
   const conversationRef = useRef(conversation)
   conversationRef.current = conversation
   const scheduleIdleReset = (ms: number) => {
@@ -238,16 +251,19 @@ export default function ChatView({
     }
     addMessage(activeAgent.id, userMsg)
     setTyping(true)
+    const gen = ++sendGenRef.current
 
     const conv = conversationRef.current
     const mentioned = parseMentionedAgents(content, agents)
-    const isGroup = conv?.kind === 'group' || conv?.id?.startsWith('g-') || (conv?.agentIds?.length || 0) > 0
+    const isGroup = conv?.kind === 'group' || conv?.id?.startsWith('g-') || (conv?.agentIds?.length || 0) > 1
     const groupMembers = (conv?.agentIds || [])
       .map((id) => agents.find((a) => a.id === id))
       .filter(Boolean) as Agent[]
+    const threadAgent = conv?.agentId ? agents.find((a) => a.id === conv.agentId) : undefined
 
     const runDirect = async (targets: Agent[]) => {
       directModeRef.current = true
+      stickyAgentsRef.current = targets
       const unique = targets.filter((t, i, arr) => arr.findIndex((x) => x.id === t.id) === i)
       if (!unique.length) {
         addMessage(activeAgent.id, {
@@ -262,69 +278,96 @@ export default function ChatView({
         setTyping(false)
         return
       }
-      for (const agent of unique) {
-        try {
-          const history = getMessages(activeAgent.id)
-            .filter((m) => m.role === 'user' || m.role === 'assistant')
-            .map((m) => ({ role: m.role, content: m.content }))
-          const res = await window.electronAPI?.ai?.chat?.(
-            [{ role: 'system', content: agent.systemPrompt }, ...history],
-            agent.model || currentModelId,
-            { webSearch: false }
-          )
-          if (res?.ok && res.content) {
-            addMessage(activeAgent.id, {
-              id: `m-${agent.id}-${Date.now()}`,
-              agentId: activeAgent.id,
-              content: res.content,
-              role: 'assistant',
-              timestamp: Date.now(),
-              type: 'text',
-              botName: mentionHandle(agent.name),
-              botAvatar: agent.avatar,
-              botRole: agent.roleTitle,
-            })
-          } else if (res && !res.ok) {
+      try {
+        for (const agent of unique) {
+          if (gen !== sendGenRef.current) return
+          try {
+            const history = getMessages(activeAgent.id)
+              .filter((m) => m.role === 'user' || m.role === 'assistant')
+              .slice(-16)
+              .map((m) => ({ role: m.role, content: m.content }))
+            const timeout = new Promise<{ ok: false; error: string }>((resolve) =>
+              setTimeout(() => resolve({ ok: false, error: 'Timed out waiting for a reply.' }), 45000)
+            )
+            const call = window.electronAPI?.ai?.chat?.(
+              [{ role: 'system', content: agent.systemPrompt }, ...history],
+              agent.model || currentModelId,
+              { webSearch: false }
+            ) || Promise.resolve({ ok: false, error: 'AI bridge is not ready.' })
+            const res = await Promise.race([call, timeout])
+            if (gen !== sendGenRef.current) return
+            if (res?.ok && res.content) {
+              addMessage(activeAgent.id, {
+                id: `m-${agent.id}-${Date.now()}`,
+                agentId: activeAgent.id,
+                content: res.content,
+                role: 'assistant',
+                timestamp: Date.now(),
+                type: 'text',
+                botName: mentionHandle(agent.name),
+                botAvatar: agent.avatar,
+                botRole: agent.roleTitle,
+                citations: res.citations,
+              })
+            } else {
+              addMessage(activeAgent.id, {
+                id: `m-err-${Date.now()}`,
+                agentId: activeAgent.id,
+                content: (res && 'error' in res && res.error) || `${mentionHandle(agent.name)} could not reply. Check OPENROUTER_API_KEY or NVIDIA_API_KEY.`,
+                role: 'assistant',
+                timestamp: Date.now(),
+                type: 'text',
+                botName: mentionHandle(agent.name),
+                botAvatar: agent.avatar,
+              })
+            }
+          } catch (err) {
             addMessage(activeAgent.id, {
               id: `m-err-${Date.now()}`,
               agentId: activeAgent.id,
-              content: res.error || `${mentionHandle(agent.name)} could not reply. Check OPENROUTER_API_KEY.`,
+              content: err instanceof Error ? err.message : 'Reply failed',
               role: 'assistant',
               timestamp: Date.now(),
               type: 'text',
               botName: mentionHandle(agent.name),
-              botAvatar: agent.avatar,
             })
           }
-        } catch (err) {
-          addMessage(activeAgent.id, {
-            id: `m-err-${Date.now()}`,
-            agentId: activeAgent.id,
-            content: err instanceof Error ? err.message : 'Reply failed',
-            role: 'assistant',
-            timestamp: Date.now(),
-            type: 'text',
-            botName: mentionHandle(agent.name),
-          })
         }
+      } finally {
+        if (gen === sendGenRef.current) setTyping(false)
       }
-      setTyping(false)
     }
 
-    if (isGroup) {
-      const fallback = groupMembers.length ? groupMembers : agents.filter((a) => !a.isCeo).slice(0, 3)
-      const targets = mentioned.length ? mentioned : fallback.length ? fallback : [activeAgent]
-      await runDirect(targets)
+    if (mentioned.length) {
+      await runDirect(mentioned)
       return
     }
-    if (!activeAgent.isCeo || mentioned.length) {
-      await runDirect(mentioned.length ? mentioned : [activeAgent])
+    if (isGroup) {
+      const fallback = stickyAgentsRef.current.length
+        ? stickyAgentsRef.current
+        : groupMembers.length
+          ? groupMembers
+          : agents.filter((a) => !a.isCeo).slice(0, 3)
+      await runDirect(fallback.length ? fallback : [activeAgent])
+      return
+    }
+    if (threadAgent && !threadAgent.isCeo) {
+      await runDirect([threadAgent])
+      return
+    }
+    if (stickyAgentsRef.current.length && !activeAgent.isCeo) {
+      await runDirect(stickyAgentsRef.current)
+      return
+    }
+    if (!activeAgent.isCeo) {
+      await runDirect([activeAgent])
       return
     }
 
     setOps([])
     setSwarm({ Scout: 'thinking', Hive: 'thinking', Pulse: 'thinking', Critic: 'idle' })
     directModeRef.current = false
+    stickyAgentsRef.current = []
 
     // Map intent to Grok personality commentary & Hex mascot state
     const lowerContent = content.toLowerCase()
@@ -404,6 +447,7 @@ Followed by a brief explanation of what was run.`
           }
         })
         window.setTimeout(() => {
+          if (gen !== sendGenRef.current) return
           setTyping(false)
           setSwarm((prev) => ({
             ...prev,
