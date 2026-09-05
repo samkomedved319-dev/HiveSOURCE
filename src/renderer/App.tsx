@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import IconRail, { NavTab } from './components/layout/IconRail'
 import ConversationList, { Conversation } from './components/layout/ConversationList'
 import ChatView from './components/chat/ChatView'
-import HiveOffice from './components/office/HiveOffice'
+import OfficeOverlay from './components/office/OfficeOverlay'
 import CanvasPanel, { BrowserStep } from './components/canvas/CanvasPanel'
 import SettingsModal from './components/layout/SettingsModal'
 import ProjectsModal from './components/layout/ProjectsModal'
@@ -571,26 +571,6 @@ export default function App() {
       />
       )}
       </div>
-      {mainView === 'office' && (
-        <div
-          style={{
-            position: 'fixed',
-            left: 56,
-            top: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 80,
-            background: '#d7b57a',
-          }}
-        >
-          <HiveOffice
-            onBack={() => {
-              setMainView('chat')
-              setActiveTab('chat')
-            }}
-          />
-        </div>
-      )}
       {showPalette && (
         <CommandPalette
           open={showPalette}
@@ -653,6 +633,14 @@ export default function App() {
         <VoiceCall onClose={() => setShowVoiceModal(false)} />
       )}
     </div>
+    {mainView === 'office' && (
+      <OfficeOverlay
+        onClose={() => {
+          setMainView('chat')
+          setActiveTab('chat')
+        }}
+      />
+    )}
     </>
   )
 }
