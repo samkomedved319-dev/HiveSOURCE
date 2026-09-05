@@ -5,7 +5,7 @@ import type { HiveSwarmEvent } from '../../types'
 import { useAgentStore } from '../../stores/agentStore'
 import { useChatStore } from '../../stores/chatStore'
 import { emitTitleChat } from '../../chatTitle'
-import IsometricFloor from './IsometricFloor'
+import OfficeFloor2D from './OfficeFloor2D'
 
 const Office3D = lazy(() => import('./Office3D'))
 
@@ -79,7 +79,7 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
   const [task, setTask] = useState('')
   const [busy, setBusy] = useState(false)
   const [viewMode, setViewMode] = useState<'3d' | 'iso'>('iso')
-  const [webglAvailable, setWebglAvailable] = useState<boolean>(() => checkWebGLSupport())
+  const [webglAvailable, setWebglAvailable] = useState(false)
   const [live3d, setLive3d] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
   const speaker = useRef('Hive')
@@ -92,11 +92,6 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight })
   }, [thread])
 
-  useEffect(() => {
-    if (!webglAvailable) return
-    const t = window.setTimeout(() => setViewMode('3d'), 400)
-    return () => window.clearTimeout(t)
-  }, [webglAvailable])
   useEffect(() => {
     const handleContextLost = (e: Event) => {
       e.preventDefault()
@@ -196,7 +191,7 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
   const renderFloor = () => {
     return (
       <>
-        <IsometricFloor moods={moods} meeting={meeting} />
+        <OfficeFloor2D moods={moods} meeting={meeting} />
         {webglAvailable && viewMode === '3d' && (
           <div
             style={{
@@ -208,7 +203,11 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
             }}
           >
             <WebGLErrorBoundary
-              onError={() => setWebglAvailable(false)}
+              onError={() => {
+                setWebglAvailable(false)
+                setViewMode('iso')
+                setLive3d(false)
+              }}
               fallback={null}
             >
               <Suspense fallback={null}>
@@ -277,19 +276,28 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             type="button"
-            onClick={() => setViewMode('3d')}
-            disabled={!webglAvailable}
-            style={viewMode === '3d' && webglAvailable ? activeSwitchBtn : switchBtn}
-            title={webglAvailable ? '3D ClawOffice (Three.js)' : 'WebGL not supported on this device'}
+            onClick={() => {
+              const ok = checkWebGLSupport()
+              setWebglAvailable(ok)
+              if (ok) {
+                setLive3d(false)
+                setViewMode('3d')
+              }
+            }}
+            style={viewMode === '3d' && live3d ? activeSwitchBtn : switchBtn}
+            title="Load Claw3D furniture (WebGL)"
           >
             Claw3D
           </button>
           <button
             type="button"
-            onClick={() => setViewMode('iso')}
-            style={viewMode === 'iso' || !webglAvailable ? activeSwitchBtn : switchBtn}
+            onClick={() => {
+              setViewMode('iso')
+              setLive3d(false)
+            }}
+            style={viewMode === 'iso' || !live3d ? activeSwitchBtn : switchBtn}
           >
-            Isometric Floor
+            Floor
           </button>
         </div>
       </div>
