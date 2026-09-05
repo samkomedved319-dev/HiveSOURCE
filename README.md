@@ -121,6 +121,8 @@ bun run dist:win
 ```
 The resulting installer and portable binaries will be saved in `release/`.
 
+Pushing to `main` also runs **Windows installer** on GitHub Actions (`windows-latest`) and uploads the `.exe` as an artifact.
+
 ---
 
 ## 📁 Project Architecture

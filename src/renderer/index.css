@@ -1,27 +1,15 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "./theme.css";
 
-@custom-variant dark (&:is(.dark *));
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-  font-family: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #000000;
-  color: #fafafa;
-  overflow: hidden;
-  user-select: none;
-  -webkit-font-smoothing: antialiased;
+@theme inline {
+  --font-sans: 'Outfit', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  --color-background: #0b0c0e;
+  --color-foreground: #f4f1ea;
+  --color-accent: #d4b37a;
 }
-
-#root { width: 100vw; height: 100vh; }
-
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #27272a; border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
 
 @keyframes voice-pulse {
   0%, 100% { transform: scale(1); opacity: 0.6; }
@@ -33,14 +21,5 @@ body {
   100% { transform: scale(2.2); opacity: 0; }
 }
 
-.voice-pulse {
-  animation: voice-pulse 1.5s ease-in-out infinite;
-}
-
-.voice-ring {
-  animation: voice-ring 1.2s ease-out infinite;
-}
-
-@theme inline {
-  --font-sans: 'Geist Variable', sans-serif;
-}
+.voice-pulse { animation: voice-pulse 1.5s ease-in-out infinite; }
+.voice-ring { animation: voice-ring 1.2s ease-out infinite; }

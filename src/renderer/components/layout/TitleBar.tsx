@@ -16,11 +16,11 @@ export const AVAILABLE_MODELS: ModelOption[] = [
 ]
 
 export const THINKING_MODES: { id: ThinkingMode; label: string; badge: string; desc: string }[] = [
-  { id: 'fast', label: 'Fast', badge: '⚡', desc: 'Direct, lowest latency answers' },
-  { id: 'reasoning', label: 'Reasoning', badge: '🧠', desc: 'Step-by-step balanced logical deduction' },
-  { id: 'heavy', label: 'Heavy Thinking', badge: '🔥', desc: 'Deep multi-angle analysis and synthesis' },
-  { id: 'max', label: 'Max Thinking', badge: '🚀', desc: 'Maximum reflection depth & exhaustive reasoning' },
-  { id: 'computer_control', label: 'PC Control', badge: '💻', desc: 'Autonomous system control, terminal, apps & browser' },
+  { id: 'fast', label: 'Fast', badge: 'F', desc: 'Direct, lowest latency answers' },
+  { id: 'reasoning', label: 'Reasoning', badge: 'R', desc: 'Step-by-step balanced logical deduction' },
+  { id: 'heavy', label: 'Heavy Thinking', badge: 'H', desc: 'Deep multi-angle analysis and synthesis' },
+  { id: 'max', label: 'Max Thinking', badge: 'M', desc: 'Maximum reflection depth & exhaustive reasoning' },
+  { id: 'computer_control', label: 'PC Control', badge: 'PC', desc: 'Autonomous system control, terminal, apps & browser' },
 ]
 
 interface TitleBarProps {
@@ -151,7 +151,7 @@ export default function TitleBar({
               borderRadius: '50%',
               background: 'var(--accent)',
               display: 'inline-block',
-              boxShadow: '0 0 6px rgba(242,193,78,0.6)',
+              boxShadow: '0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent)',
             }}
           />
           <span style={{ fontWeight: 500 }}>{activeModelObj.label}</span>

@@ -23,11 +23,11 @@ export default function LaunchScreen({ onComplete, minDurationMs = 2400 }: Launc
   const fullCommand = 'npm run HIVE'
 
   const STATUS_STEPS: Array<{ label: string; tag: string }> = [
-    { label: 'Initializing Hive Core & Swarm Engine runtime', tag: 'OK' },
-    { label: 'Mounting Grok Mascot & Canvas Physics Matrix', tag: 'OK' },
-    { label: 'Synthesizing Neural Matrix & Live Search Bridge', tag: 'OK' },
-    { label: 'Calibrating Swarm: Hive CEO 👑, Apollo ⚡, Athena 🔬', tag: 'OK' },
-    { label: 'HIVE READY — Swarm intelligence online', tag: 'READY' },
+    { label: 'Initializing Hive core', tag: 'OK' },
+    { label: 'Mounting mascot physics', tag: 'OK' },
+    { label: 'Bridging live search', tag: 'OK' },
+    { label: 'Calibrating workers: Hive, Apollo, Athena', tag: 'OK' },
+    { label: 'Hive ready', tag: 'READY' },
   ]
 
   // Safe dismiss callback respecting minDurationMs unless explicitly triggered
