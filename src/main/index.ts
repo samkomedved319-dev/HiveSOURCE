@@ -31,6 +31,10 @@ function hushMozaikCloudLogs() {
 hushMozaikCloudLogs()
 process.env.MOZAIK_TELEMETRY = process.env.MOZAIK_TELEMETRY || '0'
 
+let mainWindow: BrowserWindow | null = null
+let tray: Tray | null = null
+let isQuitting = false
+let pendingAuthUrl: string | null = null
 
 const isDev = !app.isPackaged
 const HIVE_WEB_LOGIN = 'https://samkomedved319-dev.github.io/hive/?desktop=1'
