@@ -34,6 +34,7 @@ interface TitleBarProps {
   isConvListOpen?: boolean
   onToggleSidebar?: () => void
   onFeedback?: () => void
+  compact?: boolean
 }
 
 export default function TitleBar({
@@ -47,6 +48,7 @@ export default function TitleBar({
   isConvListOpen = true,
   onToggleSidebar,
   onFeedback,
+  compact = false,
 }: TitleBarProps) {
   const [max, setMax] = useState(false)
   const [showSelector, setShowSelector] = useState(false)
@@ -320,7 +322,7 @@ export default function TitleBar({
             </svg>
           </button>
         )}
-        {onFeedback && (
+        {!compact && onFeedback && (
           <button
             type="button"
             onClick={(e) => {
@@ -344,6 +346,7 @@ export default function TitleBar({
           </button>
         )}
         {/* Share */}
+        {!compact && (
         <button
           type="button"
           onClick={(e) => {
@@ -373,8 +376,9 @@ export default function TitleBar({
             <path d="M8.6 13.5l6.8 3.9M15.4 6.6L8.6 10.5" />
           </svg>
         </button>
+        )}
 
-        {/* Active Bots / Swarm toggle button */}
+        {!compact && (
         <button
           type="button"
           onClick={(e) => {
@@ -407,6 +411,7 @@ export default function TitleBar({
           <span>HiveBox</span>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981' }} />
         </button>
+        )}
 
         <div style={{ width: 1, height: 16, background: 'var(--border-soft)', margin: '0 4px' }} />
 

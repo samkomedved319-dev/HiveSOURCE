@@ -91,7 +91,7 @@ export default function App() {
   })
   const [searchQuery, setSearchQuery] = useState('')
   const [isChatOpen, setIsChatOpen] = useState(true)
-  const [isConvListOpen, setIsConvListOpen] = useState(true)
+  const [isConvListOpen, setIsConvListOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showProjects, setShowProjects] = useState(false)
   const [mainView, setMainView] = useState<'office' | 'bots' | 'projects'>('office')
@@ -400,7 +400,7 @@ export default function App() {
       <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '56px minmax(0, 1fr) auto',
+        gridTemplateColumns: isChatOpen ? '56px minmax(0, 1fr) 400px' : '56px minmax(0, 1fr)',
         height: '100vh',
         width: '100vw',
         overflow: 'hidden',
@@ -491,45 +491,53 @@ export default function App() {
       )}
       </div>
 
-      {/* 3. Chat dock on the right (where office used to live) */}
+      {/* 3. Chat dock — fixed 400px, chats overlay so they don't crush the office */}
+      {isChatOpen && (
       <div
         style={{
-          width: isChatOpen ? (isConvListOpen ? 640 : 400) : 0,
-          opacity: isChatOpen ? 1 : 0,
-          visibility: isChatOpen ? 'visible' : 'hidden',
+          width: 400,
+          minWidth: 400,
+          maxWidth: 400,
           height: '100%',
+          minHeight: 0,
           overflow: 'hidden',
-          flexShrink: 0,
           display: 'flex',
-          borderLeft: isChatOpen ? '1px solid var(--border-soft)' : 'none',
-          transition: 'width .35s var(--ease), opacity .25s var(--ease)',
+          flexDirection: 'column',
+          borderLeft: '1px solid var(--border-soft)',
+          position: 'relative',
+          background: 'var(--bg)',
         }}
       >
-        <div
-          style={{
-            width: isConvListOpen ? 240 : 0,
-            overflow: 'hidden',
-            flexShrink: 0,
-            height: '100%',
-            transition: 'width .35s var(--ease)',
-          }}
-        >
-          <div style={{ width: 240, height: '100%' }}>
+        {isConvListOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 20,
+              background: 'var(--bg)',
+            }}
+          >
             <ConversationList
               conversations={conversations}
               activeId={activeConvId}
-              onSelect={handleSelectConv}
-              onNewChat={handleNewChat}
+              onSelect={(id) => {
+                handleSelectConv(id)
+                setIsConvListOpen(false)
+              }}
+              onNewChat={() => {
+                handleNewChat()
+                setIsConvListOpen(false)
+              }}
               onNewGroup={() => setShowNewGroup(true)}
               onDeleteChat={handleDeleteChat}
               onOpenWorkers={() => setMainView('bots')}
-              onToggleSidebar={() => setIsConvListOpen((prev) => !prev)}
+              onToggleSidebar={() => setIsConvListOpen(false)}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
             />
           </div>
-        </div>
-        <div style={{ width: 400, height: '100%', minWidth: 400, display: 'flex' }}>
+        )}
+        <div style={{ flex: 1, minHeight: 0, minWidth: 0, display: 'flex', overflow: 'hidden' }}>
           <ChatView
             isCanvasOpen={false}
             onToggleCanvas={() => setIsChatOpen(false)}
@@ -541,11 +549,12 @@ export default function App() {
             onNewChat={handleNewChat}
             onOpenWorkers={() => setMainView('bots')}
             isConvListOpen={isConvListOpen}
-            onToggleSidebar={() => setIsConvListOpen((prev) => !prev)}
+            onToggleSidebar={() => setIsConvListOpen((v) => !v)}
             conversation={conversations.find((c) => c.id === activeConvId) || null}
           />
         </div>
       </div>
+      )}
       {showPalette && (
         <CommandPalette
           open={showPalette}

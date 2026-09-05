@@ -735,8 +735,9 @@ Followed by a brief explanation of what was run.`
         isConvListOpen={isConvListOpen}
         onToggleSidebar={onToggleSidebar}
         onFeedback={() => window.dispatchEvent(new CustomEvent('hive:feedback'))}
+        compact
       />
-      {!isCanvasOpen && <SwarmStrip status={swarm} />}
+      {false && <SwarmStrip status={swarm} />}
       {approval && (
         <div
           style={{
