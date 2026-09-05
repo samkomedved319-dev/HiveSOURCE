@@ -294,7 +294,10 @@ export default function TitleBar({
         {onNewChat && (
           <button
             type="button"
-            onClick={onNewChat}
+            onClick={(e) => {
+              e.stopPropagation()
+              onNewChat()
+            }}
             title="New chat"
             style={{
               background: 'transparent',
@@ -320,7 +323,10 @@ export default function TitleBar({
         {onFeedback && (
           <button
             type="button"
-            onClick={onFeedback}
+            onClick={(e) => {
+              e.stopPropagation()
+              onFeedback()
+            }}
             title="Send feedback"
             style={{
               background: 'transparent',
@@ -340,7 +346,10 @@ export default function TitleBar({
         {/* Share */}
         <button
           type="button"
-          onClick={onShare}
+          onClick={(e) => {
+            e.stopPropagation()
+            onShare?.()
+          }}
           title="Share formatted conversation"
           style={{
             background: 'transparent',
@@ -368,8 +377,11 @@ export default function TitleBar({
         {/* Active Bots / Swarm toggle button */}
         <button
           type="button"
-          onClick={onToggleCanvas}
-          title="Active Bots & Swarm Network"
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleCanvas()
+          }}
+          title="HiveBox — live cloud desk"
           style={{
             background: isCanvasOpen ? 'rgba(242,193,78,0.15)' : 'var(--panel)',
             border: isCanvasOpen ? '1px solid var(--accent)' : '1px solid var(--border-soft)',
@@ -392,7 +404,7 @@ export default function TitleBar({
           }}
         >
           <span style={{ fontSize: 13 }}>👑</span>
-          <span>Bots Swarm</span>
+          <span>HiveBox</span>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981' }} />
         </button>
 

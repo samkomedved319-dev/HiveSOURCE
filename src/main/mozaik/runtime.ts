@@ -110,9 +110,13 @@ export function startMozaikRuntime() {
     require('dotenv').config()
   } catch {}
 
-  const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || ''
+  const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || process.env.MOZAIK_CLOUD_API_KEY || ''
   if (apiKey && !process.env.OPENAI_API_KEY) process.env.OPENAI_API_KEY = apiKey
-  if (!process.env.OPENAI_BASE_URL) process.env.OPENAI_BASE_URL = 'https://openrouter.ai/api/v1'
+  if (!process.env.OPENAI_BASE_URL) process.env.OPENAI_BASE_URL = process.env.MOZAIK_CLOUD_BASE_URL || 'https://openrouter.ai/api/v1'
+  // Mozaik SDK looks for a cloud key; reuse OpenRouter so local Hive is not blocked.
+  if (!process.env.MOZAIK_CLOUD_API_KEY && apiKey) process.env.MOZAIK_CLOUD_API_KEY = apiKey
+  if (!process.env.MOZAIK_CLOUD_BASE_URL) process.env.MOZAIK_CLOUD_BASE_URL = process.env.OPENAI_BASE_URL
+  process.env.MOZAIK_TELEMETRY = process.env.MOZAIK_TELEMETRY || '0'
 
   const endpoint = new OpenAIChatCompletions(undefined, {
     baseURL: 'https://openrouter.ai/api/v1',

@@ -199,18 +199,19 @@ export const hiveOnCritic: SituationHandler = {
       if (!(participant instanceof Agent)) return
       const runtime = resolveRuntime()
       const critique = answerText(event)
-      if (/\bSHIP\b/i.test(critique)) {
+      if (/\bSHIP\b/i.test(critique) || runtime.state.hiveRevisedFromCritic) {
         runtime.state.mood = 'done'
         emitHiveState(runtime.state.snapshot())
         return
       }
-      if (runtime.state.hiveRevisedFromCritic) return
       runtime.state.hiveRevisedFromCritic = true
       startAgent(
         participant,
         `Critic rejected the draft:\n${critique}\n\nRevise once. Address the gaps. This is the last pass.`,
         'hive'
       )
+      runtime.state.mood = 'done'
+      emitHiveState(runtime.state.snapshot())
     },
   },
 }

@@ -16,8 +16,8 @@ const POSE: Record<SwarmStatus, StateId> = {
   idle: 'idle',
   searching: 'orbit',
   thinking: 'thinking',
-  arguing: 'wink',
-  done: 'exclaim',
+  arguing: 'thinking',
+  done: 'idle',
   error: 'alert',
 }
 

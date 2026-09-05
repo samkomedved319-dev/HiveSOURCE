@@ -93,7 +93,7 @@ export default function ChatView({
       setOps((prev) => [...prev.slice(-40), ev])
       if (ev.type === 'inference.started') mark(name, name === 'Scout' ? 'searching' : 'thinking')
       if (ev.type === 'function_call.started') mark(name === 'Sentry' ? 'Scout' : name, 'searching')
-      if (ev.type === 'model.answer') mark(name, name === 'Critic' ? 'arguing' : 'done')
+      if (ev.type === 'model.answer') mark(name, 'done')
       if (ev.type === 'interception.started') mark('Hive', 'thinking')
       if (ev.type === 'hive.approve' && ev.approvalId) {
         setApproval({ id: ev.approvalId, text: ev.text || 'Allow machine action?' })
@@ -106,6 +106,7 @@ export default function ChatView({
         void window.electronAPI.tts.speak(ev.text)
       }
       if (ev.type === 'inference.stream' && ev.text && name === 'Hive') {
+        setTyping(false)
         const agentId = activeIdRef.current
         if (!agentId) return
         const id = `stream-${ev.producerId}`
@@ -282,19 +283,30 @@ Followed by a brief explanation of what was run.`
 
     try {
       if (window.electronAPI?.hive?.send) {
-        const res = await window.electronAPI.hive.send(content, activeAgent.id)
-        if (!res.ok) {
-          addMessage(activeAgent.id, {
-            id: `m-err-${Date.now()}`,
-            agentId: activeAgent.id,
-            content: res.error || 'Hive swarm failed to start. Set OPENROUTER_API_KEY in .env.',
-            role: 'assistant',
-            timestamp: Date.now(),
-            type: 'text',
-            botName: 'Hive',
-          })
+        void window.electronAPI.hive.send(content, activeAgent.id).then((res) => {
+          if (!res?.ok) {
+            addMessage(activeAgent.id, {
+              id: `m-err-${Date.now()}`,
+              agentId: activeAgent.id,
+              content: res?.error || 'Hive swarm failed to start. Set OPENROUTER_API_KEY in .env.',
+              role: 'assistant',
+              timestamp: Date.now(),
+              type: 'text',
+              botName: 'Hive',
+            })
+            setTyping(false)
+          }
+        })
+        window.setTimeout(() => {
           setTyping(false)
-        }
+          setSwarm((prev) => ({
+            ...prev,
+            Scout: prev.Scout === 'thinking' || prev.Scout === 'searching' ? 'done' : prev.Scout,
+            Hive: prev.Hive === 'thinking' ? 'done' : prev.Hive,
+            Pulse: prev.Pulse === 'thinking' ? 'done' : prev.Pulse,
+            Critic: prev.Critic === 'arguing' || prev.Critic === 'thinking' ? 'done' : prev.Critic,
+          }))
+        }, 16000)
         return
       }
       if (window.electronAPI?.ai?.chat) {

@@ -148,7 +148,7 @@ export default function ChatInput({
             <button
               type="button"
               onClick={onOpenTools}
-              title="Hive Tools"
+              title="Tools"
               style={{
                 width: 26,
                 height: 26,
@@ -173,7 +173,7 @@ export default function ChatInput({
               }}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                <path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 1 1 5.4-5.4z" />
+                <path d="M12 5v14M5 12h14" strokeLinecap="round" />
               </svg>
             </button>
           </div>
@@ -199,7 +199,10 @@ export default function ChatInput({
                 fontSize: 14,
               }}
             >
-              🎙
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                <rect x="9" y="3" width="6" height="11" rx="3" />
+                <path d="M6 11a6 6 0 0 0 12 0M12 17v4" strokeLinecap="round" />
+              </svg>
             </button>
           ) : (
           <button

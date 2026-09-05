@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { useAgentStore } from '../../stores/agentStore'
+import BloubEngineAvatar from '../mascot/BloubEngineAvatar'
+import { getMascot, resolveAgentMascotId } from '../mascot/mascotLibrary'
 
 interface NewGroupModalProps {
   onClose: () => void
@@ -31,7 +33,7 @@ export default function NewGroupModal({ onClose, onCreate }: NewGroupModalProps)
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: 380,
+          width: 400,
           background: 'var(--panel)',
           border: '1px solid var(--border)',
           borderRadius: 14,
@@ -62,6 +64,7 @@ export default function NewGroupModal({ onClose, onCreate }: NewGroupModalProps)
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 240, overflowY: 'auto' }}>
           {agents.map((agent) => {
             const on = selected.includes(agent.id)
+            const m = getMascot(resolveAgentMascotId(agent))
             return (
               <button
                 key={agent.id}
@@ -81,7 +84,15 @@ export default function NewGroupModal({ onClose, onCreate }: NewGroupModalProps)
                   fontFamily: 'inherit',
                 }}
               >
-                <span style={{ fontSize: 16 }}>{agent.avatar || '⬡'}</span>
+                <BloubEngineAvatar
+                  size={36}
+                  crop={118}
+                  live={false}
+                  ink={m.ink}
+                  paper={m.paper}
+                  shapeId={m.shape}
+                  botState="idle"
+                />
                 <span style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{agent.name}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>{agent.roleTitle || agent.description}</div>
