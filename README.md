@@ -1,7 +1,7 @@
 # ⬡ Hive — Grok-Style Desktop AI Companion
 
 <p align="center">
-  <img src="screenshots/LogoHive.png" alt="Hive Logo" width="120" />
+  <img src="screenshots/LogoHive.png" alt="Hive logo with honeycomb mark and tagline Sync. Create. Connect." width="120" />
 </p>
 
 <p align="center">
@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Electron-34+-47848F?style=for-the-badge&logo=electron&logoColor=white" />
-  <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" />
-  <img src="https://img.shields.io/badge/TypeScript-5+-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tailwind-v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" />
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Electron-34+-47848F?style=for-the-badge&logo=electron&logoColor=white"  alt="" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black"  alt="" />
+  <img src="https://img.shields.io/badge/TypeScript-5+-3178C6?style=for-the-badge&logo=typescript&logoColor=white"  alt="" />
+  <img src="https://img.shields.io/badge/Tailwind-v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white"  alt="" />
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge"  alt="" />
 </p>
 
 ---
@@ -54,11 +54,11 @@
 
 | Chat & Web Search with Citations | Mascot Companion Notch |
 | :---: | :---: |
-| ![Hive Chat](screenshots/hive-chat.png) | ![Hive Notch](screenshots/hive-notch.png) |
+| ![Hive chat: assistant runs PowerShell Start-Process notepad after the user asks to open Notepad](screenshots/hive-chat.png) | ![Hive Buddy notch pill with orange mascot face and status dot](screenshots/hive-notch.png) |
 
 | Floating Buddy Companion | Settings & Model Configuration |
 | :---: | :---: |
-| ![Buddy Float](screenshots/hive-buddy-float.png) | ![Settings](screenshots/hive-settings.png) |
+| ![Orange circular Hive Buddy mascot face on black](screenshots/hive-buddy-float.png) | ![Hive Desktop General Preferences: Enter key, Buddy options, and color swatches](screenshots/hive-settings.png) |
 
 ---
 
@@ -67,7 +67,7 @@
 - **Framework**: [Electron](https://www.electronjs.org/) + [Vite](https://vitejs.dev/)
 - **UI & State**: [React 19](https://react.dev/), [Zustand](https://github.com/pmndrs/zustand), [Tailwind CSS v4](https://tailwindcss.com/)
 - **Icons & Components**: [Lucide React](https://lucide.dev/), [Phosphor Icons](https://phosphoricons.com/), [shadcn/ui](https://ui.shadcn.com/)
-- **Voice & Media**: `msedge-tts`, `edge-tts`, `livekit-client`, `livekit-server-sdk`
+- **Voice & Media**: `msedge-tts`, `livekit-client`, `livekit-server-sdk`
 - **Animation**: [Motion](https://motion.dev/) (Framer Motion) + Custom 2D Canvas Bot Engine
 
 ---
@@ -75,8 +75,8 @@
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ (Node 20+ recommended)
-- npm or pnpm
+- Node.js 22+ required
+- Recommend [bun](https://bun.sh) as the verified install path (not Node 18/20)
 
 ### Installation
 
@@ -88,7 +88,7 @@
 
 2. Install dependencies:
    ```bash
-   npm install
+   bun install
    ```
 
 3. Configure environment variables (optional):
@@ -99,7 +99,7 @@
 
 4. Start development mode:
    ```bash
-   npm run dev
+   bun run dev
    ```
    This concurrently runs Vite on `http://localhost:5173` and compiles Electron main/preload processes.
 
@@ -111,13 +111,13 @@ Build production bundles or generate a Windows installer (NSIS):
 
 ```bash
 # Build Vite renderer and TypeScript main/preload
-npm run build
+bun run build
 
 # Package unpacked directory
-npm run pack
+bun run pack
 
 # Build Windows installer (.exe)
-npm run dist:win
+bun run dist:win
 ```
 The resulting installer and portable binaries will be saved in `release/`.
 
