@@ -68,6 +68,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('ai:chat', messages, model, options),
     models: () => ipcRenderer.invoke('ai:models'),
   },
+  keys: {
+    set: (next: Record<string, string>) => ipcRenderer.invoke('keys:set', next),
+    status: () => ipcRenderer.invoke('keys:status'),
+  },
+  mem0: {
+    search: (query: string) => ipcRenderer.invoke('mem0:search', query),
+    add: (messages: { role: string; content: string }[]) => ipcRenderer.invoke('mem0:add', messages),
+    status: () => ipcRenderer.invoke('mem0:status'),
+  },
   auth: {
     openWebLogin: () => ipcRenderer.send('auth:openWeb'),
     onSession: (cb: (tokens: { access_token: string; refresh_token: string }) => void) => {

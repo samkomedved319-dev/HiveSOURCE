@@ -40,6 +40,12 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   // Model & Reasoning Settings
   const [defaultModel, setDefaultModel] = useState(localStorage.getItem('hive_model') || 'openai/gpt-4o-mini')
   const [customKey, setCustomKey] = useState(localStorage.getItem('hive_custom_api_key') || '')
+  const [openaiKey, setOpenaiKey] = useState(localStorage.getItem('hive_openai_key') || '')
+  const [anthropicKey, setAnthropicKey] = useState(localStorage.getItem('hive_anthropic_key') || '')
+  const [geminiKey, setGeminiKey] = useState(localStorage.getItem('hive_gemini_key') || '')
+  const [mem0Key, setMem0Key] = useState(localStorage.getItem('hive_mem0_key') || '')
+  const [mozaikCloudKey, setMozaikCloudKey] = useState(localStorage.getItem('hive_mozaik_cloud_key') || '')
+  const [mozaikCloudBase, setMozaikCloudBase] = useState(localStorage.getItem('hive_mozaik_cloud_base') || '')
   const [systemPrompt, setSystemPrompt] = useState(
     localStorage.getItem('hive_system_prompt') || 'You are Hive, an expert pro-tier developer and AI reasoning assistant.'
   )
@@ -70,6 +76,22 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     localStorage.setItem('hive_buddy_color', buddyColor)
     localStorage.setItem('hive_buddy_mascot', buddyMascot)
     localStorage.setItem('hive_custom_api_key', customKey)
+    localStorage.setItem('hive_openai_key', openaiKey)
+    localStorage.setItem('hive_anthropic_key', anthropicKey)
+    localStorage.setItem('hive_gemini_key', geminiKey)
+    localStorage.setItem('hive_mem0_key', mem0Key)
+    localStorage.setItem('hive_mozaik_cloud_key', mozaikCloudKey)
+    localStorage.setItem('hive_mozaik_cloud_base', mozaikCloudBase)
+    void window.electronAPI?.keys?.set?.({
+      OPENROUTER_API_KEY: customKey,
+      hive_custom_api_key: customKey,
+      OPENAI_API_KEY: openaiKey || customKey,
+      ANTHROPIC_API_KEY: anthropicKey,
+      GEMINI_API_KEY: geminiKey,
+      MEM0_API_KEY: mem0Key,
+      MOZAIK_CLOUD_API_KEY: mozaikCloudKey,
+      MOZAIK_CLOUD_BASE_URL: mozaikCloudBase,
+    })
     localStorage.setItem('hive_system_prompt', systemPrompt)
     localStorage.setItem('hive_accent_color', accentColor)
     localStorage.setItem('hive_reduced_motion', reducedMotion ? 'true' : 'false')
@@ -420,9 +442,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             {activeTab === 'models' && (
               <>
                 <div style={{ fontSize: 12.5, color: 'var(--text-dim)', lineHeight: 1.5, marginBottom: 12 }}>
-                  Hive talks through <b>OpenRouter</b> (`OPENROUTER_API_KEY` in `.env`). Mozaik Cloud is an optional
-                  managed runtime at mozaik.jigjoy.ai — you do not need a Mozaik key. If the terminal says
-                  “no API key”, ignore it; local Hive already reuses your OpenRouter key.
+                  Chat needs an <b>OpenRouter</b> key (or OpenAI / Anthropic / Gemini). Mozaik Cloud at{' '}
+                  <a href="https://app.jigjoy.ai/" style={{ color: 'var(--accent)' }}>app.jigjoy.ai</a> is optional hosted runtime.
+                  Mem0 is long-term agent memory — apply free months at{' '}
+                  <a href="https://mozaik.jigjoy.ai/mem0" style={{ color: 'var(--accent)' }}>mozaik.jigjoy.ai/mem0</a>. Without a Mem0 key, Hive still remembers locally.
                 </div>
                 <SettingRow
                   label="Default Model"
@@ -506,7 +529,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     type="password"
                     value={customKey}
                     onChange={(e) => setCustomKey(e.target.value)}
-                    placeholder="sk-or-v1-... (optional, overrides default)"
+                    placeholder="sk-or-v1-...  required for chat"
                     style={{
                       background: 'var(--panel-2)',
                       border: '1px solid var(--border)',
@@ -519,6 +542,34 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     }}
                   />
                 </div>
+                {[
+                  ['OpenAI key', openaiKey, setOpenaiKey, 'sk-...'],
+                  ['Anthropic key', anthropicKey, setAnthropicKey, 'sk-ant-...'],
+                  ['Gemini key', geminiKey, setGeminiKey, 'AIza...'],
+                  ['Mem0 key', mem0Key, setMem0Key, 'from app.mem0.ai'],
+                  ['Mozaik Cloud key', mozaikCloudKey, setMozaikCloudKey, 'from app.jigjoy.ai'],
+                  ['Mozaik Cloud URL', mozaikCloudBase, setMozaikCloudBase, 'https://… (OpenAI-compatible)'],
+                ].map(([label, val, set, ph]) => (
+                  <div key={String(label)} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text)' }}>{label as string}</label>
+                    <input
+                      type="password"
+                      value={val as string}
+                      onChange={(e) => (set as (v: string) => void)(e.target.value)}
+                      placeholder={ph as string}
+                      style={{
+                        background: 'var(--panel-2)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 6,
+                        padding: '7px 10px',
+                        color: 'var(--text)',
+                        fontSize: 12,
+                        outline: 'none',
+                        fontFamily: "'JetBrains Mono', monospace",
+                      }}
+                    />
+                  </div>
+                ))}
               </>
             )}
 

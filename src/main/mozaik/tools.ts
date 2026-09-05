@@ -4,6 +4,7 @@ import { openSystemTarget, runSystemCommand } from '../system-service'
 import { resolveRuntime } from './runtime'
 import { requestApproval } from './approvals'
 import { emitHiveState } from './notify'
+import { recallForPrompt } from '../mem0-service'
 import {
   getAdaptionDataset,
   listAdaptionDatasets,
@@ -210,4 +211,23 @@ export const hiveCloudWriteTool: Tool = {
   strict: false,
   invoke: async (args: { path?: string; content?: string }) =>
     cloudWrite(String(args?.path || ''), String(args?.content || '')),
+}
+
+export const memorySearchTool: Tool = {
+  type: 'function',
+  name: 'recall_memory',
+  description: 'Search Mem0 / local Hive memory about this user. Use before answering personal questions.',
+  parameters: {
+    type: 'object',
+    properties: {
+      query: { type: 'string' },
+    },
+    required: ['query'],
+    additionalProperties: false,
+  },
+  strict: false,
+  invoke: async (args: { query?: string }) => {
+    const memories = await recallForPrompt(String(args?.query || ''))
+    return { ok: true, memories }
+  },
 }

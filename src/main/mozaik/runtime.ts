@@ -5,6 +5,7 @@ import {
   type InferenceRunnerConfig,
 } from '@mozaik-ai/core'
 import type { SearchCitation } from '../search-service'
+import { openRouterKey, mozaikCloudBase, mozaikCloudKey } from '../keys'
 
 export type HiveMood = 'idle' | 'searching' | 'thinking' | 'arguing' | 'done' | 'error'
 
@@ -105,21 +106,16 @@ export const {
 } = defineRuntime<HiveState>()
 
 export function startMozaikRuntime() {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require('dotenv').config()
-  } catch {}
-
-  const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || process.env.MOZAIK_CLOUD_API_KEY || ''
+  const cloudBase = mozaikCloudBase()
+  const cloudKey = mozaikCloudKey()
+  const apiKey = cloudKey || openRouterKey()
+  const baseURL = cloudBase || 'https://openrouter.ai/api/v1'
   if (apiKey && !process.env.OPENAI_API_KEY) process.env.OPENAI_API_KEY = apiKey
-  if (!process.env.OPENAI_BASE_URL) process.env.OPENAI_BASE_URL = process.env.MOZAIK_CLOUD_BASE_URL || 'https://openrouter.ai/api/v1'
-  // Mozaik SDK looks for a cloud key; reuse OpenRouter so local Hive is not blocked.
-  if (!process.env.MOZAIK_CLOUD_API_KEY && apiKey) process.env.MOZAIK_CLOUD_API_KEY = apiKey
-  if (!process.env.MOZAIK_CLOUD_BASE_URL) process.env.MOZAIK_CLOUD_BASE_URL = process.env.OPENAI_BASE_URL
+  if (!process.env.OPENAI_BASE_URL) process.env.OPENAI_BASE_URL = baseURL
   process.env.MOZAIK_TELEMETRY = process.env.MOZAIK_TELEMETRY || '0'
 
   const endpoint = new OpenAIChatCompletions(undefined, {
-    baseURL: 'https://openrouter.ai/api/v1',
+    baseURL,
     apiKey,
     extraBody: {
       max_tokens: 1400,

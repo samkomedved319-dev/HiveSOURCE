@@ -44,6 +44,19 @@ export default function App() {
   }, [hydrate])
 
   useEffect(() => {
+    void window.electronAPI?.keys?.set?.({
+      OPENROUTER_API_KEY: localStorage.getItem('hive_custom_api_key') || '',
+      hive_custom_api_key: localStorage.getItem('hive_custom_api_key') || '',
+      OPENAI_API_KEY: localStorage.getItem('hive_openai_key') || localStorage.getItem('hive_custom_api_key') || '',
+      ANTHROPIC_API_KEY: localStorage.getItem('hive_anthropic_key') || '',
+      GEMINI_API_KEY: localStorage.getItem('hive_gemini_key') || '',
+      MEM0_API_KEY: localStorage.getItem('hive_mem0_key') || '',
+      MOZAIK_CLOUD_API_KEY: localStorage.getItem('hive_mozaik_cloud_key') || '',
+      MOZAIK_CLOUD_BASE_URL: localStorage.getItem('hive_mozaik_cloud_base') || '',
+    })
+  }, [])
+
+  useEffect(() => {
     const onFb = () => setShowFeedback(true)
     window.addEventListener('hive:feedback', onFb as EventListener)
     return () => window.removeEventListener('hive:feedback', onFb as EventListener)

@@ -8,6 +8,7 @@ import { inferenceInputFor, resolveRuntime, runLoop } from './runtime'
 import { emitHiveEvent, emitHiveState } from './notify'
 import { stashRoom } from './persist'
 import { setBuddyMood } from '../buddy-service'
+import { recallForPrompt, rememberTurn } from '../mem0-service'
 import { CitationGuard, CommandGuard } from './interception'
 
 function startAgent(participant: Agent, prompt: string, guard?: 'hive' | 'operator') {
@@ -149,11 +150,14 @@ export const hiveOnMessage: SituationHandler = {
       const citeNote = cites.length
         ? `\nCitations already in shared state:\n${cites.map((c) => `- ${c.title} (${c.url})`).join('\n')}`
         : '\nNo citations in shared state yet. Do not pretend you searched.'
-      startAgent(
-        participant,
-        `User:\n${message}${citeNote}\n\nWrite the user-facing Hive reply.`,
-        'hive'
-      )
+      void recallForPrompt(message).then((mem) => {
+        const memNote = mem ? `\nWhat you remember about this user (Mem0):\n${mem}` : ''
+        startAgent(
+          participant,
+          `User:\n${message}${citeNote}${memNote}\n\nWrite the user-facing Hive reply.`,
+          'hive'
+        )
+      })
     },
   },
 }
@@ -310,6 +314,10 @@ export const relayLifecycle: SituationHandler = {
       if (event.type === 'model.answer' && text) {
         const role = producerName === 'You' ? 'user' : 'assistant'
         pushTranscript(event.producerId, producerName, role, text)
+        if (producerName === 'Hive') {
+          const lastUser = resolveRuntime().state.lastUserMessage || ''
+          void rememberTurn(lastUser, text)
+        }
         const st = resolveRuntime().state
         stashRoom(st.conversationId || 'default', { transcript: st.transcript, citations: st.citations })
         if (producerName === 'Hive' && st.lastVia === 'telegram' && st.lastTelegramChatId) {

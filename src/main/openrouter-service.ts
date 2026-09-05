@@ -1,7 +1,8 @@
 import { ipcMain } from 'electron'
 import { performWebSearch } from './search-service'
+import { openRouterKey } from './keys'
+import { recallForPrompt, rememberTurn } from './mem0-service'
 
-const API_KEY = process.env.OPENROUTER_API_KEY || ''
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions'
 
 // Strictly free, verified high-performance OpenRouter AI models
@@ -37,11 +38,32 @@ export async function queryAIModel(
   modelChoice?: string,
   options?: ChatOptions
 ): Promise<{ ok: boolean; content?: string; error?: string; model?: string; citations?: SearchCitation[] }> {
+  const API_KEY = openRouterKey()
+  if (!API_KEY) {
+    return {
+      ok: false,
+      error:
+        'Missing OpenRouter key. Open Settings → Models and paste a key from openrouter.ai/keys (sk-or-v1-…), then Save. Hive will not send a request without Authorization.',
+    }
+  }
+
   // Always restrict strictly to FREE models
   const requestedModel = modelChoice && modelChoice.includes(':free') ? modelChoice : DEFAULT_FREE_MODEL
   const modelsToTry = [requestedModel, ...FREE_MODELS.filter((m) => m !== requestedModel)]
 
   let activeMessages = [...messages]
+  const recalled = await recallForPrompt(
+    [...messages].reverse().find((m) => m.role === 'user')?.content || 'preferences'
+  )
+  if (recalled) {
+    activeMessages = [
+      {
+        role: 'system',
+        content: `Memories about this user (Mem0):\n${recalled}\nUse them when relevant. Do not invent extra personal facts.`,
+      },
+      ...activeMessages,
+    ]
+  }
   let fallbackCitations: SearchCitation[] | undefined = undefined
 
   // If webSearch is requested, check if we should prepare search fallback context
@@ -121,6 +143,8 @@ export async function queryAIModel(
         const rawMsg = data.choices?.[0]?.message
         const content = rawMsg?.content
         if (content && content.trim().length > 0) {
+          const userQ = [...messages].reverse().find((m) => m.role === 'user')?.content || ''
+          void rememberTurn(userQ, String(content))
           const rawAnns = rawMsg.annotations || []
           const citations: SearchCitation[] = []
 

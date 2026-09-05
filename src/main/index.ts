@@ -1,5 +1,7 @@
 import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, globalShortcut, shell } from 'electron'
 import path from 'path'
+import { registerKeyHandlers } from './keys'
+import { registerMem0Handlers } from './mem0-service'
 import { registerTelegramHandlers } from './telegram-service'
 import { registerOpenRouterHandlers } from './openrouter-service'
 import { registerLiveKitHandlers } from './livekit-service'
@@ -169,6 +171,8 @@ function createTray() {
 }
 
 app.whenReady().then(() => {
+  registerKeyHandlers()
+  registerMem0Handlers()
   registerTelegramHandlers()
   registerOpenRouterHandlers()
   registerLiveKitHandlers()

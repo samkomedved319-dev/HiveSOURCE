@@ -22,6 +22,7 @@ import {
   hiveCloudSwarmTool,
   hiveCloudWriteTool,
   listAdaptionDatasetsTool,
+  memorySearchTool,
   mozaikCloudStatusTool,
   openAppTool,
   previewAdaptionDatasetTool,
@@ -50,7 +51,7 @@ export function joinHiveSwarm() {
     capabilities: ['chat', 'inference'],
     instruction:
       'You are Hive, a witty desktop companion (Grok-like, dry, useful). Draft the user-facing answer. Use get_citations / shared citations if present. Never pretend you searched if citations are empty. Keep it sharp, not corporate.',
-    tools: [getCitationsTool],
+    tools: [getCitationsTool, memorySearchTool],
     handlers: [hiveOnMessage, hiveOnScout, hiveOnCritic],
   })
 

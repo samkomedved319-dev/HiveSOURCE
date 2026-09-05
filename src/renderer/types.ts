@@ -120,6 +120,15 @@ export interface ElectronAPI {
       error?: string
     }>
   }
+  keys?: {
+    set: (next: Record<string, string>) => Promise<{ ok: boolean; openrouter?: boolean; mozaikCloud?: boolean; mem0?: boolean }>
+    status: () => Promise<{ ok: boolean; openrouter?: boolean; mozaikCloud?: boolean; mem0?: boolean; cloudBase?: string }>
+  }
+  mem0?: {
+    search: (query: string) => Promise<{ ok: boolean; memories?: string[] }>
+    add: (messages: { role: string; content: string }[]) => Promise<{ ok: boolean }>
+    status: () => Promise<{ ok: boolean; cloud?: boolean; local?: boolean }>
+  }
   auth?: {
     openWebLogin: () => void
     onSession: (cb: (tokens: { access_token: string; refresh_token: string }) => void) => () => void

@@ -1,6 +1,7 @@
 const ADAPTION_API = 'https://api.prod.adaptionlabs.ai/api/v1'
 export const ADAPTION_APP = 'https://adaptionlabs.ai/app/datasets'
 export const MOZAIK_CLOUD_DOCS = 'https://mozaik.jigjoy.ai'
+import { mozaikCloudBase, mozaikCloudKey } from './keys'
 
 function adaptionKey() {
   return process.env.ADAPTION_API_KEY || ''
@@ -48,15 +49,17 @@ export async function previewAdaptionDataset(id: string) {
 }
 
 export function mozaikCloudStatus() {
-  const base = process.env.MOZAIK_CLOUD_BASE_URL || MOZAIK_CLOUD_DOCS
-  const keyed = Boolean(process.env.MOZAIK_CLOUD_API_KEY)
+  const keyed = Boolean(mozaikCloudKey())
+  const base = mozaikCloudBase() || MOZAIK_CLOUD_DOCS
   return {
     ok: true,
     managed: keyed,
     base,
+    dashboard: 'https://app.jigjoy.ai/',
     docs: MOZAIK_CLOUD_DOCS,
+    mem0: 'https://mozaik.jigjoy.ai/mem0',
     note: keyed
-      ? 'Mozaik Cloud credentials present — Hive can point OpenAI-compatible inference at MOZAIK_CLOUD_BASE_URL.'
-      : 'Local @mozaik-ai/core is running. Add MOZAIK_CLOUD_API_KEY + MOZAIK_CLOUD_BASE_URL for the managed runtime.',
+      ? 'Mozaik Cloud is connected. Hive inference can use MOZAIK_CLOUD_BASE_URL.'
+      : 'Local Mozaik runtime is on. Optional: set Mozaik Cloud URL + key in Settings → Models, and Mem0 for long-term memory.',
   }
 }

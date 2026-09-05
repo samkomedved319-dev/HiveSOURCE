@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron'
+import { openRouterKey } from './keys'
 
 export interface SearchCitation {
   url: string
@@ -16,7 +17,6 @@ export interface SearchResult {
   error?: string
 }
 
-const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || ''
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const SEARCH_MODEL = 'minimax/minimax-m3:free'
 
@@ -29,7 +29,7 @@ async function searchViaOpenRouter(query: string): Promise<SearchResult | null> 
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENROUTER_KEY}`,
+        Authorization: `Bearer ${openRouterKey()}`,
         'HTTP-Referer': 'https://hive.app',
         'X-Title': 'Hive Desktop Search',
       },
