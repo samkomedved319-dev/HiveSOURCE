@@ -137,11 +137,13 @@ export default function IconRail({
         </svg>
       </RailBtn>
 
+      {/* Messages / calling rail — kept in source, hidden from users.
       <RailBtn title="Messages" active={activeTab === 'voice'} onClick={() => onSelectTab('voice')}>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
           <path d="M21.2 16.7v2.6a1.7 1.7 0 0 1-1.9 1.7 16.8 16.8 0 0 1-7.3-2.5 16.5 16.5 0 0 1-5.1-5.1A16.8 16.8 0 0 1 4.4 6.1 1.7 1.7 0 0 1 6.1 4.2h2.5a1.7 1.7 0 0 1 1.7 1.4c.1.9.3 1.7.5 2.5a1.7 1.7 0 0 1-.4 1.8L9.2 11a13.6 13.6 0 0 0 5.1 5.1l1.1-1.1a1.7 1.7 0 0 1 1.8-.4c.8.2 1.6.4 2.5.5a1.7 1.7 0 0 1 1.5 1.6z" />
         </svg>
       </RailBtn>
+      */}
 
       {onToggleBuddy && (
         <RailBtn

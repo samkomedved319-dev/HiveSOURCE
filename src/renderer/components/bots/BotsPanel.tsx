@@ -4,6 +4,7 @@ import type { Agent } from '../../types'
 import BloubEngineAvatar from '../mascot/BloubEngineAvatar'
 import MascotPicker from '../mascot/MascotPicker'
 import { DEFAULT_MASCOT_ID, getMascot, resolveAgentMascotId } from '../mascot/mascotLibrary'
+import { PREMADE_BOTS } from './botLibrary'
 
 interface BotsPanelProps {
   onBack: () => void
@@ -94,6 +95,42 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
         <p style={{ fontSize: 13, color: 'var(--text-dim)', margin: '0 0 20px 0' }}>
           {agents.length} bot{agents.length === 1 ? '' : 's'} on the roster. Pick one to chat live.
         </p>
+
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 11, fontWeight: 650, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 }}>
+            Premade by Hive
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
+            {PREMADE_BOTS.map((b) => {
+              const already = agents.some((a) => a.name.split(' ')[0] === b.name)
+              return (
+                <button
+                  key={b.id}
+                  type="button"
+                  disabled={already}
+                  onClick={() => {
+                    if (already) return
+                    addAgent({ ...b, id: `agent-${b.name.toLowerCase()}-${Date.now()}`, createdAt: Date.now() })
+                  }}
+                  style={{
+                    textAlign: 'left',
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    border: '1px solid var(--border-soft)',
+                    background: 'var(--panel)',
+                    color: 'var(--text)',
+                    cursor: already ? 'default' : 'pointer',
+                    opacity: already ? 0.5 : 1,
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 650 }}>{b.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>{b.roleTitle}</div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
 
         {/* Roster */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

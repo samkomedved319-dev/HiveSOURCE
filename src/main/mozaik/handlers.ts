@@ -124,6 +124,7 @@ export const scoutOnMessage: SituationHandler = {
     apply({ event, participant }) {
       if (!(participant instanceof Agent)) return
       const { message } = event.payload as { message: string }
+      if (!/\b(search|find|who is|what is|latest|news|lookup|browse|https?:)\b/i.test(message)) return
       const runtime = resolveRuntime()
       runtime.state.mood = 'searching'
       emitHiveState(runtime.state.snapshot())

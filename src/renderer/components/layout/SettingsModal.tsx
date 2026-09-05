@@ -419,6 +419,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             {/* MODELS & REASONING TAB */}
             {activeTab === 'models' && (
               <>
+                <div style={{ fontSize: 12.5, color: 'var(--text-dim)', lineHeight: 1.5, marginBottom: 12 }}>
+                  Hive talks through <b>OpenRouter</b> (`OPENROUTER_API_KEY` in `.env`). Mozaik Cloud is an optional
+                  managed runtime at mozaik.jigjoy.ai — you do not need a Mozaik key. If the terminal says
+                  “no API key”, ignore it; local Hive already reuses your OpenRouter key.
+                </div>
                 <SettingRow
                   label="Default Model"
                   description="Primary LLM selected for new conversations"
@@ -521,33 +526,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             {activeTab === 'appearance' && (
               <>
                 <SettingRow
-                  label="Accent Color"
-                  description="Precision highlight used on indicators and buttons"
+                  label="Accent"
+                  description="Hive uses a fixed gold accent. Colors are not customizable."
                 >
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    {[
-                      { hex: '#F2C14E', label: 'Hive Amber (Default)' },
-                      { hex: '#38bdf8', label: 'Sky' },
-                      { hex: '#a855f7', label: 'Violet' },
-                      { hex: '#34d399', label: 'Emerald' },
-                    ].map((c) => (
-                      <button
-                        key={c.hex}
-                        type="button"
-                        onClick={() => setAccentColor(c.hex)}
-                        title={c.label}
-                        style={{
-                          width: 20,
-                          height: 20,
-                          borderRadius: 4,
-                          background: c.hex,
-                          border: accentColor === c.hex ? '2px solid #FFFFFF' : '1px solid var(--border)',
-                          cursor: 'pointer',
-                          outline: 'none',
-                        }}
-                      />
-                    ))}
-                  </div>
+                  <div style={{ width: 20, height: 20, borderRadius: 4, background: '#F2C14E', border: '1px solid var(--border)' }} />
                 </SettingRow>
 
                 <SettingRow
@@ -827,10 +809,15 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             {/* SHORTCUTS TAB */}
             {activeTab === 'shortcuts' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <ShortcutItem keys={['Ctrl', 'Shift', 'J']} description="Pop the Hive Buddy notch (voice + PC control)" />
+                <ShortcutItem keys={['Ctrl', 'K']} description="Command palette" />
+                <ShortcutItem keys={['Ctrl', 'N']} description="New chat" />
                 <ShortcutItem keys={['Ctrl', 'B']} description="Toggle conversation list sidebar" />
+                <ShortcutItem keys={['Ctrl', 'Shift', 'H']} description="Toggle HiveBox crew panel" />
+                <ShortcutItem keys={['Ctrl', ',']} description="Open settings" />
+                <ShortcutItem keys={['Ctrl', 'Shift', 'J']} description="Pop the Hive Buddy notch (voice + PC control)" />
                 <ShortcutItem keys={['Enter']} description="Send message" />
                 <ShortcutItem keys={['Shift', 'Enter']} description="Insert newline into composer" />
+                <ShortcutItem keys={['@']} description="Mention a bot in a group (Discord-style)" />
                 <ShortcutItem keys={['Esc']} description="Close active dialog or modal" />
               </div>
             )}

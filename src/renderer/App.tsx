@@ -14,6 +14,7 @@ import LaunchScreen from './components/launch/LaunchScreen'
 import FloatingPanel from './components/layout/FloatingPanel'
 import NewGroupModal from './components/layout/NewGroupModal'
 import FeedbackModal from './components/layout/FeedbackModal'
+import CommandPalette from './components/layout/CommandPalette'
 import CloudComputerPanel from './components/layout/CloudComputerPanel'
 import { AnimatePresence } from 'motion/react'
 import { useChatStore } from './stores/chatStore'
@@ -75,6 +76,7 @@ export default function App() {
   const [showVoiceModal, setShowVoiceModal] = useState(false)
   const [showNewGroup, setShowNewGroup] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
+  const [showPalette, setShowPalette] = useState(false)
   const [buddyOn, setBuddyOn] = useState(isBuddyEnabled)
   const [canvasMode, setCanvasMode] = useState<'code' | 'browser'>('code')
   const [activeBrowserUrl, setActiveBrowserUrl] = useState('https://google.com')
@@ -189,22 +191,41 @@ export default function App() {
     } catch {}
   }
 
-  // Keyboard shortcut: Cmd/Ctrl + B conversation list
+  // Keyboard shortcuts (capture so they work even from the composer)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b' && !e.shiftKey) {
+      const ctrl = e.ctrlKey || e.metaKey
+      if (!ctrl) return
+      const k = e.key.toLowerCase()
+      if (k === 'b' && !e.shiftKey) {
         e.preventDefault()
         setIsConvListOpen((prev) => !prev)
       }
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'j') {
+      if (k === 'n' && !e.shiftKey) {
+        e.preventDefault()
+        handleNewChat()
+      }
+      if (k === ',' ) {
+        e.preventDefault()
+        setShowSettings(true)
+      }
+      if (k === 'k' && !e.shiftKey) {
+        e.preventDefault()
+        setShowPalette(true)
+      }
+      if (k === 'h' && e.shiftKey) {
+        e.preventDefault()
+        setIsCanvasOpen((prev) => !prev)
+      }
+      if (e.shiftKey && k === 'j') {
         e.preventDefault()
         setIsConvListOpen((prev) => !prev)
         setMainView('chat')
         setActiveTab('chat')
       }
     }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => window.removeEventListener('keydown', handleKeyDown, true)
   }, [])
 
   useEffect(() => {
@@ -462,6 +483,7 @@ export default function App() {
         onOpenWorkers={() => setMainView('bots')}
         isConvListOpen={isConvListOpen}
         onToggleSidebar={() => setIsConvListOpen((prev) => !prev)}
+        conversation={conversations.find((c) => c.id === activeConvId) || null}
       />
       </div>
       ) : (
@@ -487,13 +509,26 @@ export default function App() {
       />
       )}
 
-      {isCanvasOpen && (
+      {false && isCanvasOpen && (
         <FloatingPanel title="HiveBox · live cloud" onClose={() => setIsCanvasOpen(false)} width={440} height={620}>
           <CloudComputerPanel onClose={() => setIsCanvasOpen(false)} />
         </FloatingPanel>
       )}
 
-      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
+      {showPalette && (
+        <CommandPalette
+          open={showPalette}
+          onClose={() => setShowPalette(false)}
+          actions={[
+            { id: 'new', label: 'New chat', hint: 'Ctrl+N', run: () => { setShowPalette(false); handleNewChat() } },
+            { id: 'group', label: 'New group', run: () => { setShowPalette(false); setShowNewGroup(true) } },
+            { id: 'hivebox', label: 'Toggle HiveBox', hint: 'Ctrl+Shift+H', run: () => { setShowPalette(false); setIsCanvasOpen((v) => !v) } },
+            { id: 'sidebar', label: 'Toggle sidebar', hint: 'Ctrl+B', run: () => { setShowPalette(false); setIsConvListOpen((v) => !v) } },
+            { id: 'workers', label: 'AI Workers', run: () => { setShowPalette(false); setMainView('bots') } },
+            { id: 'settings', label: 'Settings', hint: 'Ctrl+,', run: () => { setShowPalette(false); setShowSettings(true) } },
+          ]}
+        />
+      )}
 
       {showNewGroup && (
         <NewGroupModal onClose={() => setShowNewGroup(false)} onCreate={handleNewGroup} />

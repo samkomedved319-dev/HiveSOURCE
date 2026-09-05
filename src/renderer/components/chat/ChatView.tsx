@@ -5,10 +5,13 @@ import ChatInput from './ChatInput'
 import VoiceCall from './VoiceCall'
 import ToolsModal from './ToolsModal'
 import SwarmStrip, { type SwarmStatus } from './SwarmStrip'
+import CrewPanel from '../layout/CrewPanel'
 import { grokPersonality } from '../../companion/grokPersonality'
 import { useAgentStore } from '../../stores/agentStore'
 import { useChatStore } from '../../stores/chatStore'
-import type { HiveSwarmEvent, HiveSwarmState, Message } from '../../types'
+import type { HiveSwarmEvent, HiveSwarmState, Message, Agent } from '../../types'
+import { mentionHandle } from '../bots/botLibrary'
+import type { Conversation } from '../layout/ConversationList'
 
 interface ChatViewProps {
   isCanvasOpen: boolean
@@ -19,6 +22,7 @@ interface ChatViewProps {
   onOpenWorkers?: () => void
   isConvListOpen?: boolean
   onToggleSidebar?: () => void
+  conversation?: Conversation | null
 }
 
 export default function ChatView({
@@ -30,6 +34,7 @@ export default function ChatView({
   onOpenWorkers,
   isConvListOpen,
   onToggleSidebar,
+  conversation,
 }: ChatViewProps) {
   const { activeAgent, agents, addAgent } = useAgentStore()
   const { addMessage, upsertMessage, getMessages, clearMessages, setTyping } = useChatStore()
@@ -217,6 +222,76 @@ export default function ChatView({
     }
     addMessage(activeAgent.id, userMsg)
     setTyping(true)
+
+    const mentioned = agents.filter((a) => {
+      const h = mentionHandle(a.name)
+      return new RegExp(`@${h}\\b`, 'i').test(content)
+    })
+    const isGroup = conversation?.kind === 'group'
+    const groupMembers = (conversation?.agentIds || [])
+      .map((id) => agents.find((a) => a.id === id))
+      .filter(Boolean) as Agent[]
+
+    const runDirect = async (targets: Agent[]) => {
+      for (const agent of targets) {
+        try {
+          const history = getMessages(activeAgent.id)
+            .filter((m) => m.role === 'user' || m.role === 'assistant')
+            .map((m) => ({ role: m.role, content: m.content }))
+          const res = await window.electronAPI?.ai?.chat?.(
+            [{ role: 'system', content: agent.systemPrompt }, ...history],
+            agent.model || currentModelId,
+            { webSearch: false }
+          )
+          if (res?.ok && res.content) {
+            addMessage(activeAgent.id, {
+              id: `m-${agent.id}-${Date.now()}`,
+              agentId: activeAgent.id,
+              content: res.content,
+              role: 'assistant',
+              timestamp: Date.now(),
+              type: 'text',
+              botName: mentionHandle(agent.name),
+              botAvatar: agent.avatar,
+              botRole: agent.roleTitle,
+            })
+          } else if (res && !res.ok) {
+            addMessage(activeAgent.id, {
+              id: `m-err-${Date.now()}`,
+              agentId: activeAgent.id,
+              content: res.error || `${mentionHandle(agent.name)} could not reply. Check OPENROUTER_API_KEY.`,
+              role: 'assistant',
+              timestamp: Date.now(),
+              type: 'text',
+              botName: mentionHandle(agent.name),
+              botAvatar: agent.avatar,
+            })
+          }
+        } catch (err) {
+          addMessage(activeAgent.id, {
+            id: `m-err-${Date.now()}`,
+            agentId: activeAgent.id,
+            content: err instanceof Error ? err.message : 'Reply failed',
+            role: 'assistant',
+            timestamp: Date.now(),
+            type: 'text',
+            botName: mentionHandle(agent.name),
+          })
+        }
+      }
+      setTyping(false)
+    }
+
+    if (isGroup) {
+      const targets = mentioned.length ? mentioned : groupMembers.length ? groupMembers : [activeAgent]
+      await runDirect(targets)
+      return
+    }
+    if (!activeAgent.isCeo || mentioned.length) {
+      await runDirect(mentioned.length ? mentioned : [activeAgent])
+      return
+    }
+
     setOps([])
     setSwarm({ Scout: 'thinking', Hive: 'thinking', Pulse: 'thinking', Critic: 'idle' })
 
@@ -561,6 +636,7 @@ Followed by a brief explanation of what was run.`
   const messages = activeAgent ? getMessages(activeAgent.id) : []
 
   return (
+    <div style={{ display: 'flex', flex: 1, minWidth: 0, minHeight: 0, height: '100%' }}>
     <div
       style={{
         display: 'flex',
@@ -586,7 +662,7 @@ Followed by a brief explanation of what was run.`
         onToggleSidebar={onToggleSidebar}
         onFeedback={() => window.dispatchEvent(new CustomEvent('hive:feedback'))}
       />
-      <SwarmStrip status={swarm} />
+      {!isCanvasOpen && <SwarmStrip status={swarm} />}
       {approval && (
         <div
           style={{
@@ -664,7 +740,14 @@ Followed by a brief explanation of what was run.`
         onAttach={handleAttachFile}
         onOpenTools={() => setShowTools(true)}
         onOpenVoice={() => setShowVoice(true)}
+        mentionables={
+          conversation?.kind === 'group'
+            ? agents.filter((a) => (conversation.agentIds || []).includes(a.id))
+            : agents
+        }
       />
+    </div>
+    {isCanvasOpen && <CrewPanel status={swarm} onClose={onToggleCanvas} />}
     </div>
   )
 }

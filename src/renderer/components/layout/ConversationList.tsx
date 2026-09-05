@@ -180,6 +180,7 @@ export default function ConversationList({
               id={c.id}
               active={c.id === activeId}
               title={c.title}
+              kind={c.kind}
               onClick={() => onSelect(c.id)}
               onDelete={onDeleteChat}
             />
@@ -207,6 +208,7 @@ export default function ConversationList({
               id={c.id}
               active={c.id === activeId}
               title={c.title}
+              kind={c.kind}
               onClick={() => onSelect(c.id)}
               onDelete={onDeleteChat}
             />
@@ -234,6 +236,7 @@ export default function ConversationList({
               id={c.id}
               active={c.id === activeId}
               title={c.title}
+              kind={c.kind}
               onClick={() => onSelect(c.id)}
               onDelete={onDeleteChat}
             />
@@ -248,12 +251,14 @@ function ConversationItem({
   id,
   title,
   active,
+  kind,
   onClick,
   onDelete,
 }: {
   id: string
   title: string
   active: boolean
+  kind?: 'chat' | 'group'
   onClick: () => void
   onDelete?: (id: string) => void
 }) {
@@ -302,6 +307,11 @@ function ConversationItem({
       >
         {title}
       </span>
+      {kind === 'group' && (
+        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--accent)', border: '1px solid var(--accent-dim)', borderRadius: 4, padding: '1px 5px' }}>
+          Group
+        </span>
+      )}
       {hovered && onDelete && (
         <button
           type="button"
