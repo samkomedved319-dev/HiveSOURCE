@@ -1,29 +1,34 @@
 import React, { useState } from 'react'
+import { useAuthStore } from '../../stores/authStore'
 
 interface ProfileModalProps {
   onClose: () => void
   userInitial?: string
 }
 
-export default function ProfileModal({ onClose, userInitial = 'A' }: ProfileModalProps) {
-  const [name, setName] = useState(localStorage.getItem('hive_user_name') || 'Samko Medved')
-  const [handle, setHandle] = useState(localStorage.getItem('hive_user_handle') || '@samko')
-  const [role, setRole] = useState(localStorage.getItem('hive_user_role') || 'Lead AI Engineer')
-  const [status, setStatus] = useState(localStorage.getItem('hive_user_status') || 'Building autonomous systems')
-  const [tier, setTier] = useState(localStorage.getItem('hive_user_tier') || 'Pro Developer')
-  const [toast, setToast] = useState<string | null>(null)
+const STATUS: Record<string, { label: string; color: string; bg: string }> = {
+  pending: { label: 'On the waitlist', color: '#F2C14E', bg: 'rgba(242,193,78,.12)' },
+  approved: { label: 'Approved', color: '#10B981', bg: 'rgba(16,185,129,.12)' },
+  denied: { label: 'Denied', color: '#F04438', bg: 'rgba(240,68,56,.12)' },
+}
 
-  const handleSave = () => {
-    localStorage.setItem('hive_user_name', name.trim())
-    localStorage.setItem('hive_user_handle', handle.trim())
-    localStorage.setItem('hive_user_role', role.trim())
-    localStorage.setItem('hive_user_status', status.trim())
-    localStorage.setItem('hive_user_tier', tier)
-    setToast('Profile updated')
-    setTimeout(() => {
-      setToast(null)
-      onClose()
-    }, 450)
+export default function ProfileModal({ onClose, userInitial = 'A' }: ProfileModalProps) {
+  const { user, profile, saveProfile, signOut } = useAuthStore()
+  const [name, setName] = useState(profile?.display_name || localStorage.getItem('hive_user_name') || '')
+  const [toast, setToast] = useState<string | null>(null)
+  const email = profile?.email || user?.email || ''
+  const st = STATUS[profile?.status || 'pending']
+  const initial = (name || email || userInitial).charAt(0).toUpperCase()
+
+  const handleSave = async () => {
+    const ok = await saveProfile(name.trim())
+    if (ok) {
+      setToast('Profile saved')
+      setTimeout(() => {
+        setToast(null)
+        onClose()
+      }, 450)
+    }
   }
 
   return (
@@ -57,26 +62,17 @@ export default function ProfileModal({ onClose, userInitial = 'A' }: ProfileModa
           position: 'relative',
         }}
       >
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>User Profile & Identity</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Hive account</div>
           <button
             type="button"
             onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-faint)',
-              cursor: 'pointer',
-              fontSize: 14,
-              padding: 4,
-            }}
+            style={{ background: 'transparent', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 14 }}
           >
             ✕
           </button>
         </div>
 
-        {/* Avatar Profile Card */}
         <div
           style={{
             display: 'flex',
@@ -100,110 +96,58 @@ export default function ProfileModal({ onClose, userInitial = 'A' }: ProfileModa
               fontWeight: 700,
               fontSize: 18,
               color: '#0D0E11',
-              boxShadow: '0 4px 14px rgba(242, 193, 78, 0.25)',
             }}
           >
-            {name ? name.charAt(0).toUpperCase() : userInitial}
+            {initial}
           </div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{name}</div>
-            <div style={{ fontSize: 11.5, color: 'var(--accent)', fontWeight: 500 }}>{handle} · {tier}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{name || 'Hive member'}</div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>{email}</div>
           </div>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: st.color,
+              background: st.bg,
+              borderRadius: 999,
+              padding: '4px 8px',
+            }}
+          >
+            {st.label}
+          </span>
         </div>
 
-        {/* Inputs */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div>
-            <label style={{ fontSize: 11.5, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-              Full Display Name
-            </label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              style={{
-                width: '100%',
-                background: 'var(--panel-2)',
-                border: '1px solid var(--border)',
-                borderRadius: 6,
-                padding: '7px 10px',
-                color: 'var(--text)',
-                fontSize: 12.5,
-                outline: 'none',
-                fontFamily: 'inherit',
-              }}
-            />
-          </div>
+        {profile?.customer_number != null && (
+          <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>Member #{profile.customer_number}</div>
+        )}
 
-          <div>
-            <label style={{ fontSize: 11.5, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-              Handle
-            </label>
-            <input
-              value={handle}
-              onChange={(e) => setHandle(e.target.value)}
-              style={{
-                width: '100%',
-                background: 'var(--panel-2)',
-                border: '1px solid var(--border)',
-                borderRadius: 6,
-                padding: '7px 10px',
-                color: 'var(--text)',
-                fontSize: 12.5,
-                outline: 'none',
-                fontFamily: "'JetBrains Mono', monospace",
-              }}
-            />
-          </div>
-
-          <div>
-            <label style={{ fontSize: 11.5, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-              Role / Title
-            </label>
-            <input
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              style={{
-                width: '100%',
-                background: 'var(--panel-2)',
-                border: '1px solid var(--border)',
-                borderRadius: 6,
-                padding: '7px 10px',
-                color: 'var(--text)',
-                fontSize: 12.5,
-                outline: 'none',
-                fontFamily: 'inherit',
-              }}
-            />
-          </div>
-
-          <div>
-            <label style={{ fontSize: 11.5, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-              Status Bio
-            </label>
-            <input
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              placeholder="What are you working on?"
-              style={{
-                width: '100%',
-                background: 'var(--panel-2)',
-                border: '1px solid var(--border)',
-                borderRadius: 6,
-                padding: '7px 10px',
-                color: 'var(--text)',
-                fontSize: 12.5,
-                outline: 'none',
-                fontFamily: 'inherit',
-              }}
-            />
-          </div>
+        <div>
+          <label style={{ fontSize: 11.5, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
+            Display name
+          </label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              background: 'var(--panel-2)',
+              border: '1px solid var(--border)',
+              borderRadius: 6,
+              padding: '7px 10px',
+              color: 'var(--text)',
+              fontSize: 12.5,
+              outline: 'none',
+              fontFamily: 'inherit',
+            }}
+          />
         </div>
 
-        {/* Footer */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 4 }}>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => void signOut()}
             style={{
               background: 'transparent',
               border: '1px solid var(--border)',
@@ -214,24 +158,41 @@ export default function ProfileModal({ onClose, userInitial = 'A' }: ProfileModa
               cursor: 'pointer',
             }}
           >
-            Cancel
+            Sign out
           </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            style={{
-              background: 'var(--accent)',
-              border: 'none',
-              borderRadius: 6,
-              padding: '6px 16px',
-              fontSize: 12,
-              fontWeight: 600,
-              color: '#0D0E11',
-              cursor: 'pointer',
-            }}
-          >
-            Save Profile
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--border)',
+                borderRadius: 6,
+                padding: '6px 12px',
+                fontSize: 12,
+                color: 'var(--text-dim)',
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              style={{
+                background: 'var(--accent)',
+                border: 'none',
+                borderRadius: 6,
+                padding: '6px 16px',
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#0D0E11',
+                cursor: 'pointer',
+              }}
+            >
+              Save
+            </button>
+          </div>
         </div>
 
         {toast && (
@@ -247,7 +208,6 @@ export default function ProfileModal({ onClose, userInitial = 'A' }: ProfileModa
               padding: '5px 12px',
               fontSize: 11.5,
               color: 'var(--accent)',
-              pointerEvents: 'none',
             }}
           >
             {toast}

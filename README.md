@@ -43,6 +43,10 @@
   - 2-way Telegram messaging bridge with 6-digit PIN authentication handshake.
   - Voice memo responses generated directly via neural audio synthesis.
 
+- 🔐 **Hive website accounts (Supabase)**:
+  - Same project as [samkomedved319-dev.github.io/hive](https://samkomedved319-dev.github.io/hive).
+  - Sign in or create an account in the desktop app; waitlist profiles stay in sync.
+
 - 🖥️ **Windows Native Experience**:
   - Frameless custom glass TitleBar with window snapping.
   - System Tray integration with minimize-to-tray & background persistence.
@@ -96,6 +100,7 @@
    cp .env.example .env
    ```
    Provide your `OPENROUTER_API_KEY` and `TELEGRAM_BOT_TOKEN` if you wish to use your own credentials.
+   `VITE_SUPABASE_*` defaults to the Hive website project so one login works on web and desktop.
 
 4. Start development mode:
    ```bash

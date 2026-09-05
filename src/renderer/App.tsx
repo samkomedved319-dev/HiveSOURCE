@@ -17,7 +17,9 @@ import { AnimatePresence } from 'motion/react'
 import { useChatStore } from './stores/chatStore'
 import { useAgentStore } from './stores/agentStore'
 import { BUDDY_SETTINGS_EVENT, isBuddyEnabled } from './components/mascot/CursorBuddy'
-import type { Message } from './types'
+import AuthGate from './components/auth/AuthGate'
+import DeniedScreen from './components/auth/DeniedScreen'
+import { useAuthStore } from './stores/authStore'
 
 function loadConvMessages(): Record<string, Message[]> {
   try {
@@ -28,6 +30,15 @@ function loadConvMessages(): Record<string, Message[]> {
 }
 
 export default function App() {
+  const authReady = useAuthStore((s) => s.ready)
+  const session = useAuthStore((s) => s.session)
+  const profile = useAuthStore((s) => s.profile)
+  const hydrate = useAuthStore((s) => s.hydrate)
+
+  useEffect(() => {
+    void hydrate()
+  }, [hydrate])
+
   // Launch screen animation disabled: boot straight into the workspace.
   // (LaunchScreen component is kept for tests/preview; set this back to
   // `useState(true)` to re-enable the animated boot sequence.)
@@ -304,6 +315,16 @@ export default function App() {
   // Calculate 4-column grid template: Rail (56px) | Conv (240px or 0px) | Main (1fr) | Canvas (400px or 0px)
   const convWidth = isConvListOpen ? '240px' : '0px'
   const canvasWidth = '0px'
+  const displayName = profile?.display_name || localStorage.getItem('hive_user_name') || 'H'
+  const userInitial = displayName.charAt(0).toUpperCase()
+
+  if (!authReady) {
+    return (
+      <div style={{ height: '100vh', width: '100vw', background: 'var(--bg)' }} />
+    )
+  }
+  if (!session) return <AuthGate />
+  if (profile?.status === 'denied') return <DeniedScreen />
 
   return (
     <>
@@ -326,15 +347,36 @@ export default function App() {
         width: '100vw',
         overflow: 'hidden',
         background: 'var(--bg)',
+        position: 'relative',
         transition: 'grid-template-columns .45s var(--ease)',
       }}
     >
+      {profile?.status === 'pending' && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 30,
+            fontSize: 12,
+            color: 'var(--accent)',
+            background: 'rgba(242,193,78,0.1)',
+            border: '1px solid var(--accent-dim)',
+            borderRadius: 999,
+            padding: '5px 12px',
+            pointerEvents: 'none',
+          }}
+        >
+          On the Hive waitlist — same account as the website
+        </div>
+      )}
       {/* 1. Icon rail */}
       <IconRail
         activeTab={activeTab}
         onSelectTab={handleNavTab}
         onOpenProfile={() => setShowProfile(true)}
-        userInitial={(localStorage.getItem('hive_user_name') || 'Samko').charAt(0).toUpperCase()}
+        userInitial={userInitial}
         buddyOn={buddyOn}
         onToggleBuddy={toggleBuddy}
       />
@@ -462,7 +504,7 @@ export default function App() {
       {showProfile && (
         <ProfileModal
           onClose={() => setShowProfile(false)}
-          userInitial={(localStorage.getItem('hive_user_name') || 'Samko').charAt(0).toUpperCase()}
+          userInitial={userInitial}
         />
       )}
 
