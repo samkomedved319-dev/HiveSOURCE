@@ -10,21 +10,67 @@ import { registerSearchHandlers } from './search-service'
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let isQuitting = false
+let pendingAuthUrl: string | null = null
 
 const isDev = !app.isPackaged
-const gotLock = isDev ? true : app.requestSingleInstanceLock()
+const HIVE_WEB_LOGIN = 'https://samkomedved319-dev.github.io/hive/?desktop=1'
+
+const gotLock = app.requestSingleInstanceLock()
 
 if (!gotLock) {
   process.exit(0)
-} else if (!isDev) {
-  app.on('second-instance', () => {
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore()
-      mainWindow.show()
-      mainWindow.focus()
-    }
-  })
 }
+
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient('hive', process.execPath, [path.resolve(process.argv[1])])
+  }
+} else {
+  app.setAsDefaultProtocolClient('hive')
+}
+
+function parseHiveAuthUrl(raw: string): { access_token: string; refresh_token: string } | null {
+  try {
+    const normalized = raw.replace(/^hive:\/\//i, 'https://hive-auth/')
+    const u = new URL(normalized)
+    const hash = new URLSearchParams(u.hash.replace(/^#/, ''))
+    const access =
+      u.searchParams.get('access_token') || hash.get('access_token') || ''
+    const refresh =
+      u.searchParams.get('refresh_token') || hash.get('refresh_token') || ''
+    if (!access || !refresh) return null
+    return { access_token: access, refresh_token: refresh }
+  } catch {
+    return null
+  }
+}
+
+function deliverAuthUrl(raw: string) {
+  const tokens = parseHiveAuthUrl(raw)
+  if (!tokens) return
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.show()
+    mainWindow.focus()
+    mainWindow.webContents.send('auth:session', tokens)
+  } else {
+    pendingAuthUrl = raw
+  }
+}
+
+app.on('second-instance', (_e, argv) => {
+  const url = argv.find((a) => typeof a === 'string' && a.startsWith('hive://'))
+  if (url) deliverAuthUrl(url)
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+  }
+})
+
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  deliverAuthUrl(url)
+})
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -67,6 +113,10 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show()
     if (isDev) mainWindow?.webContents.openDevTools({ mode: 'detach' })
+    if (pendingAuthUrl) {
+      deliverAuthUrl(pendingAuthUrl)
+      pendingAuthUrl = null
+    }
   })
 
   setTimeout(() => {
@@ -125,6 +175,9 @@ app.whenReady().then(() => {
   createWindow()
   createTray()
 
+  const launchUrl = process.argv.find((a) => a.startsWith('hive://'))
+  if (launchUrl) pendingAuthUrl = launchUrl
+
   try {
     globalShortcut.register('CommandOrControl+Shift+H', () => {
       if (mainWindow?.isVisible?.() && mainWindow?.isFocused?.()) mainWindow?.hide()
@@ -158,3 +211,6 @@ ipcMain.on('window:maximize', () => {
 })
 ipcMain.on('window:close', () => mainWindow?.close())
 ipcMain.handle('window:isMaximized', () => mainWindow?.isMaximized() ?? false)
+ipcMain.on('auth:openWeb', () => {
+  shell.openExternal(HIVE_WEB_LOGIN)
+})

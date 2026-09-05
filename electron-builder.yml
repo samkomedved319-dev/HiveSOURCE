@@ -10,3 +10,7 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+protocols:
+  - name: Hive Auth
+    schemes:
+      - hive

@@ -115,6 +115,10 @@ export interface ElectronAPI {
       error?: string
     }>
   }
+  auth?: {
+    openWebLogin: () => void
+    onSession: (cb: (tokens: { access_token: string; refresh_token: string }) => void) => () => void
+  }
 }
 
 declare global {

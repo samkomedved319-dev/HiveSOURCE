@@ -63,4 +63,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('ai:chat', messages, model, options),
     models: () => ipcRenderer.invoke('ai:models'),
   },
+  auth: {
+    openWebLogin: () => ipcRenderer.send('auth:openWeb'),
+    onSession: (cb: (tokens: { access_token: string; refresh_token: string }) => void) => {
+      const handler = (_e: unknown, tokens: { access_token: string; refresh_token: string }) => cb(tokens)
+      ipcRenderer.on('auth:session', handler)
+      return () => ipcRenderer.removeListener('auth:session', handler)
+    },
+  },
 })

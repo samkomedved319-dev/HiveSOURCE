@@ -16,6 +16,7 @@ interface AuthState {
   signUp: (email: string, password: string, name: string) => Promise<boolean>
   signOut: () => Promise<void>
   saveProfile: (displayName: string, notify?: boolean) => Promise<boolean>
+  acceptSession: (accessToken: string, refreshToken: string) => Promise<boolean>
 }
 
 async function ensureProfile(user: User, name?: string): Promise<HiveProfile> {
@@ -155,6 +156,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return true
     } catch (e: unknown) {
       set({ error: e instanceof Error ? e.message : 'Save failed' })
+      return false
+    }
+  },
+
+  acceptSession: async (accessToken, refreshToken) => {
+    set({ loading: true, error: null, info: null })
+    try {
+      const r = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+      if (r.error) throw r.error
+      const session = r.data.session
+      const user = r.data.user
+      if (!session || !user) throw new Error('No session from website login')
+      const profile = await ensureProfile(user)
+      applyLocalName(profile, user)
+      set({ session, user, profile, loading: false, info: null })
+      return true
+    } catch (e: unknown) {
+      set({ loading: false, error: e instanceof Error ? e.message : 'Could not take over website login' })
       return false
     }
   },
