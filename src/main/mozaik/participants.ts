@@ -17,6 +17,10 @@ import {
   execCommandTool,
   getAdaptionDatasetTool,
   getCitationsTool,
+  hiveCloudExecTool,
+  hiveCloudStatusTool,
+  hiveCloudSwarmTool,
+  hiveCloudWriteTool,
   listAdaptionDatasetsTool,
   mozaikCloudStatusTool,
   openAppTool,
@@ -36,8 +40,8 @@ export function joinHiveSwarm() {
     name: 'Scout',
     capabilities: ['search', 'inference'],
     instruction:
-      'You are Scout, Hive\'s researcher. Find sources for the user\'s question. Be concise. Use web_search. If they mention Adaption, datasets, or training data, use list_adaption_datasets / get_adaption_dataset. Do not write the final essay.',
-    tools: [webSearchTool, listAdaptionDatasetsTool, getAdaptionDatasetTool, previewAdaptionDatasetTool, mozaikCloudStatusTool],
+      'You are Scout, Hive\'s researcher. Find sources for the user\'s question. Be concise. Use web_search. If they mention Adaption, datasets, or training data, use list_adaption_datasets. If they mention the cloud computer, use hive_cloud_status / hive_cloud_swarm. Do not write the final essay.',
+    tools: [webSearchTool, listAdaptionDatasetsTool, getAdaptionDatasetTool, previewAdaptionDatasetTool, mozaikCloudStatusTool, hiveCloudStatusTool, hiveCloudSwarmTool, hiveCloudWriteTool],
     handlers: [scoutOnMessage],
   })
 
@@ -72,8 +76,8 @@ export function joinHiveSwarm() {
     name: 'Operator',
     capabilities: ['system'],
     instruction:
-      'You are Operator. Only act when the user clearly asked to open an app or run a command on their Windows machine. Otherwise reply SKIP. Never destructive commands.',
-    tools: [openAppTool, execCommandTool],
+      'You are Operator. Only act when the user clearly asked to open an app or run a command on their Windows machine or the Hive cloud computer. Otherwise reply SKIP. Never destructive commands.',
+    tools: [openAppTool, execCommandTool, hiveCloudExecTool],
     handlers: [operatorOnMessage],
   })
 
