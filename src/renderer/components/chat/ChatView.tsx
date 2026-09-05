@@ -13,6 +13,17 @@ import type { HiveSwarmEvent, HiveSwarmState, Message, Agent } from '../../types
 import { mentionHandle } from '../bots/botLibrary'
 import type { Conversation } from '../layout/ConversationList'
 
+function parseMentionedAgents(content: string, list: Agent[]): Agent[] {
+  const tags = [...content.matchAll(/@([A-Za-z0-9_-]+)/g)].map((m) => m[1].toLowerCase())
+  if (!tags.length) return []
+  return list.filter((a) => {
+    const handle = mentionHandle(a.name).toLowerCase()
+    const first = (a.name.split(/[\s(/]/)[0] || '').toLowerCase()
+    const idBit = a.id.replace(/^agent-/, '').toLowerCase()
+    return tags.some((t) => t === handle || t === first || idBit.startsWith(t) || handle.startsWith(t))
+  })
+}
+
 interface ChatViewProps {
   isCanvasOpen: boolean
   onToggleCanvas: () => void
@@ -60,6 +71,9 @@ export default function ChatView({
   // Idle reset timer: a stale reset from an earlier message must never
   // clobber the state of a newer one, so each send clears the previous.
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const directModeRef = useRef(false)
+  const conversationRef = useRef(conversation)
+  conversationRef.current = conversation
   const scheduleIdleReset = (ms: number) => {
     if (idleTimer.current) clearTimeout(idleTimer.current)
     idleTimer.current = setTimeout(() => {
@@ -111,6 +125,7 @@ export default function ChatView({
         void window.electronAPI.tts.speak(ev.text)
       }
       if (ev.type === 'inference.stream' && ev.text && name === 'Hive') {
+        if (directModeRef.current) return
         setTyping(false)
         const agentId = activeIdRef.current
         if (!agentId) return
@@ -129,6 +144,7 @@ export default function ChatView({
         })
       }
       if (ev.type === 'model.answer' && ev.text && name === 'Hive') {
+        if (directModeRef.current) return
         const agentId = activeIdRef.current
         if (!agentId) return
         upsertMessage(agentId, {
@@ -223,17 +239,30 @@ export default function ChatView({
     addMessage(activeAgent.id, userMsg)
     setTyping(true)
 
-    const mentioned = agents.filter((a) => {
-      const h = mentionHandle(a.name)
-      return new RegExp(`@${h}\\b`, 'i').test(content)
-    })
-    const isGroup = conversation?.kind === 'group'
-    const groupMembers = (conversation?.agentIds || [])
+    const conv = conversationRef.current
+    const mentioned = parseMentionedAgents(content, agents)
+    const isGroup = conv?.kind === 'group' || conv?.id?.startsWith('g-') || (conv?.agentIds?.length || 0) > 0
+    const groupMembers = (conv?.agentIds || [])
       .map((id) => agents.find((a) => a.id === id))
       .filter(Boolean) as Agent[]
 
     const runDirect = async (targets: Agent[]) => {
-      for (const agent of targets) {
+      directModeRef.current = true
+      const unique = targets.filter((t, i, arr) => arr.findIndex((x) => x.id === t.id) === i)
+      if (!unique.length) {
+        addMessage(activeAgent.id, {
+          id: `m-err-${Date.now()}`,
+          agentId: activeAgent.id,
+          content: 'No bot matched that @mention. Try @Athena, @Apollo, or @Hive.',
+          role: 'assistant',
+          timestamp: Date.now(),
+          type: 'text',
+          botName: 'Hive',
+        })
+        setTyping(false)
+        return
+      }
+      for (const agent of unique) {
         try {
           const history = getMessages(activeAgent.id)
             .filter((m) => m.role === 'user' || m.role === 'assistant')
@@ -283,7 +312,8 @@ export default function ChatView({
     }
 
     if (isGroup) {
-      const targets = mentioned.length ? mentioned : groupMembers.length ? groupMembers : [activeAgent]
+      const fallback = groupMembers.length ? groupMembers : agents.filter((a) => !a.isCeo).slice(0, 3)
+      const targets = mentioned.length ? mentioned : fallback.length ? fallback : [activeAgent]
       await runDirect(targets)
       return
     }
@@ -294,6 +324,7 @@ export default function ChatView({
 
     setOps([])
     setSwarm({ Scout: 'thinking', Hive: 'thinking', Pulse: 'thinking', Critic: 'idle' })
+    directModeRef.current = false
 
     // Map intent to Grok personality commentary & Hex mascot state
     const lowerContent = content.toLowerCase()
@@ -741,8 +772,8 @@ Followed by a brief explanation of what was run.`
         onOpenTools={() => setShowTools(true)}
         onOpenVoice={() => setShowVoice(true)}
         mentionables={
-          conversation?.kind === 'group'
-            ? agents.filter((a) => (conversation.agentIds || []).includes(a.id))
+          conversation?.kind === 'group' || conversation?.id?.startsWith('g-')
+            ? agents.filter((a) => !(conversation.agentIds || []).length || (conversation.agentIds || []).includes(a.id))
             : agents
         }
       />

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import IconRail, { NavTab } from './components/layout/IconRail'
 import ConversationList, { Conversation } from './components/layout/ConversationList'
 import ChatView from './components/chat/ChatView'
+import HiveOffice from './components/office/HiveOffice'
 import CanvasPanel, { BrowserStep } from './components/canvas/CanvasPanel'
 import SettingsModal from './components/layout/SettingsModal'
 import ProjectsModal from './components/layout/ProjectsModal'
@@ -93,7 +94,7 @@ export default function App() {
   const [isConvListOpen, setIsConvListOpen] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
   const [showProjects, setShowProjects] = useState(false)
-  const [mainView, setMainView] = useState<'chat' | 'bots'>('chat')
+  const [mainView, setMainView] = useState<'chat' | 'bots' | 'office'>('chat')
   const [showProfile, setShowProfile] = useState(false)
   const [showVoiceModal, setShowVoiceModal] = useState(false)
   const [showNewGroup, setShowNewGroup] = useState(false)
@@ -278,7 +279,6 @@ export default function App() {
   const handleNavTab = (tab: NavTab) => {
     setActiveTab(tab)
     if (tab === 'chat') {
-      // Chat tab doubles as "back to workspace": dismiss any modal surface.
       setMainView('chat')
       setShowSettings(false)
       setShowProjects(false)
@@ -289,8 +289,11 @@ export default function App() {
     } else if (tab === 'projects') {
       setShowProjects(true)
     } else if (tab === 'workers') {
-      // Bots live in the main column where chat lives — no popup.
       setMainView('bots')
+    } else if (tab === 'office') {
+      setMainView('office')
+      setShowSettings(false)
+      setShowProjects(false)
     } else if (tab === 'voice') {
       setShowVoiceModal(true)
     }
@@ -508,6 +511,13 @@ export default function App() {
         conversation={conversations.find((c) => c.id === activeConvId) || null}
       />
       </div>
+      ) : mainView === 'office' ? (
+      <HiveOffice
+        onBack={() => {
+          setMainView('chat')
+          setActiveTab('chat')
+        }}
+      />
       ) : (
       <BotsPanel
         onBack={() => {
@@ -547,6 +557,7 @@ export default function App() {
             { id: 'hivebox', label: 'Toggle HiveBox', hint: 'Ctrl+Shift+H', run: () => { setShowPalette(false); setIsCanvasOpen((v) => !v) } },
             { id: 'sidebar', label: 'Toggle sidebar', hint: 'Ctrl+B', run: () => { setShowPalette(false); setIsConvListOpen((v) => !v) } },
             { id: 'workers', label: 'AI Workers', run: () => { setShowPalette(false); setMainView('bots') } },
+            { id: 'office', label: 'Hive Office', run: () => { setShowPalette(false); setMainView('office'); setActiveTab('office') } },
             { id: 'settings', label: 'Settings', hint: 'Ctrl+,', run: () => { setShowPalette(false); setShowSettings(true) } },
           ]}
         />

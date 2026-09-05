@@ -1,6 +1,6 @@
 import React from 'react'
 
-export type NavTab = 'chat' | 'workers' | 'projects' | 'voice' | 'settings'
+export type NavTab = 'chat' | 'workers' | 'projects' | 'office' | 'voice' | 'settings'
 
 interface IconRailProps {
   activeTab: NavTab
@@ -134,6 +134,14 @@ export default function IconRail({
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
           <rect x="3" y="7" width="18" height="13" rx="2" />
           <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        </svg>
+      </RailBtn>
+
+      <RailBtn title="Hive Office" active={activeTab === 'office'} onClick={() => onSelectTab('office')}>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+          <path d="M3 21V8l9-5 9 5v13" />
+          <path d="M9 21v-8h6v8" />
+          <path d="M9 10h.01M15 10h.01M12 10h.01" />
         </svg>
       </RailBtn>
 
