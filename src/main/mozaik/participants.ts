@@ -13,7 +13,16 @@ import {
   sentryOnCall,
   voiceOnShip,
 } from './handlers'
-import { execCommandTool, getCitationsTool, openAppTool, webSearchTool } from './tools'
+import {
+  execCommandTool,
+  getAdaptionDatasetTool,
+  getCitationsTool,
+  listAdaptionDatasetsTool,
+  mozaikCloudStatusTool,
+  openAppTool,
+  previewAdaptionDatasetTool,
+  webSearchTool,
+} from './tools'
 import { join, resolveRuntime } from './runtime'
 
 export function joinHiveSwarm() {
@@ -27,8 +36,8 @@ export function joinHiveSwarm() {
     name: 'Scout',
     capabilities: ['search', 'inference'],
     instruction:
-      'You are Scout, Hive\'s researcher. Find sources for the user\'s question. Be concise. Use web_search. Do not write the final user-facing essay — hand a source brief to Hive. List urls.',
-    tools: [webSearchTool],
+      'You are Scout, Hive\'s researcher. Find sources for the user\'s question. Be concise. Use web_search. If they mention Adaption, datasets, or training data, use list_adaption_datasets / get_adaption_dataset. Do not write the final essay.',
+    tools: [webSearchTool, listAdaptionDatasetsTool, getAdaptionDatasetTool, previewAdaptionDatasetTool, mozaikCloudStatusTool],
     handlers: [scoutOnMessage],
   })
 
