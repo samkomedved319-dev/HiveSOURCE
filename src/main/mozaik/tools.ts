@@ -4,6 +4,12 @@ import { openSystemTarget, runSystemCommand } from '../system-service'
 import { resolveRuntime } from './runtime'
 import { requestApproval } from './approvals'
 import { emitHiveState } from './notify'
+import {
+  getAdaptionDataset,
+  listAdaptionDatasets,
+  mozaikCloudStatus,
+  previewAdaptionDataset,
+} from '../adaption-service'
 
 export const webSearchTool: Tool = {
   type: 'function',
@@ -96,4 +102,56 @@ export const execCommandTool: Tool = {
     if (!ok) return { ok: false, error: 'User denied' }
     return runSystemCommand(command)
   },
+}
+
+export const listAdaptionDatasetsTool: Tool = {
+  type: 'function',
+  name: 'list_adaption_datasets',
+  description: 'List Adaptive Data datasets from Adaption Labs (https://adaptionlabs.ai/app/datasets).',
+  parameters: {
+    type: 'object',
+    properties: {
+      query: { type: 'string', description: 'Optional name search' },
+    },
+    additionalProperties: false,
+  },
+  strict: false,
+  invoke: async (args: { query?: string }) => listAdaptionDatasets(args?.query),
+}
+
+export const getAdaptionDatasetTool: Tool = {
+  type: 'function',
+  name: 'get_adaption_dataset',
+  description: 'Get one Adaption dataset by id.',
+  parameters: {
+    type: 'object',
+    properties: { dataset_id: { type: 'string' } },
+    required: ['dataset_id'],
+    additionalProperties: false,
+  },
+  strict: false,
+  invoke: async (args: { dataset_id?: string }) => getAdaptionDataset(String(args?.dataset_id || '')),
+}
+
+export const previewAdaptionDatasetTool: Tool = {
+  type: 'function',
+  name: 'preview_adaption_dataset',
+  description: 'Download a short JSONL preview of an Adaption dataset.',
+  parameters: {
+    type: 'object',
+    properties: { dataset_id: { type: 'string' } },
+    required: ['dataset_id'],
+    additionalProperties: false,
+  },
+  strict: false,
+  invoke: async (args: { dataset_id?: string }) => previewAdaptionDataset(String(args?.dataset_id || '')),
+}
+
+export const mozaikCloudStatusTool: Tool = {
+  type: 'function',
+  name: 'mozaik_cloud_status',
+  description: 'Report whether Hive is using local @mozaik-ai/core or Mozaik Cloud credentials.',
+  parameters: { type: 'object', properties: {}, additionalProperties: false },
+  strict: false,
+  invoke: async () => mozaikCloudStatus(),
 }
