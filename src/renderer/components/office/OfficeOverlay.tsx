@@ -1,24 +1,9 @@
-import React, { Component, Suspense, lazy, useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { FLOOR_CREW, moodFromEvent, type AgentMood } from './crew'
 import type { HiveSwarmEvent } from '../../types'
 import { useAgentStore } from '../../stores/agentStore'
 import { useChatStore } from '../../stores/chatStore'
 import { emitTitleChat } from '../../chatTitle'
-
-const Office3D = lazy(() => import('./Office3D'))
-
-class Gate extends Component<{ children: React.ReactNode; fallback: React.ReactNode }, { err: boolean }> {
-  state = { err: false }
-  static getDerivedStateFromError() {
-    return { err: true }
-  }
-  componentDidCatch() {
-    this.setState({ err: true })
-  }
-  render() {
-    return this.state.err ? this.props.fallback : this.props.children
-  }
-}
 
 function pickSpeaker(task: string) {
   const t = task.toLowerCase()
@@ -39,20 +24,99 @@ function readable(raw: string) {
   return t
 }
 
-function Desks2D({ moods, meeting }: { moods: Record<string, AgentMood>; meeting: boolean }) {
+const DESK_POS = [
+  { left: 8, top: 10 },
+  { left: 38, top: 10 },
+  { left: 68, top: 10 },
+  { left: 8, top: 48 },
+  { left: 38, top: 48 },
+  { left: 68, top: 48 },
+]
+
+function IsoOffice({ moods, meeting }: { moods: Record<string, AgentMood>; meeting: boolean }) {
   return (
-    <div style={{ height: '100%', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: 14, padding: 18, background: '#d7b57a' }}>
-      {FLOOR_CREW.map((a) => {
-        const mood = moods[a.id] || moods[a.name.toLowerCase()] || 'idle'
-        const live = meeting || mood !== 'idle'
-        return (
-          <div key={a.id} style={{ background: '#1a1712', border: `3px solid ${a.color}`, borderRadius: 16, padding: 16, color: '#fff' }}>
-            <div style={{ width: 22, height: 22, borderRadius: '50%', background: a.color, marginBottom: 8 }} />
-            <div style={{ fontWeight: 800, fontSize: 18 }}>{a.name}</div>
-            <div style={{ color: '#c4b396', fontSize: 12 }}>{live ? mood : a.job}</div>
-          </div>
-        )
-      })}
+    <div
+      style={{
+        height: '100%',
+        minHeight: 280,
+        background: 'radial-gradient(ellipse at 50% 20%, #5a4a32 0%, #2a2218 55%, #16130e 100%)',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: '46%',
+          width: 640,
+          height: 420,
+          marginLeft: -320,
+          marginTop: -210,
+          transform: 'rotateX(56deg) rotateZ(-32deg)',
+          transformStyle: 'preserve-3d',
+          background:
+            'repeating-linear-gradient(90deg, rgba(0,0,0,.08) 0 2px, transparent 2px 48px), repeating-linear-gradient(0deg, rgba(0,0,0,.08) 0 2px, transparent 2px 48px), #c9a66b',
+          boxShadow: '0 40px 80px rgba(0,0,0,.45)',
+          border: '8px solid #8a6a3a',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: 18,
+            transform: 'translateX(-50%)',
+            width: 160,
+            height: 70,
+            background: meeting ? 'rgba(242,193,78,.55)' : 'rgba(20,20,24,.75)',
+            border: '2px solid #F2C14E',
+            display: 'grid',
+            placeItems: 'center',
+            color: '#fff',
+            fontWeight: 800,
+            fontSize: 12,
+          }}
+        >
+          {meeting ? 'MEETING' : 'GLASS ROOM'}
+        </div>
+        {FLOOR_CREW.map((a, i) => {
+          const mood = moods[a.id] || moods[a.name.toLowerCase()] || 'idle'
+          const live = meeting || mood !== 'idle'
+          const pos = DESK_POS[i]
+          const goMeet = live && meeting
+          return (
+            <div
+              key={a.id}
+              style={{
+                position: 'absolute',
+                left: goMeet ? `${28 + (i % 3) * 14}%` : `${pos.left}%`,
+                top: goMeet ? `${8 + Math.floor(i / 3) * 8}%` : `${pos.top}%`,
+                width: 120,
+                height: 88,
+                transition: 'left .8s ease, top .8s ease',
+              }}
+            >
+              <div style={{ width: 110, height: 52, background: '#6b5340', border: '2px solid #3d2e22', position: 'relative' }}>
+                <div style={{ position: 'absolute', left: 18, top: -18, width: 74, height: 22, background: '#111', border: `2px solid ${a.color}` }} />
+              </div>
+              <div
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  background: a.color,
+                  margin: '6px auto 0',
+                  boxShadow: live ? `0 0 14px ${a.color}` : 'none',
+                  animation: live ? 'hive-bob .45s ease-in-out infinite alternate' : 'none',
+                }}
+              />
+              <div style={{ textAlign: 'center', fontSize: 11, fontWeight: 800, color: '#1a1712', marginTop: 2 }}>{a.name}</div>
+            </div>
+          )
+        })}
+      </div>
+      <style>{`@keyframes hive-bob { from { transform: translateY(0) } to { transform: translateY(-6px) } }`}</style>
     </div>
   )
 }
@@ -62,6 +126,7 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
   const [meeting, setMeeting] = useState(false)
   const [task, setTask] = useState('')
   const [busy, setBusy] = useState(false)
+  const [world, setWorld] = useState<'hive' | 'delegation'>('hive')
   const scroller = useRef<HTMLDivElement>(null)
   const speaker = useRef('Hive')
   const { activeAgent } = useAgentStore()
@@ -109,10 +174,7 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
       void window.electronAPI?.hive?.send?.(t, 'office')
       const res = await window.electronAPI?.ai?.chat?.(
         [
-          {
-            role: 'system',
-            content: `You are ${speaker.current} at the Hive office. Reply as that one person. Short, useful.`,
-          },
+          { role: 'system', content: `You are ${speaker.current} at the Hive office. Reply as that one person. Short, useful.` },
           { role: 'user', content: t },
         ],
         undefined,
@@ -145,67 +207,33 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 99999,
-        display: 'flex',
-        flexDirection: 'column',
-        background: '#1c1812',
-        fontFamily: 'inherit',
-      }}
-    >
-      <div
-        style={{
-          height: 52,
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          padding: '0 14px',
-          background: '#111',
-          color: '#F2C14E',
-        }}
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          style={{
-            background: '#F2C14E',
-            color: '#111',
-            border: 'none',
-            borderRadius: 8,
-            padding: '8px 14px',
-            fontWeight: 800,
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-          }}
-        >
+    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', flexDirection: 'column', background: '#2a2218', fontFamily: 'inherit' }}>
+      <div style={{ height: 52, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', background: '#111', color: '#F2C14E' }}>
+        <button type="button" onClick={onClose} style={goldBtn}>
           BACK TO CHAT
         </button>
         <div style={{ fontWeight: 900, letterSpacing: '.08em' }}>HIVE OFFICE</div>
-        <div style={{ fontSize: 12, color: '#c4b396' }}>{meeting ? 'Crew moving' : 'Idle · drag to look around'}</div>
+        <button type="button" onClick={() => setWorld('hive')} style={world === 'hive' ? goldBtn : ghostBtn}>
+          Floor
+        </button>
+        <button type="button" onClick={() => setWorld('delegation')} style={world === 'delegation' ? goldBtn : ghostBtn}>
+          The Delegation 3D
+        </button>
       </div>
 
-      <div style={{ flex: 1, minHeight: 280, position: 'relative', background: '#1c1812' }}>
-        <Gate fallback={<Desks2D moods={moods} meeting={meeting} />}>
-          <Suspense fallback={<Desks2D moods={moods} meeting={meeting} />}>
-            <Office3D moods={moods} bubbles={{}} meeting={meeting} />
-          </Suspense>
-        </Gate>
+      <div style={{ flex: 1, minHeight: 240, position: 'relative', background: '#2a2218' }}>
+        {world === 'delegation' ? (
+          <iframe
+            title="The Delegation"
+            src="https://arturitu.github.io/the-delegation/"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', background: '#111' }}
+          />
+        ) : (
+          <IsoOffice moods={moods} meeting={meeting} />
+        )}
       </div>
 
-      <div
-        style={{
-          height: 230,
-          flexShrink: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          background: '#111',
-          borderTop: '2px solid #F2C14E',
-        }}
-      >
+      <div style={{ height: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', background: '#111', borderTop: '2px solid #F2C14E' }}>
         <div ref={scroller} style={{ flex: 1, overflow: 'auto', padding: '10px 16px', color: '#f3eee4' }}>
           {thread.length === 0 && <div style={{ color: '#c4b396' }}>Same history as Chat. Named in the sidebar.</div>}
           {thread.map((row) => {
@@ -230,21 +258,35 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
             value={task}
             onChange={(e) => setTask(e.target.value)}
             placeholder="Task the floor…"
-            style={{
-              flex: 1,
-              background: '#1a1712',
-              border: '1px solid #333',
-              color: '#fff',
-              borderRadius: 8,
-              padding: '10px 12px',
-              fontFamily: 'inherit',
-            }}
+            style={{ flex: 1, background: '#1a1712', border: '1px solid #333', color: '#fff', borderRadius: 8, padding: '10px 12px', fontFamily: 'inherit' }}
           />
-          <button type="submit" disabled={busy} style={{ background: '#F2C14E', color: '#111', border: 'none', borderRadius: 8, padding: '10px 16px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button type="submit" disabled={busy} style={goldBtn}>
             Send
           </button>
         </form>
       </div>
     </div>
   )
+}
+
+const goldBtn: React.CSSProperties = {
+  background: '#F2C14E',
+  color: '#111',
+  border: 'none',
+  borderRadius: 8,
+  padding: '8px 14px',
+  fontWeight: 800,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+}
+
+const ghostBtn: React.CSSProperties = {
+  background: 'transparent',
+  color: '#c4b396',
+  border: '1px solid #3d3428',
+  borderRadius: 8,
+  padding: '8px 14px',
+  fontWeight: 700,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
 }
