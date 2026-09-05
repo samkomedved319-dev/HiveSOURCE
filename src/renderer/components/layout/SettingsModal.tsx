@@ -83,20 +83,14 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     localStorage.setItem('hive_mozaik_cloud_key', mozaikCloudKey)
     localStorage.setItem('hive_mozaik_cloud_base', mozaikCloudBase)
     void window.electronAPI?.keys?.set?.({
-      OPENROUTER_API_KEY: customKey,
-      hive_custom_api_key: customKey,
-      OPENAI_API_KEY: openaiKey || customKey,
-      ANTHROPIC_API_KEY: anthropicKey,
-      GEMINI_API_KEY: geminiKey,
-      MEM0_API_KEY: mem0Key,
-      MOZAIK_CLOUD_API_KEY: mozaikCloudKey,
-      MOZAIK_CLOUD_BASE_URL: mozaikCloudBase,
+      ...(customKey.trim() ? { OPENROUTER_API_KEY: customKey.trim(), hive_custom_api_key: customKey.trim() } : {}),
+      ...(openaiKey.trim() ? { OPENAI_API_KEY: openaiKey.trim() } : {}),
     })
     localStorage.setItem('hive_system_prompt', systemPrompt)
-    localStorage.setItem('hive_accent_color', accentColor)
+    localStorage.setItem('hive_accent_color', '#F2C14E')
     localStorage.setItem('hive_reduced_motion', reducedMotion ? 'true' : 'false')
 
-    document.documentElement.style.setProperty('--accent', accentColor)
+    document.documentElement.style.setProperty('--accent', '#F2C14E')
 
     window.dispatchEvent(new Event('hive:buddy-settings'))
     showToast('Settings saved')
@@ -225,11 +219,13 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 label="Models & Reasoning"
                 onClick={() => setActiveTab('models')}
               />
+              {/* Appearance / design tokens — kept in source, hidden from users.
               <NavButton
                 active={activeTab === 'appearance'}
                 label="Appearance"
                 onClick={() => setActiveTab('appearance')}
               />
+              */}
               <NavButton
                 active={activeTab === 'integrations'}
                 label="Integrations & Auth"
@@ -442,10 +438,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             {activeTab === 'models' && (
               <>
                 <div style={{ fontSize: 12.5, color: 'var(--text-dim)', lineHeight: 1.5, marginBottom: 12 }}>
-                  Chat needs an <b>OpenRouter</b> key (or OpenAI / Anthropic / Gemini). Mozaik Cloud at{' '}
-                  <a href="https://app.jigjoy.ai/" style={{ color: 'var(--accent)' }}>app.jigjoy.ai</a> is optional hosted runtime.
-                  Mem0 is long-term agent memory — apply free months at{' '}
-                  <a href="https://mozaik.jigjoy.ai/mem0" style={{ color: 'var(--accent)' }}>mozaik.jigjoy.ai/mem0</a>. Without a Mem0 key, Hive still remembers locally.
+                  Paste your OpenRouter key below, or keep it in <code>.env</code> as <b>OPENROUTER_API_KEY</b>
+                  (the same key also works as OPENAI_API_KEY). Hive reads it on every message.
                 </div>
                 <SettingRow
                   label="Default Model"
@@ -529,7 +523,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     type="password"
                     value={customKey}
                     onChange={(e) => setCustomKey(e.target.value)}
-                    placeholder="sk-or-v1-...  required for chat"
+                    placeholder="sk-or-v1-...  leave blank to use .env"
                     style={{
                       background: 'var(--panel-2)',
                       border: '1px solid var(--border)',
@@ -542,6 +536,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     }}
                   />
                 </div>
+                {/* Coming later: extra providers + Mem0 + Mozaik Cloud. Kept in source, hidden from users. */}
+                <div style={{ display: 'none' }}>
                 {[
                   ['OpenAI key', openaiKey, setOpenaiKey, 'sk-...'],
                   ['Anthropic key', anthropicKey, setAnthropicKey, 'sk-ant-...'],
@@ -570,6 +566,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     />
                   </div>
                 ))}
+                </div>
               </>
             )}
 
@@ -594,32 +591,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     style={{ accentColor: 'var(--accent)', cursor: 'pointer' }}
                   />
                 </SettingRow>
-
-                <div
-                  style={{
-                    background: 'var(--panel-2)',
-                    border: '1px solid var(--border-soft)',
-                    borderRadius: 8,
-                    padding: 12,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 6,
-                  }}
-                >
-                  <div style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--text)' }}>
-                    Visual Design Tokens
-                  </div>
-                  <pre
-                    style={{
-                      fontFamily: "'JetBrains Mono', monospace",
-                      fontSize: 11,
-                      color: 'var(--text-dim)',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    --bg: #0D0E11; --panel: #17181C; --border: #2A2C32; --accent: {accentColor};
-                  </pre>
-                </div>
+                {/* Visual Design Tokens — kept in source, hidden from users. */}
               </>
             )}
 

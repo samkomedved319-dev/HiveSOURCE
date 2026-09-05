@@ -2,44 +2,75 @@ import path from 'path'
 import fs from 'fs'
 import { app, ipcMain } from 'electron'
 
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const dotenv = require('dotenv')
+function isPlaceholder(v: string) {
+  const s = v.trim()
+  if (!s) return true
+  if (s.includes('your_') || s.endsWith('_here')) return true
+  if (s === 'sk-or-v1-...' || s === 'sk-or-v1-your-real-key') return true
+  return false
+}
+
+function applyEnvFile(file: string) {
+  if (!fs.existsSync(file)) return
+  try {
+    const text = fs.readFileSync(file, 'utf8')
+    for (const raw of text.split(/\r?\n/)) {
+      const line = raw.trim()
+      if (!line || line.startsWith('#')) continue
+      const eq = line.indexOf('=')
+      if (eq < 1) continue
+      const name = line.slice(0, eq).trim()
+      let val = line.slice(eq + 1).trim()
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1)
+      }
+      if (!isPlaceholder(val)) process.env[name] = val
+    }
+  } catch {}
+}
+
+export function loadEnvFiles() {
+  const extra: string[] = []
+  try {
+    extra.push(path.join(app.getAppPath(), '.env'))
+    extra.push(path.join(path.dirname(app.getPath('exe')), '.env'))
+    extra.push(path.join(app.getPath('userData'), '.env'))
+  } catch {}
   const candidates = [
     path.join(process.cwd(), '.env'),
     path.join(__dirname, '../../.env'),
     path.join(__dirname, '../../../.env'),
+    ...extra,
   ]
-  try {
-    if (app?.isReady?.()) candidates.push(path.join(app.getAppPath(), '.env'))
-  } catch {}
-  for (const p of candidates) {
-    if (fs.existsSync(p)) dotenv.config({ path: p, override: false })
-  }
-  dotenv.config({ override: false })
-} catch {}
+  for (const p of candidates) applyEnvFile(p)
+}
+
+loadEnvFiles()
 
 const overlay: Record<string, string> = {}
 
 export function setOverlayKeys(next: Record<string, string | undefined>) {
   for (const [k, v] of Object.entries(next)) {
-    if (typeof v === 'string' && v.trim()) overlay[k] = v.trim()
-    else if (v === '') delete overlay[k]
+    if (typeof v === 'string' && !isPlaceholder(v)) overlay[k] = v.trim()
   }
 }
 
 export function getKey(...names: string[]): string {
   for (const n of names) {
     const fromOverlay = overlay[n]
-    if (fromOverlay) return fromOverlay
+    if (fromOverlay && !isPlaceholder(fromOverlay)) return fromOverlay
     const fromEnv = process.env[n]
-    if (fromEnv && fromEnv.trim() && !fromEnv.includes('your_') && !fromEnv.endsWith('_here')) return fromEnv.trim()
+    if (fromEnv && !isPlaceholder(fromEnv)) return fromEnv.trim()
   }
   return ''
 }
 
 export function openRouterKey() {
-  return getKey('OPENROUTER_API_KEY', 'OPENAI_API_KEY', 'hive_custom_api_key')
+  const k = getKey('OPENROUTER_API_KEY', 'OPENAI_API_KEY', 'hive_custom_api_key')
+  if (k) return k
+  const openai = getKey('OPENAI_API_KEY')
+  if (openai.startsWith('sk-or-')) return openai
+  return ''
 }
 
 export function openRouterBase() {
@@ -59,12 +90,15 @@ export function mem0Key() {
 }
 
 export function registerKeyHandlers() {
+  try {
+    loadEnvFiles()
+  } catch {}
   ipcMain.handle('keys:set', (_e, next: Record<string, string>) => {
     setOverlayKeys(next || {})
     const or = openRouterKey()
     if (or) {
       process.env.OPENROUTER_API_KEY = or
-      if (!process.env.OPENAI_API_KEY) process.env.OPENAI_API_KEY = or
+      if (isPlaceholder(process.env.OPENAI_API_KEY || '')) process.env.OPENAI_API_KEY = or
     }
     const cloud = mozaikCloudKey()
     if (cloud) process.env.MOZAIK_CLOUD_API_KEY = cloud

@@ -31,15 +31,16 @@ const LABEL: Record<SwarmStatus, string> = {
 }
 
 export default function SwarmStrip({ status }: { status: Record<string, SwarmStatus> }) {
+  const live = Object.values(status).some((s) => s !== 'idle')
   return (
+    <div style={{ flexShrink: 0 }}>
     <div
       style={{
         display: 'flex',
         gap: 22,
-        padding: '10px 16px 6px',
+        padding: '10px 16px 2px',
         justifyContent: 'center',
         alignItems: 'flex-end',
-        flexShrink: 0,
       }}
     >
       {AGENTS.map((a) => {
@@ -63,6 +64,10 @@ export default function SwarmStrip({ status }: { status: Record<string, SwarmSta
           </div>
         )
       })}
+    </div>
+    <div style={{ textAlign: 'center', fontSize: 10.5, color: live ? 'var(--accent)' : 'var(--text-faint)', paddingBottom: 8, letterSpacing: '.04em' }}>
+      {live ? 'four minds at once · not a queue' : 'Scout · Hive · Pulse · Critic share one room'}
+    </div>
     </div>
   )
 }

@@ -24,11 +24,10 @@ export function getBuddyPhaseState(phase: BuddyLivePhase): StateId {
 }
 
 export const BUDDY_COLORS = [
-  { hex: '#F08A24', label: 'Orange (Default)' },
+  { hex: '#F2C14E', label: 'Hive Gold' },
+  { hex: '#F08A24', label: 'Orange' },
   { hex: '#0a0a0c', label: 'Ink' },
   { hex: '#EDEDEF', label: 'Ghost' },
-  { hex: '#1D9BF0', label: 'Cobalt' },
-  { hex: '#F2C14E', label: 'Amber' },
 ] as const
 
 export function isBuddyEnabled(): boolean {

@@ -100,7 +100,7 @@ export default function ToolsModal({ onClose, onSelectAction }: ToolsModalProps)
               gap: 2,
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#38bdf8' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>
               🎙️ Start Live Voice Call
             </span>
             <span style={{ fontSize: 11.5, color: 'var(--text-dim)' }}>

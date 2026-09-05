@@ -29,9 +29,9 @@ export const KIT_POSE_FOR_STATE: Record<KitAppState, BloubPose> = {
 
 /** Accent per state — Grok blue for search/think, amber for work/code, red for alert. */
 export const KIT_ACCENT_FOR_STATE: Record<KitAppState, string> = {
-  idle: '#1D9BF0',
-  thinking: '#1D9BF0',
-  searching: '#1D9BF0',
+  idle: '#F2C14E',
+  thinking: '#F2C14E',
+  searching: '#F08A24',
   coding: '#F59E0B',
   working: '#F59E0B',
   done: '#10B981',
@@ -44,5 +44,5 @@ export function getKitPose(state: KitAppState): BloubPose {
 }
 
 export function getKitAccent(state: KitAppState): string {
-  return KIT_ACCENT_FOR_STATE[state] ?? '#1D9BF0'
+  return KIT_ACCENT_FOR_STATE[state] ?? '#F2C14E'
 }

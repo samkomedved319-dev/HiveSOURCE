@@ -37,7 +37,7 @@ const BODY: Record<BloubPose, string> = {
 const ALERT_BODY = '#F04438'
 const INK_BODY = '#0A0A0C'
 
-export default function BloubMascot({ pose = 'idle', size = 120, className = '', accent = '#1D9BF0' }: BloubMascotProps) {
+export default function BloubMascot({ pose = 'idle', size = 120, className = '', accent = '#F2C14E' }: BloubMascotProps) {
   const bodyFill = pose === 'alert' ? ALERT_BODY : INK_BODY
 
   return (

@@ -259,7 +259,7 @@ export default React.memo(function MessageItem({
                   gap: 6,
                   fontSize: 11.5,
                   fontWeight: 600,
-                  color: '#1D9BF0',
+                  color: 'var(--accent)',
                   letterSpacing: '0.02em',
                 }}
               >
@@ -303,8 +303,8 @@ export default React.memo(function MessageItem({
                       cursor: 'pointer',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(29, 155, 240, 0.08)'
-                      e.currentTarget.style.borderColor = 'rgba(29, 155, 240, 0.4)'
+                      e.currentTarget.style.background = 'rgba(242, 193, 78, 0.10)'
+                      e.currentTarget.style.borderColor = 'rgba(242, 193, 78, 0.45)'
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'
@@ -319,8 +319,8 @@ export default React.memo(function MessageItem({
                           fontWeight: 700,
                           textTransform: 'uppercase',
                           letterSpacing: '0.04em',
-                          color: '#1D9BF0',
-                          background: 'rgba(29, 155, 240, 0.12)',
+                          color: 'var(--accent)',
+                          background: 'rgba(242, 193, 78, 0.14)',
                           padding: '1px 6px',
                           borderRadius: 3,
                           maxWidth: '80%',

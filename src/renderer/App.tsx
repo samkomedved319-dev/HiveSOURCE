@@ -44,16 +44,25 @@ export default function App() {
   }, [hydrate])
 
   useEffect(() => {
-    void window.electronAPI?.keys?.set?.({
-      OPENROUTER_API_KEY: localStorage.getItem('hive_custom_api_key') || '',
-      hive_custom_api_key: localStorage.getItem('hive_custom_api_key') || '',
-      OPENAI_API_KEY: localStorage.getItem('hive_openai_key') || localStorage.getItem('hive_custom_api_key') || '',
-      ANTHROPIC_API_KEY: localStorage.getItem('hive_anthropic_key') || '',
-      GEMINI_API_KEY: localStorage.getItem('hive_gemini_key') || '',
-      MEM0_API_KEY: localStorage.getItem('hive_mem0_key') || '',
-      MOZAIK_CLOUD_API_KEY: localStorage.getItem('hive_mozaik_cloud_key') || '',
-      MOZAIK_CLOUD_BASE_URL: localStorage.getItem('hive_mozaik_cloud_base') || '',
-    })
+    document.documentElement.style.setProperty('--accent', '#F2C14E')
+    const payload: Record<string, string> = {}
+    const or = localStorage.getItem('hive_custom_api_key') || ''
+    if (or.trim()) {
+      payload.OPENROUTER_API_KEY = or.trim()
+      payload.hive_custom_api_key = or.trim()
+    }
+    const openai = localStorage.getItem('hive_openai_key') || ''
+    if (openai.trim()) payload.OPENAI_API_KEY = openai.trim()
+    const staff = localStorage.getItem('hive_staff') === '1'
+    if (staff) {
+      const mem = localStorage.getItem('hive_mem0_key') || ''
+      const ck = localStorage.getItem('hive_mozaik_cloud_key') || ''
+      const cb = localStorage.getItem('hive_mozaik_cloud_base') || ''
+      if (mem.trim()) payload.MEM0_API_KEY = mem.trim()
+      if (ck.trim()) payload.MOZAIK_CLOUD_API_KEY = ck.trim()
+      if (cb.trim()) payload.MOZAIK_CLOUD_BASE_URL = cb.trim()
+    }
+    if (Object.keys(payload).length) void window.electronAPI?.keys?.set?.(payload)
   }, [])
 
   useEffect(() => {
