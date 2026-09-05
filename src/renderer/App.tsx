@@ -76,7 +76,7 @@ export default function App() {
   // (LaunchScreen component is kept for tests/preview; set this back to
   // `useState(true)` to re-enable the animated boot sequence.)
   const [isLaunching, setIsLaunching] = useState(false)
-  const [activeTab, setActiveTab] = useState<NavTab>('office')
+  const [activeTab, setActiveTab] = useState<NavTab>('chat')
   const [conversations, setConversations] = useState<Conversation[]>(() => {
     const saved = localStorage.getItem('hive_conversations')
     if (saved) {
@@ -90,11 +90,11 @@ export default function App() {
     return localStorage.getItem('hive_active_conv') || ''
   })
   const [searchQuery, setSearchQuery] = useState('')
-  const [isChatOpen, setIsChatOpen] = useState(true)
-  const [isConvListOpen, setIsConvListOpen] = useState(false)
+  const [isCanvasOpen, setIsCanvasOpen] = useState(false)
+  const [isConvListOpen, setIsConvListOpen] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
   const [showProjects, setShowProjects] = useState(false)
-  const [mainView, setMainView] = useState<'office' | 'bots' | 'projects'>('office')
+  const [mainView, setMainView] = useState<'chat' | 'office' | 'bots' | 'projects'>('chat')
   const [showProfile, setShowProfile] = useState(false)
   const [showVoiceModal, setShowVoiceModal] = useState(false)
   const [showNewGroup, setShowNewGroup] = useState(false)
@@ -238,12 +238,13 @@ export default function App() {
       }
       if (k === 'h' && e.shiftKey) {
         e.preventDefault()
-        setIsChatOpen((prev) => !prev)
+        setIsCanvasOpen((prev) => !prev)
       }
       if (e.shiftKey && k === 'j') {
         e.preventDefault()
         setIsConvListOpen((prev) => !prev)
-        setIsChatOpen(true)
+        setMainView('chat')
+        setActiveTab('chat')
       }
     }
     window.addEventListener('keydown', handleKeyDown, true)
@@ -253,7 +254,8 @@ export default function App() {
   useEffect(() => {
     const off = window.electronAPI?.buddy?.onSummon?.(() => {
       setIsConvListOpen(true)
-      setIsChatOpen(true)
+      setMainView('chat')
+      setActiveTab('chat')
     })
     return () => {
       try {
@@ -275,13 +277,11 @@ export default function App() {
   }, [])
 
   const handleNavTab = (tab: NavTab) => {
-    if (tab === 'chat') {
-      setIsChatOpen((v) => !v)
-      setShowSettings(false)
-      return
-    }
     setActiveTab(tab)
-    if (tab === 'settings') {
+    if (tab === 'chat') {
+      setMainView('chat')
+      setShowSettings(false)
+    } else if (tab === 'settings') {
       setShowSettings(true)
     } else if (tab === 'projects') {
       setMainView('projects')
@@ -292,6 +292,7 @@ export default function App() {
     } else if (tab === 'office') {
       setMainView('office')
       setShowSettings(false)
+      setIsCanvasOpen(false)
     } else if (tab === 'voice') {
       setShowVoiceModal(true)
     }
@@ -349,6 +350,8 @@ export default function App() {
     if (activeAgent) {
       clearMessages(activeAgent.id)
     }
+    setMainView('chat')
+    setActiveTab('chat')
   }
 
   const handleDeleteChat = (id: string) => {
@@ -400,7 +403,7 @@ export default function App() {
       <div
       style={{
         display: 'grid',
-        gridTemplateColumns: isChatOpen ? '56px minmax(0, 1fr) 400px' : '56px minmax(0, 1fr)',
+        gridTemplateColumns: `56px ${mainView === 'chat' && isConvListOpen ? '240px' : '0px'} minmax(0, 1fr)`,
         height: '100vh',
         width: '100vw',
         overflow: 'hidden',
@@ -420,6 +423,8 @@ export default function App() {
             transform: 'translateX(-50%)',
             zIndex: 30,
             fontSize: 12,
+            gridColumn: '1 / -1',
+            height: 0,
             color: 'var(--accent)',
             background: 'rgba(242,193,78,0.1)',
             border: '1px solid var(--accent-dim)',
@@ -439,17 +444,39 @@ export default function App() {
         userInitial={userInitial}
         buddyOn={buddyOn}
         onToggleBuddy={toggleBuddy}
-        chatOpen={isChatOpen}
       />
 
-      {/* 2. Main stage: 3D office / projects / workers */}
+      <div
+        style={{
+          width: mainView === 'chat' && isConvListOpen ? 240 : 0,
+          overflow: 'hidden',
+          height: '100%',
+          minHeight: 0,
+        }}
+      >
+        <div style={{ width: 240, height: '100%' }}>
+          <ConversationList
+            conversations={conversations}
+            activeId={activeConvId}
+            onSelect={handleSelectConv}
+            onNewChat={handleNewChat}
+            onNewGroup={() => setShowNewGroup(true)}
+            onDeleteChat={handleDeleteChat}
+            onOpenWorkers={() => setMainView('bots')}
+            onToggleSidebar={() => setIsConvListOpen((prev) => !prev)}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+          />
+        </div>
+      </div>
+
       <div style={{ minWidth: 0, minHeight: 0, overflow: 'hidden', height: '100%', display: 'flex' }}>
       {mainView === 'projects' ? (
         <ProjectsModal
           embedded
           onClose={() => {
-            setMainView('office')
-            setActiveTab('office')
+            setMainView('chat')
+            setActiveTab('chat')
           }}
           onSelectProject={(projName) => {
             const newId = `c-${Date.now()}`
@@ -461,14 +488,15 @@ export default function App() {
             setConversations([newConv, ...conversations])
             setActiveConvId(newId)
             if (activeAgent) clearMessages(activeAgent.id)
-            setIsChatOpen(true)
+            setMainView('chat')
+            setActiveTab('chat')
           }}
         />
       ) : mainView === 'bots' ? (
       <BotsPanel
         onBack={() => {
-          setMainView('office')
-          setActiveTab('office')
+          setMainView('chat')
+          setActiveTab('chat')
         }}
         onSelectAgent={(agent) => {
           useAgentStore.getState().setActiveAgent(agent)
@@ -483,78 +511,40 @@ export default function App() {
           activeConvRef.current = newId
           setActiveConvId(newId)
           clearMessages(agent.id)
-          setIsChatOpen(true)
+          setMainView('chat')
+          setActiveTab('chat')
+        }}
+      />
+      ) : mainView === 'office' ? (
+      <HiveOffice
+        onBack={() => {
+          setMainView('chat')
+          setActiveTab('chat')
         }}
       />
       ) : (
-      <HiveOffice />
-      )}
-      </div>
-
-      {/* 3. Chat dock — fixed 400px, chats overlay so they don't crush the office */}
-      {isChatOpen && (
-      <div
-        style={{
-          width: 400,
-          minWidth: 400,
-          maxWidth: 400,
-          height: '100%',
-          minHeight: 0,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          borderLeft: '1px solid var(--border-soft)',
-          position: 'relative',
-          background: 'var(--bg)',
+      <ChatView
+        isCanvasOpen={isCanvasOpen}
+        onToggleCanvas={() => setIsCanvasOpen((prev) => !prev)}
+        onUpdateCanvas={(data) => {
+          setCanvasData(data)
+          setCanvasMode('code')
+          setIsCanvasOpen(true)
         }}
-      >
-        {isConvListOpen && (
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 20,
-              background: 'var(--bg)',
-            }}
-          >
-            <ConversationList
-              conversations={conversations}
-              activeId={activeConvId}
-              onSelect={(id) => {
-                handleSelectConv(id)
-                setIsConvListOpen(false)
-              }}
-              onNewChat={() => {
-                handleNewChat()
-                setIsConvListOpen(false)
-              }}
-              onNewGroup={() => setShowNewGroup(true)}
-              onDeleteChat={handleDeleteChat}
-              onOpenWorkers={() => setMainView('bots')}
-              onToggleSidebar={() => setIsConvListOpen(false)}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-            />
-          </div>
-        )}
-        <div style={{ flex: 1, minHeight: 0, minWidth: 0, display: 'flex', overflow: 'hidden' }}>
-          <ChatView
-            isCanvasOpen={false}
-            onToggleCanvas={() => setIsChatOpen(false)}
-            onUpdateCanvas={() => setIsChatOpen(true)}
-            onOpenBrowserCanvas={(url) => {
-              setActiveBrowserUrl(url)
-              setIsChatOpen(true)
-            }}
-            onNewChat={handleNewChat}
-            onOpenWorkers={() => setMainView('bots')}
-            isConvListOpen={isConvListOpen}
-            onToggleSidebar={() => setIsConvListOpen((v) => !v)}
-            conversation={conversations.find((c) => c.id === activeConvId) || null}
-          />
-        </div>
-      </div>
+        onOpenBrowserCanvas={(url, title) => {
+          setActiveBrowserUrl(url)
+          if (title) setActiveTabTitle(title)
+          setCanvasMode('browser')
+          setIsCanvasOpen(true)
+        }}
+        onNewChat={handleNewChat}
+        onOpenWorkers={() => setMainView('bots')}
+        isConvListOpen={isConvListOpen}
+        onToggleSidebar={() => setIsConvListOpen((prev) => !prev)}
+        conversation={conversations.find((c) => c.id === activeConvId) || null}
+      />
       )}
+      </div>
       {showPalette && (
         <CommandPalette
           open={showPalette}
@@ -562,7 +552,7 @@ export default function App() {
           actions={[
             { id: 'new', label: 'New chat', hint: 'Ctrl+N', run: () => { setShowPalette(false); handleNewChat() } },
             { id: 'group', label: 'New group', run: () => { setShowPalette(false); setShowNewGroup(true) } },
-            { id: 'chat', label: 'Toggle chat panel', hint: 'Ctrl+Shift+H', run: () => { setShowPalette(false); setIsChatOpen((v) => !v) } },
+            { id: 'hivebox', label: 'Toggle HiveBox', hint: 'Ctrl+Shift+H', run: () => { setShowPalette(false); setIsCanvasOpen((v) => !v) } },
             { id: 'sidebar', label: 'Toggle sidebar', hint: 'Ctrl+B', run: () => { setShowPalette(false); setIsConvListOpen((v) => !v) } },
             { id: 'projects', label: 'Projects', run: () => { setShowPalette(false); setMainView('projects'); setActiveTab('projects') } },
             { id: 'office', label: 'Hive Office', run: () => { setShowPalette(false); setMainView('office'); setActiveTab('office') } },

@@ -5,6 +5,7 @@ import ChatInput from './ChatInput'
 import VoiceCall from './VoiceCall'
 import ToolsModal from './ToolsModal'
 import SwarmStrip, { type SwarmStatus } from './SwarmStrip'
+import CrewPanel from '../layout/CrewPanel'
 import { grokPersonality } from '../../companion/grokPersonality'
 import { useAgentStore } from '../../stores/agentStore'
 import { useChatStore } from '../../stores/chatStore'
@@ -735,9 +736,8 @@ Followed by a brief explanation of what was run.`
         isConvListOpen={isConvListOpen}
         onToggleSidebar={onToggleSidebar}
         onFeedback={() => window.dispatchEvent(new CustomEvent('hive:feedback'))}
-        compact
       />
-      {false && <SwarmStrip status={swarm} />}
+      {!isCanvasOpen && <SwarmStrip status={swarm} />}
       {approval && (
         <div
           style={{
@@ -822,6 +822,7 @@ Followed by a brief explanation of what was run.`
         }
       />
     </div>
+    {isCanvasOpen && <CrewPanel status={swarm} onClose={onToggleCanvas} />}
     </div>
   )
 }

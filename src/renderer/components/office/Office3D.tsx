@@ -119,55 +119,109 @@ function VoxelPerson({
   meeting: boolean
 }) {
   const g = useRef<Group>(null)
+  const body = useRef<Group>(null)
   const lLeg = useRef<Mesh>(null)
   const rLeg = useRef<Mesh>(null)
-  const target = meeting && mood !== 'idle' ? agent.meet : agent.desk
-  const walking = useRef(false)
+  const lArm = useRef<Mesh>(null)
+  const rArm = useRef<Mesh>(null)
+  const head = useRef<Mesh>(null)
+  const last = useRef(0)
+  const sit = useRef(0)
+
+  const deskSit: [number, number, number] = [agent.desk[0], 0, agent.desk[2] + 0.52]
+  const target = meeting && mood !== 'idle' && mood !== 'done' ? agent.meet : deskSit
+  const wantSit = mood === 'idle' || mood === 'coding' || mood === 'thinking' || mood === 'talking' || mood === 'done'
 
   useFrame((state) => {
     const node = g.current
     if (!node) return
+    const t = state.clock.elapsedTime
+    const dt = Math.min(0.05, Math.max(0.001, t - last.current))
+    last.current = t
+
     const dx = target[0] - node.position.x
     const dz = target[2] - node.position.z
     const dist = Math.hypot(dx, dz)
-    walking.current = dist > 0.12
-    const k = Math.min(1, state.clock.getDelta() * 2.4)
-    if (dist > 0.05) {
+    const walking = dist > 0.1
+    if (dist > 0.04) {
+      const k = 1 - Math.pow(0.012, dt)
       node.position.x += dx * k
       node.position.z += dz * k
       node.rotation.y = Math.atan2(dx, dz)
+    } else if (!walking) {
+      const face = meeting && mood !== 'idle' ? 0 : Math.PI
+      node.rotation.y += (face - node.rotation.y) * Math.min(1, dt * 6)
     }
-    const t = state.clock.elapsedTime
+
+    const sitTo = !walking && wantSit ? 1 : 0
+    sit.current += (sitTo - sit.current) * Math.min(1, dt * 5)
+
     if (lLeg.current && rLeg.current) {
-      const swing = walking.current ? Math.sin(t * 10) * 0.45 : 0
-      lLeg.current.rotation.x = swing
-      rLeg.current.rotation.x = -swing
+      if (walking) {
+        const swing = Math.sin(t * 11) * 0.55
+        lLeg.current.rotation.x = swing
+        rLeg.current.rotation.x = -swing
+      } else {
+        lLeg.current.rotation.x = sit.current * 0.9
+        rLeg.current.rotation.x = sit.current * 0.9
+      }
     }
-    node.position.y = walking.current ? Math.abs(Math.sin(t * 10)) * 0.04 : mood === 'idle' ? 0 : Math.sin(t * 5) * 0.02
+    if (lArm.current && rArm.current) {
+      if (walking) {
+        lArm.current.rotation.x = Math.sin(t * 11) * 0.4
+        rArm.current.rotation.x = -Math.sin(t * 11) * 0.4
+      } else if (mood === 'coding' || mood === 'thinking' || mood === 'searching') {
+        lArm.current.rotation.x = 0.85
+        rArm.current.rotation.x = 0.7 + Math.sin(t * 14) * 0.35
+      } else if (mood === 'talking') {
+        lArm.current.rotation.x = 0.2
+        rArm.current.rotation.x = 0.15 + Math.sin(t * 5) * 0.4
+      } else {
+        lArm.current.rotation.x = sit.current * 0.7
+        rArm.current.rotation.x = sit.current * 0.7
+      }
+    }
+    if (head.current) {
+      head.current.rotation.x = mood === 'thinking' ? -0.15 : mood === 'talking' ? Math.sin(t * 6) * 0.08 : 0
+      head.current.rotation.y = mood === 'searching' ? Math.sin(t * 1.4) * 0.35 : 0
+    }
+    if (body.current) body.current.position.y = -sit.current * 0.16
+    node.position.y = walking ? Math.abs(Math.sin(t * 11)) * 0.045 : 0
   })
 
   const skin = '#deb887'
   return (
-    <group ref={g} position={agent.desk}>
-      <mesh ref={lLeg} position={[-0.08, 0.2, 0]} castShadow>
-        <boxGeometry args={[0.1, 0.4, 0.1]} />
-        <meshLambertMaterial color={agent.pants} />
-      </mesh>
-      <mesh ref={rLeg} position={[0.08, 0.2, 0]} castShadow>
-        <boxGeometry args={[0.1, 0.4, 0.1]} />
-        <meshLambertMaterial color={agent.pants} />
-      </mesh>
-      <Box args={[0.11, 0.05, 0.16]} position={[-0.08, 0.025, 0]} color="#222" />
-      <Box args={[0.11, 0.05, 0.16]} position={[0.08, 0.025, 0]} color="#222" />
-      <Box args={[0.28, 0.32, 0.16]} position={[0, 0.58, 0]} color={agent.shirt} />
-      <Box args={[0.18, 0.04, 0.1]} position={[0, 0.75, 0]} color="#fff" />
-      <Box args={[0.08, 0.28, 0.08]} position={[-0.2, 0.5, 0]} color={agent.shirt} />
-      <Box args={[0.08, 0.28, 0.08]} position={[0.2, 0.5, 0]} color={agent.shirt} />
-      <Box args={[0.2, 0.2, 0.2]} position={[0, 0.88, 0]} color={skin} />
-      <Box args={[0.22, 0.08, 0.22]} position={[0, 0.98, -0.01]} color={agent.hair} />
-      <Box args={[0.03, 0.03, 0.01]} position={[-0.05, 0.9, 0.11]} color="#fff" emissive="#fff" emissiveIntensity={0.4} />
-      <Box args={[0.03, 0.03, 0.01]} position={[0.05, 0.9, 0.11]} color="#fff" emissive="#fff" emissiveIntensity={0.4} />
-      <Box args={[0.08, 0.04, 0.08]} position={[0.16, 0.42, 0.02]} color={agent.color} emissive={agent.color} emissiveIntensity={mood === 'idle' ? 0.3 : 1.4} />
+    <group ref={g} position={deskSit}>
+      <group ref={body}>
+        <mesh ref={lLeg} position={[-0.08, 0.2, 0]} castShadow>
+          <boxGeometry args={[0.1, 0.4, 0.1]} />
+          <meshLambertMaterial color={agent.pants} />
+        </mesh>
+        <mesh ref={rLeg} position={[0.08, 0.2, 0]} castShadow>
+          <boxGeometry args={[0.1, 0.4, 0.1]} />
+          <meshLambertMaterial color={agent.pants} />
+        </mesh>
+        <Box args={[0.11, 0.05, 0.16]} position={[-0.08, 0.025, 0.02]} color="#1a1a1a" />
+        <Box args={[0.11, 0.05, 0.16]} position={[0.08, 0.025, 0.02]} color="#1a1a1a" />
+        <Box args={[0.3, 0.34, 0.18]} position={[0, 0.58, 0]} color={agent.shirt} />
+        <Box args={[0.16, 0.04, 0.1]} position={[0, 0.76, 0.02]} color="#f4f1ea" />
+        <mesh ref={lArm} position={[-0.2, 0.62, 0]} castShadow>
+          <boxGeometry args={[0.08, 0.3, 0.08]} />
+          <meshLambertMaterial color={agent.shirt} />
+        </mesh>
+        <mesh ref={rArm} position={[0.2, 0.62, 0]} castShadow>
+          <boxGeometry args={[0.08, 0.3, 0.08]} />
+          <meshLambertMaterial color={agent.shirt} />
+        </mesh>
+        <mesh ref={head} position={[0, 0.9, 0]} castShadow>
+          <boxGeometry args={[0.2, 0.2, 0.2]} />
+          <meshLambertMaterial color={skin} />
+        </mesh>
+        <Box args={[0.22, 0.08, 0.22]} position={[0, 1.0, -0.01]} color={agent.hair} />
+        <Box args={[0.03, 0.03, 0.012]} position={[-0.05, 0.92, 0.1]} color="#111" />
+        <Box args={[0.03, 0.03, 0.012]} position={[0.05, 0.92, 0.1]} color="#111" />
+        <Box args={[0.07, 0.04, 0.07]} position={[0.16, 0.44, 0.02]} color={agent.color} emissive={agent.color} emissiveIntensity={mood === 'idle' ? 0.2 : 1.2} />
+      </group>
     </group>
   )
 }

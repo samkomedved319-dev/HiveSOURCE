@@ -117,7 +117,7 @@ export default function IconRail({
         <path d="M16 10.6 22.4 14.2v7.2L16 24.9 9.6 21.4v-7.2L16 10.6Z" fill="currentColor" />
       </svg>
 
-      <RailBtn title="Chat" active={chatOpen || activeTab === 'chat'} onClick={() => onSelectTab('chat')}>
+      <RailBtn title="Chat" active={activeTab === 'chat'} onClick={() => onSelectTab('chat')}>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
