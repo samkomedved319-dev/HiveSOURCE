@@ -28,7 +28,11 @@ const MODELS = [
   'chairModernCushion.glb',
 ] as const
 
-MODELS.forEach((m) => useGLTF.preload(asset(m)))
+MODELS.forEach((m) => {
+  try {
+    useGLTF.preload(asset(m))
+  } catch {}
+})
 
 function Piece({
   file,
