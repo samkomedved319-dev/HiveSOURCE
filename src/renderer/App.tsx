@@ -549,12 +549,14 @@ export default function App() {
         }}
       />
       ) : mainView === 'office' ? (
+      <div style={{ flex: 1, minWidth: 0, minHeight: 0, height: '100%', width: '100%', display: 'flex' }}>
       <HiveOffice
         onBack={() => {
           setMainView('chat')
           setActiveTab('chat')
         }}
       />
+      </div>
       ) : (
       <ChatView
         isCanvasOpen={isCanvasOpen}
