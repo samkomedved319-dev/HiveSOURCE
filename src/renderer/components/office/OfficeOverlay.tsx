@@ -1,10 +1,57 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, Component, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { FLOOR_CREW, moodFromEvent, type AgentMood } from './crew'
 import type { HiveSwarmEvent } from '../../types'
 import { useAgentStore } from '../../stores/agentStore'
 import { useChatStore } from '../../stores/chatStore'
 import { emitTitleChat } from '../../chatTitle'
+import Office3D from './Office3D'
+import IsometricFloor from './IsometricFloor'
+
+// Check if WebGL is supported in the current environment
+function checkWebGLSupport(): boolean {
+  try {
+    const canvas = document.createElement('canvas')
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
+    return Boolean(gl)
+  } catch {
+    return false
+  }
+}
+
+// Error boundary to catch any Canvas or WebGL crash cleanly without black screen
+interface ErrorBoundaryProps {
+  fallback: ReactNode
+  children: ReactNode
+  onError?: () => void
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean
+}
+
+class WebGLErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: unknown) {
+    console.warn('[Office] WebGL ErrorBoundary caught error:', error)
+    this.props.onError?.()
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback
+    }
+    return this.props.children
+  }
+}
 
 function pickSpeaker(task: string) {
   const t = task.toLowerCase()
@@ -30,25 +77,33 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
   const [meeting, setMeeting] = useState(false)
   const [task, setTask] = useState('')
   const [busy, setBusy] = useState(false)
-  const [world, setWorld] = useState<'hive' | 'delegation'>('hive')
+  const [viewMode, setViewMode] = useState<'3d' | 'iso'>('3d')
+  const [webglAvailable, setWebglAvailable] = useState<boolean>(() => checkWebGLSupport())
   const scroller = useRef<HTMLDivElement>(null)
   const speaker = useRef('Hive')
-  const { activeAgent } = useAgentStore()
+  const { activeAgent, agents, setActiveAgent } = useAgentStore()
   const addMessage = useChatStore((s) => s.addMessage)
   const thread = useChatStore((s) => (activeAgent ? s.messages[activeAgent.id] : []) || [])
 
+  // Auto-scroll chat history
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight })
   }, [thread])
 
+  // Probe WebGL and attach context loss listener
   useEffect(() => {
-    const prev = document.body.style.background
-    document.body.style.background = '#F2C14E'
+    const handleContextLost = (e: Event) => {
+      e.preventDefault()
+      console.warn('[Office] WebGL context lost; falling back to isometric floor')
+      setWebglAvailable(false)
+    }
+    window.addEventListener('webglcontextlost', handleContextLost)
     return () => {
-      document.body.style.background = prev
+      window.removeEventListener('webglcontextlost', handleContextLost)
     }
   }, [])
 
+  // Listen to swarm events
   useEffect(() => {
     const off = window.electronAPI?.hive?.onEvent?.((ev: HiveSwarmEvent) => {
       const who = ev.producerName || 'Hive'
@@ -63,15 +118,26 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
     }
   }, [])
 
+  // Send task from Office: updates chat store and emits TITLE_EVENT to title sidebar conversation
   const send = async () => {
     const t = task.trim()
     if (!t || busy) return
-    const agentId = activeAgent?.id
+
+    // Ensure active agent
+    let currentAgent = activeAgent
+    if (!currentAgent && agents.length > 0) {
+      currentAgent = agents.find((a) => a.isCeo) || agents[0]
+      setActiveAgent(currentAgent)
+    }
+    const agentId = currentAgent?.id
     if (!agentId) return
+
     setBusy(true)
     setTask('')
     setMeeting(true)
     speaker.current = pickSpeaker(t)
+
+    // Append user message
     addMessage(agentId, {
       id: `m-${Date.now()}`,
       agentId,
@@ -81,7 +147,10 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
       type: 'text',
       via: 'local',
     })
+
+    // Emit title event so the chat thread in the sidebar auto-titles ChatGPT-style
     emitTitleChat(t)
+
     try {
       void window.electronAPI?.hive?.send?.(t, 'office')
       const res = await window.electronAPI?.ai?.chat?.(
@@ -118,114 +187,185 @@ export default function OfficeOverlay({ onClose }: { onClose: () => void }) {
     setBusy(false)
   }
 
+  const renderFloor = () => {
+    if (!webglAvailable || viewMode === 'iso') {
+      return <IsometricFloor moods={moods} meeting={meeting} />
+    }
+    return (
+      <WebGLErrorBoundary
+        onError={() => setWebglAvailable(false)}
+        fallback={<IsometricFloor moods={moods} meeting={meeting} />}
+      >
+        <Office3D moods={moods} meeting={meeting} />
+      </WebGLErrorBoundary>
+    )
+  }
+
   const ui = (
     <div
       style={{
         position: 'fixed',
-        inset: 0,
-        zIndex: 2147483647,
+        left: 56, // Keep 56px icon rail completely visible and interactive
+        right: 0,
+        top: 0,
+        bottom: 0,
+        zIndex: 50,
         display: 'flex',
         flexDirection: 'column',
-        background: '#F2C14E',
-        color: '#111',
+        background: '#14110d',
+        color: '#f3eee4',
         fontFamily: 'inherit',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', background: '#111', color: '#F2C14E' }}>
-        <button type="button" onClick={onClose} style={goldBtn}>
-          BACK TO CHAT
-        </button>
-        <b style={{ letterSpacing: '.08em' }}>HIVE OFFICE</b>
-        <button type="button" onClick={() => setWorld('hive')} style={world === 'hive' ? goldBtn : ghostBtn}>
-          Floor
-        </button>
-        <button type="button" onClick={() => setWorld('delegation')} style={world === 'delegation' ? goldBtn : ghostBtn}>
-          The Delegation 3D
-        </button>
-      </div>
+      {/* Office Header Toolbar */}
+      <div
+        style={{
+          height: 56,
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 16px',
+          background: '#0d0b09',
+          borderBottom: '1px solid rgba(242, 193, 78, 0.2)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {/* Gold BACK TO CHAT button that always works */}
+          <button type="button" onClick={onClose} style={goldBtn}>
+            ← BACK TO CHAT
+          </button>
 
-      <div style={{ flex: 1, minHeight: 200, background: '#F2C14E', overflow: 'auto', padding: 16 }}>
-        {world === 'delegation' ? (
-          <iframe
-            title="The Delegation"
-            src="https://arturitu.github.io/the-delegation/"
-            style={{ width: '100%', height: '100%', minHeight: 360, border: '4px solid #111', background: '#fff' }}
-          />
-        ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, minmax(160px, 1fr))',
-              gap: 14,
-              maxWidth: 980,
-              margin: '0 auto',
-            }}
-          >
-            <div
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontWeight: 900, letterSpacing: '.06em', color: '#F2C14E', fontSize: 15 }}>
+              HIVE OFFICE
+            </span>
+            <span
               style={{
-                gridColumn: '1 / -1',
-                background: meeting ? '#111' : '#3d3428',
-                color: '#F2C14E',
-                textAlign: 'center',
-                padding: 14,
-                fontWeight: 800,
-                border: '4px solid #111',
+                fontSize: 11,
+                color: meeting ? '#F2C14E' : '#73c991',
+                background: 'rgba(255,255,255,0.06)',
+                padding: '2px 8px',
+                borderRadius: 99,
+                fontWeight: 600,
               }}
             >
-              {meeting ? 'MEETING — crew is working' : 'GLASS ROOM'}
-            </div>
-            {FLOOR_CREW.map((a) => {
-              const mood = moods[a.id] || moods[a.name.toLowerCase()] || 'idle'
-              const live = meeting || mood !== 'idle'
-              return (
-                <div
-                  key={a.id}
-                  style={{
-                    background: '#fff8e8',
-                    border: `4px solid ${a.color}`,
-                    padding: 14,
-                    minHeight: 120,
-                  }}
-                >
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: a.color }} />
-                  <div style={{ fontSize: 22, fontWeight: 900, marginTop: 8 }}>{a.name}</div>
-                  <div style={{ fontSize: 13 }}>{live ? mood : a.job + ' desk'}</div>
-                </div>
-              )
-            })}
+              {meeting ? '● Swarm Task Running' : '● Live 3D'}
+            </span>
           </div>
-        )}
+        </div>
+
+        {/* View Switcher: Claw3D vs Isometric Floor */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => setViewMode('3d')}
+            disabled={!webglAvailable}
+            style={viewMode === '3d' && webglAvailable ? activeSwitchBtn : switchBtn}
+            title={webglAvailable ? '3D ClawOffice (Three.js)' : 'WebGL not supported on this device'}
+          >
+            Claw3D
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('iso')}
+            style={viewMode === 'iso' || !webglAvailable ? activeSwitchBtn : switchBtn}
+          >
+            Isometric Floor
+          </button>
+        </div>
       </div>
 
-      <div style={{ height: 210, flexShrink: 0, display: 'flex', flexDirection: 'column', background: '#111', color: '#f3eee4', borderTop: '4px solid #111' }}>
-        <div ref={scroller} style={{ flex: 1, overflow: 'auto', padding: '10px 16px' }}>
-          {thread.length === 0 && <div style={{ color: '#c4b396' }}>Same history as Chat.</div>}
+      {/* Main 3D Scene / Isometric Office Floor (Never black screen) */}
+      <div
+        style={{
+          position: 'relative',
+          flex: 1,
+          minHeight: 220,
+          background: '#1a1612',
+          overflow: 'hidden',
+        }}
+      >
+        {renderFloor()}
+      </div>
+
+      {/* Bottom Chat Section (Connected to same chat store & sidebar conversation) */}
+      <div
+        style={{
+          height: 220,
+          flexShrink: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          background: '#0d0b09',
+          borderTop: '2px solid rgba(242, 193, 78, 0.25)',
+        }}
+      >
+        {/* Messages transcript */}
+        <div ref={scroller} style={{ flex: 1, overflow: 'auto', padding: '12px 18px' }}>
+          {thread.length === 0 && (
+            <div style={{ color: '#8c7d6b', fontSize: 13, padding: '10px 0' }}>
+              Connected to main Chat. Enter a command or query to task the floor agents.
+            </div>
+          )}
           {thread.map((row) => {
-            const who = row.role === 'user' ? 'You' : row.botName || 'Hive'
-            const color = FLOOR_CREW.find((a) => a.name === who)?.color
+            const isUser = row.role === 'user'
+            const who = isUser ? 'You' : row.botName || 'Hive'
+            const color = FLOOR_CREW.find((a) => a.name.toLowerCase() === who.toLowerCase())?.color || '#F2C14E'
+
             return (
-              <div key={row.id} style={{ marginBottom: 8 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: color || '#F2C14E' }}>{who}</div>
-                <div style={{ fontSize: 14, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{row.content}</div>
+              <div key={row.id} style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: isUser ? '#F2C14E' : color, marginBottom: 2 }}>
+                  {who}
+                </div>
+                <div style={{ fontSize: 13.5, lineHeight: 1.45, color: '#e8ded0', whiteSpace: 'pre-wrap' }}>
+                  {row.content}
+                </div>
               </div>
             )
           })}
         </div>
+
+        {/* Input prompt */}
         <form
           onSubmit={(e) => {
             e.preventDefault()
             void send()
           }}
-          style={{ display: 'flex', gap: 8, padding: '8px 14px 12px' }}
+          style={{
+            display: 'flex',
+            gap: 10,
+            padding: '10px 16px 14px',
+            background: '#120f0c',
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+          }}
         >
           <input
             value={task}
             onChange={(e) => setTask(e.target.value)}
-            placeholder="Task the floor…"
-            style={{ flex: 1, background: '#1a1712', border: '1px solid #333', color: '#fff', borderRadius: 8, padding: '10px 12px', fontFamily: 'inherit' }}
+            placeholder="Task the office floor (e.g. 'Scout research competitor APIs', 'Apollo fix the bug')..."
+            style={{
+              flex: 1,
+              background: '#1b1713',
+              border: '1px solid rgba(242, 193, 78, 0.25)',
+              color: '#fff',
+              borderRadius: 8,
+              padding: '10px 14px',
+              fontFamily: 'inherit',
+              fontSize: 13.5,
+              outline: 'none',
+            }}
           />
-          <button type="submit" disabled={busy} style={goldBtn}>
-            Send
+          <button
+            type="submit"
+            disabled={busy || !task.trim()}
+            style={{
+              ...goldBtn,
+              opacity: busy || !task.trim() ? 0.6 : 1,
+              cursor: busy || !task.trim() ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {busy ? 'Working…' : 'Send Task'}
           </button>
         </form>
       </div>
@@ -240,19 +380,36 @@ const goldBtn: React.CSSProperties = {
   color: '#111',
   border: 'none',
   borderRadius: 8,
-  padding: '8px 14px',
+  padding: '8px 16px',
   fontWeight: 800,
+  fontSize: 13,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  letterSpacing: '.02em',
+  boxShadow: '0 2px 8px rgba(242, 193, 78, 0.25)',
+  transition: 'transform 0.15s ease, background 0.15s ease',
+}
+
+const switchBtn: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.06)',
+  color: '#a89d8f',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 8,
+  padding: '6px 12px',
+  fontWeight: 700,
+  fontSize: 12,
   cursor: 'pointer',
   fontFamily: 'inherit',
 }
 
-const ghostBtn: React.CSSProperties = {
-  background: 'transparent',
-  color: '#c4b396',
-  border: '1px solid #3d3428',
+const activeSwitchBtn: React.CSSProperties = {
+  background: 'rgba(242, 193, 78, 0.15)',
+  color: '#F2C14E',
+  border: '1px solid #F2C14E',
   borderRadius: 8,
-  padding: '8px 14px',
-  fontWeight: 700,
+  padding: '6px 12px',
+  fontWeight: 800,
+  fontSize: 12,
   cursor: 'pointer',
   fontFamily: 'inherit',
 }

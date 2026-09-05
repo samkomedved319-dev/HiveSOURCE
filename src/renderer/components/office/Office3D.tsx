@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, Suspense } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, useGLTF } from '@react-three/drei'
+import { OrbitControls, useGLTF, Html } from '@react-three/drei'
 import type { Group, Mesh, Object3D } from 'three'
 import { FLOOR_CREW, type AgentMood, type FloorAgent } from './crew'
 
@@ -116,6 +116,7 @@ function VoxelPerson({
   const deskSit: [number, number, number] = [agent.desk[0], 0, agent.desk[2] + 0.55]
   const target = meeting && mood !== 'idle' && mood !== 'done' ? agent.meet : deskSit
   const wantSit = mood === 'idle' || mood === 'coding' || mood === 'thinking' || mood === 'talking' || mood === 'done'
+  const isWorking = mood !== 'idle' || meeting
 
   useFrame((state) => {
     const node = g.current
@@ -199,6 +200,50 @@ function VoxelPerson({
           <meshLambertMaterial color={agent.hair} />
         </mesh>
         <Box args={[0.07, 0.04, 0.07]} position={[0.16, 0.44, 0.02]} color={agent.color} emissive={agent.color} emissiveIntensity={mood === 'idle' ? 0.2 : 1.2} />
+
+        {/* 3D Floating Name & Status Badge */}
+        <Html position={[0, 1.35, 0]} center distanceFactor={14}>
+          <div
+            style={{
+              background: 'rgba(15, 12, 9, 0.88)',
+              border: `1.5px solid ${isWorking ? agent.color : '#554636'}`,
+              borderRadius: 8,
+              padding: '3px 8px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              pointerEvents: 'none',
+              boxShadow: isWorking ? `0 0 10px ${agent.color}80` : '0 4px 8px rgba(0,0,0,0.5)',
+              transform: 'scale(0.9)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: agent.color,
+                  boxShadow: `0 0 6px ${agent.color}`,
+                }}
+              />
+              <span style={{ color: '#fff', fontWeight: 800, fontSize: 11, letterSpacing: '.02em' }}>
+                {agent.name}
+              </span>
+            </div>
+            <span
+              style={{
+                color: isWorking ? agent.color : '#b0a08e',
+                fontSize: 9,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+              }}
+            >
+              {isWorking ? mood : agent.job}
+            </span>
+          </div>
+        </Html>
       </group>
     </group>
   )
@@ -207,13 +252,16 @@ function VoxelPerson({
 function ClawOffice({ moods, meeting }: { moods: Record<string, AgentMood>; meeting: boolean }) {
   return (
     <group>
-      <Box args={[22, 0.12, 16]} position={[0, -0.06, 0]} color="#cfc6b4" receive cast={false} />
-      <Box args={[22, 3.2, 0.12]} position={[0, 1.6, -8]} color="#e8dfd0" />
-      <Box args={[22, 3.2, 0.12]} position={[0, 1.6, 8]} color="#e8dfd0" />
-      <Box args={[0.12, 3.2, 16]} position={[-11, 1.6, 0]} color="#e8dfd0" />
-      <Box args={[0.12, 3.2, 16]} position={[11, 1.6, 0]} color="#e8dfd0" />
-      <Box args={[22, 0.08, 16]} position={[0, 3.24, 0]} color="#8a7a62" />
+      {/* Warm natural wood parquet floor */}
+      <Box args={[22, 0.12, 16]} position={[0, -0.06, 0]} color="#b58750" receive cast={false} />
+      {/* Modern architectural walls */}
+      <Box args={[22, 3.2, 0.12]} position={[0, 1.6, -8]} color="#2d261e" />
+      <Box args={[22, 3.2, 0.12]} position={[0, 1.6, 8]} color="#2d261e" />
+      <Box args={[0.12, 3.2, 16]} position={[-11, 1.6, 0]} color="#2d261e" />
+      <Box args={[0.12, 3.2, 16]} position={[11, 1.6, 0]} color="#2d261e" />
+      <Box args={[22, 0.08, 16]} position={[0, 3.24, 0]} color="#1a1612" />
 
+      {/* 6 Desks for Scout, Athena, Hive, Pulse, Apollo, Critic */}
       {FLOOR_CREW.map((a) => (
         <group key={a.id}>
           <Piece file="desk.glb" position={a.desk} scale={1} />
@@ -222,12 +270,14 @@ function ClawOffice({ moods, meeting }: { moods: Record<string, AgentMood>; meet
         </group>
       ))}
 
+      {/* Conference Round Table & Meeting Chairs */}
       <Piece file="tableRound.glb" position={[7.2, 0, -4.2]} scale={1.15} />
       <Piece file="chairModernCushion.glb" position={[6.2, 0, -4.9]} rotation={[0, 0.4, 0]} />
       <Piece file="chairModernCushion.glb" position={[8.2, 0, -4.9]} rotation={[0, -0.4, 0]} />
       <Piece file="chairModernCushion.glb" position={[6.2, 0, -3.5]} rotation={[0, 2.6, 0]} />
       <Piece file="chairModernCushion.glb" position={[8.2, 0, -3.5]} rotation={[0, -2.6, 0]} />
 
+      {/* Office Lounge & Kitchen Breakout amenities */}
       <Piece file="loungeSofa.glb" position={[8.4, 0, 5.6]} rotation={[0, Math.PI, 0]} />
       <Piece file="tableCoffee.glb" position={[8.4, 0, 4.5]} />
       <Piece file="lampRoundFloor.glb" position={[9.8, 0, 5.8]} />
@@ -237,6 +287,7 @@ function ClawOffice({ moods, meeting }: { moods: Record<string, AgentMood>; meet
       <Piece file="kitchenFridgeSmall.glb" position={[-10.2, 0, 4.4]} />
       <Piece file="kitchenCoffeeMachine.glb" position={[-9.2, 0, 4.4]} />
 
+      {/* The 6 Voxel Agents */}
       {FLOOR_CREW.map((a) => {
         const mood = moods[a.id] || moods[a.name.toLowerCase()] || 'idle'
         return <VoxelPerson key={a.id} agent={a} mood={mood} meeting={meeting} />
@@ -250,7 +301,7 @@ export default function Office3D({
   meeting,
 }: {
   moods: Record<string, AgentMood>
-  bubbles: Record<string, string>
+  bubbles?: Record<string, string>
   meeting: boolean
 }) {
   return (
