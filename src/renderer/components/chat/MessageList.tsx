@@ -8,7 +8,7 @@ import { useChatStore } from '../../stores/chatStore'
 import { useAgentStore } from '../../stores/agentStore'
 
 export default function MessageList({
-  typingLabel = 'Thinking…',
+  typingLabel = 'Thinking\u2026',
   mascotState = 'idle',
   onSuggest,
 }: {
@@ -61,7 +61,6 @@ export default function MessageList({
               marginBottom: 10,
             }}
           >
-            {/* Discord-style channel topic / intro */}
             <div
               style={{
                 width: 48,
@@ -99,13 +98,14 @@ export default function MessageList({
                 maxWidth: 620,
               }}
             >
-              Ask anything — Hive answers, researches with cited sources, writes code, and can control your PC.
+              Scout, Hive, and Pulse think at the same time. Critic reviews the draft. Ctrl+K for commands.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {[
-                { icon: '🔍', label: 'Research the web', prompt: 'Search the web for the latest AI news and cite your sources' },
-                { icon: '⚡', label: 'Write code', prompt: 'Write a TypeScript function that debounces user input, with a usage example' },
-                { icon: '🖱️', label: 'Control my PC', prompt: 'Take control: open Notepad on my PC' },
+                { icon: '\u2b21', label: 'Hackathon demo', prompt: 'What is the JigJoy Mozaik hackathon deadline and main rule?' },
+                { icon: '\ud83d\udd0d', label: 'Research the web', prompt: 'Search the web for the latest AI news and cite your sources' },
+                { icon: '\u26a1', label: 'Write code', prompt: 'Write a TypeScript function that debounces user input, with a usage example' },
+                { icon: '\ud83d\uddb1\ufe0f', label: 'Control my PC', prompt: 'Take control: open Notepad on my PC' },
               ].map((s) => (
                 <button
                   key={s.label}
