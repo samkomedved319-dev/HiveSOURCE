@@ -15,6 +15,8 @@ export const FREE_MODELS = [
   'liquid/lfm-2.5-2.6b:free',
 ]
 
+export const DEFAULT_FREE_MODEL = FREE_MODELS[0]
+
 export const NIM_MODELS = [
   'nvidia/nemotron-3.5-lightning-30b-a3b',
   'nvidia/llama-3.1-nemotron-nano-8b-v1',

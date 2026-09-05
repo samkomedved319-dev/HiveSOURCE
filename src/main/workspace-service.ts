@@ -16,10 +16,15 @@ function safe(rel: string) {
 export function registerWorkspaceHandlers() {
   ipcMain.handle('workspace:pick', async () => {
     const win = BrowserWindow.getFocusedWindow()
-    const res = await dialog.showOpenDialog(win || undefined, {
-      properties: ['openDirectory'],
-      title: 'Open a project folder for Hive',
-    })
+    const res = win
+      ? await dialog.showOpenDialog(win, {
+          properties: ['openDirectory'],
+          title: 'Open a project folder for Hive',
+        })
+      : await dialog.showOpenDialog({
+          properties: ['openDirectory'],
+          title: 'Open a project folder for Hive',
+        })
     if (res.canceled || !res.filePaths[0]) return { ok: false }
     root = res.filePaths[0]
     return { ok: true, root }
