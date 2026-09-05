@@ -84,7 +84,6 @@ function Desk({ position, accent, live }: { position: [number, number, number]; 
       <Box args={[0.42, 0.03, 0.22]} position={[x, 0.77, z + 0.12]} color="#1b1914" />
       <Box args={[0.12, 0.02, 0.18]} position={[x + 0.38, 0.77, z + 0.18]} color="#333" />
       <Chair position={[x, 0, z + 0.72]} />
-      {live && <pointLight position={[x, 1.3, z]} color={accent} intensity={0.55} distance={3.2} />}
     </group>
   )
 }
@@ -295,7 +294,7 @@ export default function Office3D({
   return (
     <Canvas
       shadows
-      camera={{ position: [18, 16, 20], fov: 34, near: 0.1, far: 200 }}
+      camera={{ position: [11, 9, 13], fov: 38, near: 0.1, far: 120 }}
       dpr={[1, 1.25]}
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {
