@@ -223,9 +223,6 @@ export default React.memo(function MessageItem({
               {open ? 'Show less' : 'Show more'}
             </button>
           )}
-          }}
-        >
-          {renderContent(message.content)}
         </div>
 
         {/* Interactive Cited Sources Cards */}
