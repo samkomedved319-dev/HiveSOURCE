@@ -1,0 +1,26 @@
+name: Deploy HiveBox Worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cloud/cloudflare/**'
+      - '.github/workflows/deploy-hivebox.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: cloud/cloudflare
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy HiveBox
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloud/cloudflare
+          command: deploy
