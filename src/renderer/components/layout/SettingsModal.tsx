@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { useChatStore } from '../../stores/chatStore'
 import { useAgentStore } from '../../stores/agentStore'
+import MascotPicker from '../mascot/MascotPicker'
+import { getBuddyMascotId, getMascot } from '../mascot/mascotLibrary'
 
 interface SettingsModalProps {
   onClose: () => void
@@ -33,6 +35,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     localStorage.getItem('hive_buddy_model') || localStorage.getItem('hive_model') || 'openai/gpt-4o-mini'
   )
   const [buddyColor, setBuddyColor] = useState(localStorage.getItem('hive_buddy_color') || '#F08A24')
+  const [buddyMascot, setBuddyMascot] = useState(getBuddyMascotId())
 
   // Model & Reasoning Settings
   const [defaultModel, setDefaultModel] = useState(localStorage.getItem('hive_model') || 'openai/gpt-4o-mini')
@@ -65,6 +68,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     localStorage.setItem('hive_buddy_enabled', buddyEnabled ? 'true' : 'false')
     localStorage.setItem('hive_buddy_model', buddyModel)
     localStorage.setItem('hive_buddy_color', buddyColor)
+    localStorage.setItem('hive_buddy_mascot', buddyMascot)
     localStorage.setItem('hive_custom_api_key', customKey)
     localStorage.setItem('hive_system_prompt', systemPrompt)
     localStorage.setItem('hive_accent_color', accentColor)
@@ -348,33 +352,17 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 </SettingRow>
 
                 <SettingRow
-                  label="Buddy Color"
-                  description="Ink for the Buddy and all Hive avatars"
+                  label="Buddy mascot"
+                  description="Premade Bloub skins from the official customizer"
                 >
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    {[
-                      { hex: '#F08A24', label: 'Orange (Default)' },
-                      { hex: '#0a0a0c', label: 'Ink' },
-                      { hex: '#EDEDEF', label: 'Ghost' },
-                      { hex: '#1D9BF0', label: 'Cobalt' },
-                      { hex: '#F2C14E', label: 'Amber' },
-                    ].map((c) => (
-                      <button
-                        key={c.hex}
-                        type="button"
-                        onClick={() => setBuddyColor(c.hex)}
-                        title={c.label}
-                        style={{
-                          width: 20,
-                          height: 20,
-                          borderRadius: '50%',
-                          background: c.hex,
-                          border: buddyColor === c.hex ? '2px solid #FFFFFF' : '1px solid var(--border)',
-                          cursor: 'pointer',
-                          outline: 'none',
-                        }}
-                      />
-                    ))}
+                  <div style={{ width: 360, maxWidth: '100%' }}>
+                    <MascotPicker
+                      value={buddyMascot}
+                      onChange={(id) => {
+                        setBuddyMascot(id)
+                        setBuddyColor(getMascot(id).ink)
+                      }}
+                    />
                   </div>
                 </SettingRow>
 

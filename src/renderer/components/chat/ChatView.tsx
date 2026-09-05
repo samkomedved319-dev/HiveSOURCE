@@ -120,6 +120,7 @@ export default function ChatView({
           type: 'text',
           via: 'local',
           botName: name,
+          botAvatar: useAgentStore.getState().activeAgent?.avatar,
         })
       }
       if (ev.type === 'model.answer' && ev.text && name === 'Hive') {
@@ -134,6 +135,7 @@ export default function ChatView({
           type: 'text',
           via: 'local',
           botName: name,
+          botAvatar: useAgentStore.getState().activeAgent?.avatar,
           botRole:
             name === 'Scout'
               ? 'Researcher'

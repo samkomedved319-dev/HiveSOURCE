@@ -29,7 +29,7 @@ export const defaultAgents: Agent[] = [
     name: 'Hive (CEO & Head Architect)',
     description: 'Supreme Head AI & System Executive. Manages, delegates, spawns bots & orchestrates the team.',
     systemPrompt: HIVE_CEO_SYSTEM_PROMPT,
-    avatar: '👑',
+    avatar: 'bloub-gold',
     roleTitle: 'CEO & Head Architect',
     isCeo: true,
     model: 'minimax/minimax-m3:free',
@@ -43,7 +43,7 @@ export const defaultAgents: Agent[] = [
     systemPrompt: `You are Apollo, Lead Software Engineer reporting directly to Hive (CEO).
 You write pristine, production-grade TypeScript, React, Python, and system code.
 You coordinate directly with Hive and the QA Analyst to implement fixes rapidly with zero placeholders.`,
-    avatar: '⚡',
+    avatar: 'bloub-orange',
     roleTitle: 'Lead Software Engineer',
     isCeo: false,
     model: 'nvidia/nemotron-3.5-lightning:free',
@@ -56,7 +56,7 @@ You coordinate directly with Hive and the QA Analyst to implement fixes rapidly 
     description: 'Intelligence & Research Analyst. Scrapes docs, investigates errors, synthesizes data.',
     systemPrompt: `You are Athena, Senior Research Intelligence reporting to Hive (CEO).
 You perform deep web research, technical documentation synthesis, and verify architectural trade-offs.`,
-    avatar: '🔬',
+    avatar: 'bloub-blue',
     roleTitle: 'Research Intelligence',
     isCeo: false,
     model: 'minimax/minimax-m3:free',

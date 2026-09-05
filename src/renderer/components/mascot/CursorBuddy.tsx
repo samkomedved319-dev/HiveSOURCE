@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import BloubEngineAvatar from './BloubEngineAvatar'
 import { subscribeBotTicker } from './botTicker'
 import type { StateId } from '../../bot/states'
+import { getBuddyMascotId, getMascot } from './mascotLibrary'
 
 export const BUDDY_SETTINGS_EVENT = 'hive:buddy-settings'
 export const BUDDY_PHASE_EVENT = 'hive:buddy-phase'
@@ -48,7 +49,9 @@ export function getBuddyModel(): string {
 
 export function getBuddyColor(): string {
   try {
-    return localStorage.getItem('hive_buddy_color') || '#F08A24'
+    const stored = localStorage.getItem('hive_buddy_color')
+    if (stored) return stored
+    return getMascot(getBuddyMascotId()).ink
   } catch {
     return '#F08A24'
   }
@@ -86,6 +89,7 @@ export function broadcastBuddyPhase(phase: BuddyLivePhase) {
  */
 export default function CursorBuddy() {
   const [enabled, setEnabled] = useState(isBuddyEnabled)
+  const [mascotId, setMascotId] = useState(getBuddyMascotId)
   const [visible, setVisible] = useState(false)
   const [pos, setPos] = useState({ x: -100, y: -100 })
   const [livePhase, setLivePhase] = useState<BuddyLivePhase>('idle')
@@ -103,6 +107,7 @@ export default function CursorBuddy() {
     const sync = () => {
       const on = isBuddyEnabled()
       setEnabled(on)
+      setMascotId(getBuddyMascotId())
       if (hasOuter) {
         try {
           window.electronAPI.buddy?.setOuterEnabled?.(on)
@@ -194,7 +199,9 @@ export default function CursorBuddy() {
         crop={122}
         follow
         botState={clickPop ? 'exclaim' : PHASE_STATE[livePhase]}
-        ink={color}
+        ink={getMascot(mascotId).ink}
+        paper={getMascot(mascotId).paper}
+        shapeId={getMascot(mascotId).shape}
         fps={60}
       />
     </div>

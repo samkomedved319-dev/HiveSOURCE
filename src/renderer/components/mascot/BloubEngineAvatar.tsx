@@ -4,6 +4,7 @@ import { BotEngine, type BotFrame } from '../../bot/engine'
 import { mixHex } from '../../bot/skins'
 import { DEMI_VIEWBOX, RAYON } from '../../bot/repere'
 import type { StateId } from '../../bot/states'
+import { SHAPE_BY_ID, type ShapeId } from '../../bot/skins'
 import { subscribeBotTicker } from './botTicker'
 
 /**
@@ -31,11 +32,9 @@ interface BloubEngineAvatarProps {
   ink?: string
   /** Sampling rate. Hero/buddy surfaces run 60; message rows stay at 30. */
   fps?: number
-  /**
-   * Live animation loop. Message rows render static (sampled once, like
-   * frozen thumbnails) — dozens of per-row rAF loops freeze long chats.
-   */
   live?: boolean
+  /** Bloub customizer shape (cercle, hexagone, goutte, …). */
+  shapeId?: ShapeId | string
 }
 
 const DEFAULT_INK = '#F08A24'
@@ -55,13 +54,15 @@ export default function BloubEngineAvatar({
   ink = DEFAULT_INK,
   fps = 30,
   live = true,
+  shapeId,
 }: BloubEngineAvatarProps) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
   const maskId = `bea-mask-${uid}`
   const svgRef = useRef<SVGSVGElement | null>(null)
   const engineRef = useRef<BotEngine | null>(null)
   if (!engineRef.current) {
-    engineRef.current = new BotEngine(RAYON, botState, null, null)
+    const radii = SHAPE_BY_ID.get(shapeId || 'cercle')?.radii || null
+    engineRef.current = new BotEngine(RAYON, botState, radii, null)
   }
   const clockRef = useRef(0)
   const lastSampleRef = useRef(-1)
@@ -71,6 +72,11 @@ export default function BloubEngineAvatar({
   useEffect(() => {
     engineRef.current?.setState(botState, clockRef.current)
   }, [botState])
+
+  useEffect(() => {
+    const radii = SHAPE_BY_ID.get(shapeId || 'cercle')?.radii || null
+    engineRef.current?.setShape(radii, clockRef.current)
+  }, [shapeId])
 
   // Static avatars sample one frozen frame and skip the ticker entirely.
   useEffect(() => {

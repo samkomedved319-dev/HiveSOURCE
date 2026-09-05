@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import type { Message } from '../../types'
 import BloubEngineAvatar from '../mascot/BloubEngineAvatar'
-import { useBuddyColor } from '../mascot/CursorBuddy'
+import { getMascot } from '../mascot/mascotLibrary'
 
 export function extractCitationDomain(c: { domain?: string; url?: string }): string {
   let domain = c.domain
@@ -23,7 +23,7 @@ export default React.memo(function MessageItem({
   index?: number
 }) {
   const isUser = message.role === 'user'
-  const buddyInk = useBuddyColor()
+  const mascot = getMascot(message.botAvatar)
   const [open, setOpen] = useState(false)
 
   const formatInline = (text: string) => {
@@ -187,7 +187,15 @@ export default React.memo(function MessageItem({
           overflow: 'hidden',
         }}
       >
-        <BloubEngineAvatar size={32} crop={120} ink={buddyInk} live={false} />
+        <BloubEngineAvatar
+          size={32}
+          crop={120}
+          live={false}
+          ink={mascot.ink}
+          paper={mascot.paper}
+          botState={mascot.pose}
+          shapeId={mascot.shape}
+        />
       </div>
 
       {/* Message Body */}

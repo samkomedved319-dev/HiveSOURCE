@@ -1,13 +1,14 @@
 import React, { useState } from 'react'
 import { useAgentStore } from '../../stores/agentStore'
 import type { Agent } from '../../types'
+import BloubEngineAvatar from '../mascot/BloubEngineAvatar'
+import MascotPicker from '../mascot/MascotPicker'
+import { DEFAULT_MASCOT_ID, getMascot } from '../mascot/mascotLibrary'
 
 interface BotsPanelProps {
   onBack: () => void
   onSelectAgent: (agent: Agent) => void
 }
-
-import { MASCOT_LIBRARY, mascotGlyph, BLOUB_URL } from '../mascot/mascotLibrary'
 
 /**
  * BotsPanel — the bot roster lives in the main column (where chat lives),
@@ -15,12 +16,13 @@ import { MASCOT_LIBRARY, mascotGlyph, BLOUB_URL } from '../mascot/mascotLibrary'
  * or remove the ones you outgrew. The Hive CEO can never be removed.
  */
 export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
-  const { agents, activeAgent, setActiveAgent, addAgent, removeAgent } = useAgentStore()
+  const { agents, activeAgent, setActiveAgent, addAgent, removeAgent, updateAgent } = useAgentStore()
   const [isCreating, setIsCreating] = useState(false)
   const [name, setName] = useState('')
   const [roleTitle, setRoleTitle] = useState('')
   const [systemPrompt, setSystemPrompt] = useState('')
-  const [avatar, setAvatar] = useState('bloub')
+  const [avatar, setAvatar] = useState(DEFAULT_MASCOT_ID)
+  const [editMascotFor, setEditMascotFor] = useState<string | null>(null)
 
   const handleCreate = () => {
     if (!name.trim()) return
@@ -43,7 +45,7 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
     setName('')
     setRoleTitle('')
     setSystemPrompt('')
-    setAvatar('bloub')
+    setAvatar(DEFAULT_MASCOT_ID)
   }
 
   const handleChat = (agent: Agent) => {
@@ -98,8 +100,8 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
           {agents.map((agent) => {
             const active = agent.id === activeAgent?.id
             return (
+              <React.Fragment key={agent.id}>
               <div
-                key={agent.id}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -110,7 +112,10 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
                   padding: '14px 16px',
                 }}
               >
-                <div
+                <button
+                  type="button"
+                  title="Change mascot"
+                  onClick={() => setEditMascotFor(editMascotFor === agent.id ? null : agent.id)}
                   style={{
                     width: 42,
                     height: 42,
@@ -120,12 +125,22 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 20,
                     flexShrink: 0,
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                    padding: 0,
                   }}
                 >
-                  {agent.avatar || '🤖'}
-                </div>
+                  <BloubEngineAvatar
+                    size={40}
+                    crop={118}
+                    live={false}
+                    ink={getMascot(agent.avatar).ink}
+                    paper={getMascot(agent.avatar).paper}
+                    botState={getMascot(agent.avatar).pose}
+                    shapeId={getMascot(agent.avatar).shape}
+                  />
+                </button>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 14, fontWeight: 600 }}>{agent.name}</span>
@@ -189,6 +204,18 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
                   </button>
                 )}
               </div>
+              {editMascotFor === agent.id && (
+                <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 12, padding: 12 }}>
+                  <MascotPicker
+                    value={agent.avatar || DEFAULT_MASCOT_ID}
+                    onChange={(id) => {
+                      updateAgent(agent.id, { avatar: id })
+                      setEditMascotFor(null)
+                    }}
+                  />
+                </div>
+              )}
+              </React.Fragment>
             )
           })}
         </div>
@@ -229,31 +256,7 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
             }}
           >
             <div style={{ fontSize: 13.5, fontWeight: 600 }}>New worker bot</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {MASCOT_LIBRARY.map((a) => (
-                <button
-                  key={a.id}
-                  type="button"
-                  title={a.hint}
-                  onClick={() => setAvatar(a.id)}
-                  style={{
-                    minWidth: 64,
-                    height: 40,
-                    borderRadius: 8,
-                    fontSize: 12,
-                    background: avatar === a.id ? 'var(--panel-2)' : 'transparent',
-                    border: avatar === a.id ? '1px solid var(--accent)' : '1px solid var(--border-soft)',
-                    cursor: 'pointer',
-                    color: 'var(--text)',
-                  }}
-                >
-                  {mascotGlyph(a.id)} {a.label}
-                </button>
-              ))}
-            </div>
-            {avatar === 'bloub' && (
-              <iframe title="Bloub mascot" src={BLOUB_URL} style={{ width: '100%', height: 120, border: '1px solid var(--border)', borderRadius: 8, background: '#111' }} />
-            )}
+            <MascotPicker value={avatar} onChange={setAvatar} />
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
