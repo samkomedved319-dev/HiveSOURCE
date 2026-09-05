@@ -1,11 +1,10 @@
 import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, globalShortcut, shell } from 'electron'
 import path from 'path'
-import fs from 'fs'
 import { registerTelegramHandlers } from './telegram-service'
 import { registerOpenRouterHandlers } from './openrouter-service'
 import { registerLiveKitHandlers } from './livekit-service'
 import { registerSystemControlHandlers } from './system-service'
-import { registerBuddyHandlers, syncBuddyWithMain } from './buddy-service'
+import { registerBuddyHandlers, syncBuddyWithMain, showNotch } from './buddy-service'
 import { registerSearchHandlers } from './search-service'
 
 let mainWindow: BrowserWindow | null = null
@@ -56,11 +55,8 @@ function createWindow() {
     mainWindow.loadFile(indexPath)
   }
 
-  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
-    if (permission === 'media') {
-      // Approve microphone and audio capture
-      return callback(true)
-    }
+  mainWindow.webContents.session.setPermissionRequestHandler((_webContents, permission, callback) => {
+    if (permission === 'media') return callback(true)
     callback(false)
   })
 
@@ -68,19 +64,13 @@ function createWindow() {
     console.error(`[Electron] Failed to load window: ${code} - ${desc}`)
   })
 
-  // Show window immediately once loaded
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show()
-    if (isDev) {
-      mainWindow?.webContents.openDevTools({ mode: 'detach' })
-    }
+    if (isDev) mainWindow?.webContents.openDevTools({ mode: 'detach' })
   })
 
-  // Fallback show if ready-to-show takes too long
   setTimeout(() => {
-    if (mainWindow && !mainWindow.isVisible()) {
-      mainWindow.show()
-    }
+    if (mainWindow && !mainWindow.isVisible()) mainWindow.show()
   }, 1500)
 
   mainWindow.on('close', (e) => {
@@ -91,8 +81,6 @@ function createWindow() {
   })
 
   mainWindow.on('closed', () => { mainWindow = null })
-
-  // Buddy lives and dies with the main window: hidden/minimized app = no buddy.
   mainWindow.on('show', () => syncBuddyWithMain())
   mainWindow.on('hide', () => syncBuddyWithMain())
   mainWindow.on('minimize', () => syncBuddyWithMain())
@@ -142,6 +130,15 @@ app.whenReady().then(() => {
       if (mainWindow?.isVisible?.() && mainWindow?.isFocused?.()) mainWindow?.hide()
       else { mainWindow?.show(); mainWindow?.focus() }
     })
+    globalShortcut.register('CommandOrControl+Shift+Space', () => {
+      try {
+        if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) {
+          mainWindow.webContents.send('buddy:summon')
+        } else {
+          showNotch()
+        }
+      } catch {}
+    })
   } catch {}
 
   app.on('activate', () => {
@@ -154,7 +151,6 @@ app.on('before-quit', () => { isQuitting = true })
 app.on('will-quit', () => globalShortcut.unregisterAll())
 app.on('window-all-closed', () => { if (process.platform !== 'win32' || isQuitting) app.quit() })
 
-// Window controls
 ipcMain.on('window:minimize', () => mainWindow?.minimize())
 ipcMain.on('window:maximize', () => {
   if (mainWindow?.isMaximized()) mainWindow.unmaximize()
