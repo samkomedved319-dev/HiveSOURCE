@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="fg" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE9A8"/><stop offset=".45" stop-color="#F2C14E"/><stop offset="1" stop-color="#B97E0F"/>
+    </linearGradient>
+    <radialGradient id="fc" cx=".5" cy=".38" r=".75">
+      <stop offset="0" stop-color="#FFF6D6"/><stop offset=".55" stop-color="#F2C14E"/><stop offset="1" stop-color="#8A5E08"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#0A0A0B"/>
+  <path d="M32 8 52 19.5v25L32 56 12 44.5v-25L32 8Z" stroke="url(#fg)" stroke-width="2.6" stroke-linejoin="round" fill="none"/>
+  <ellipse cx="25.5" cy="27" rx="5.4" ry="7" transform="rotate(-24 25.5 27)" fill="#F5F3EA"/>
+  <ellipse cx="38.5" cy="27" rx="5.4" ry="7" transform="rotate(24 38.5 27)" fill="#F5F3EA"/>
+  <rect x="27.2" y="21" width="9.6" height="22.4" rx="4.8" fill="url(#fc)"/>
+  <path d="M27.4 29h9.2v3H27.4zM27.4 34.2h9.2v3H27.4z" fill="#0A0A0B"/>
+  <path d="M32 43.4 30 47l2 1.4 2-1.4-2-3.6Z" fill="#F2C14E"/>
+  <circle cx="32" cy="20.2" r="3.1" fill="#0A0A0B" stroke="#F2C14E" stroke-width="1.3"/>
+</svg>

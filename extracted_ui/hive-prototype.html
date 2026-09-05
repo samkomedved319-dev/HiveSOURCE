@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hive — Design Prototype</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root{
+    --bg: #0D0E11;
+    --panel: #17181C;
+    --panel-2: #1D1F24;
+    --border: #2A2C32;
+    --border-soft: #232529;
+    --text: #F5F6F7;
+    --text-dim: #8A8D96;
+    --text-faint: #55585F;
+    --accent: #F2C14E;
+    --accent-dim: #6B5A2A;
+    --radius: 10px;
+    --ease: cubic-bezier(.16,.8,.24,1);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Inter',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    overflow:hidden;
+    font-size:14px;
+  }
+  .app{
+    display:grid;
+    grid-template-columns: 56px 240px 1fr 0px;
+    height:100vh;
+    transition: grid-template-columns .45s var(--ease);
+  }
+  .app.canvas-open{ grid-template-columns: 56px 240px 1fr 400px; }
+
+  /* ---- Icon rail ---- */
+  .rail{
+    background:var(--bg);
+    border-right:1px solid var(--border-soft);
+    display:flex; flex-direction:column; align-items:center;
+    padding:16px 0; gap:20px;
+  }
+  .rail-logo{
+    width:28px; height:28px; margin-bottom:8px; cursor:pointer;
+  }
+  .rail-icon{
+    width:32px; height:32px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-faint); cursor:pointer;
+    transition: background .2s var(--ease), color .2s var(--ease);
+  }
+  .rail-icon:hover{ background:var(--panel-2); color:var(--text-dim); }
+  .rail-icon.active{ background:var(--panel-2); color:var(--accent); }
+  .rail-spacer{ flex:1; }
+  .rail-avatar{
+    width:30px; height:30px; border-radius:50%;
+    background:linear-gradient(135deg,#F2C14E,#C99A2E);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:600; font-size:12px; color:#0D0E11; cursor:pointer;
+  }
+
+  /* ---- Conversation list ---- */
+  .conv-list{
+    background:var(--panel);
+    border-right:1px solid var(--border-soft);
+    display:flex; flex-direction:column;
+    padding:14px 10px;
+  }
+  .conv-list-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:4px 6px 14px 6px;
+  }
+  .conv-list-title{ font-weight:600; font-size:13px; letter-spacing:.01em; }
+  .new-chat-btn{
+    width:22px; height:22px; border-radius:6px;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-dim); cursor:pointer; border:1px solid var(--border);
+    transition: all .2s var(--ease);
+  }
+  .new-chat-btn:hover{ color:var(--accent); border-color:var(--accent-dim); }
+  .conv-search{
+    background:var(--panel-2); border:1px solid var(--border-soft);
+    border-radius:8px; padding:7px 10px; font-size:12.5px;
+    color:var(--text-faint); margin-bottom:12px; cursor:text;
+  }
+  .conv-group-label{
+    font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--text-faint); padding:10px 8px 6px 8px; font-weight:500;
+  }
+  .conv-item{
+    padding:8px 8px; border-radius:7px; cursor:pointer;
+    color:var(--text-dim); font-size:12.8px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    transition: background .15s var(--ease), color .15s var(--ease);
+    position:relative;
+  }
+  .conv-item:hover{ background:var(--panel-2); color:var(--text); }
+  .conv-item.active{ background:var(--panel-2); color:var(--text); }
+  .conv-item.active::before{
+    content:''; position:absolute; left:-10px; top:20%; bottom:20%;
+    width:2px; background:var(--accent); border-radius:2px;
+  }
+
+  /* ---- Main chat column ---- */
+  .main{
+    display:flex; flex-direction:column; min-width:0;
+    background:var(--bg);
+  }
+  .topbar{
+    height:52px; border-bottom:1px solid var(--border-soft);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 20px; -webkit-app-region: drag;
+  }
+  .topbar-left{ display:flex; align-items:center; gap:10px; }
+  .model-pill{
+    display:flex; align-items:center; gap:7px;
+    background:var(--panel); border:1px solid var(--border-soft);
+    padding:5px 10px; border-radius:20px; font-size:12px;
+    color:var(--text-dim); cursor:pointer; -webkit-app-region: no-drag;
+  }
+  .model-dot{ width:6px; height:6px; border-radius:50%; background:var(--accent); }
+  .topbar-right{ display:flex; align-items:center; gap:14px; -webkit-app-region:no-drag; }
+  .topbar-icon{ color:var(--text-faint); cursor:pointer; transition: color .2s; }
+  .topbar-icon:hover{ color:var(--text); }
+
+  .thread{
+    flex:1; overflow-y:auto; padding:32px 0 0 0;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .thread-inner{ width:100%; max-width:680px; padding:0 24px; }
+
+  .msg{ margin-bottom:28px; opacity:0; animation: rise .5s var(--ease) forwards; }
+  .msg:nth-child(1){ animation-delay:.05s; }
+  .msg:nth-child(2){ animation-delay:.15s; }
+  .msg:nth-child(3){ animation-delay:.25s; }
+  @keyframes rise{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  .msg-user{ display:flex; justify-content:flex-end; }
+  .msg-user .bubble{
+    background:var(--panel); border:1px solid var(--border-soft);
+    border-radius:14px 14px 3px 14px; padding:10px 14px;
+    max-width:78%; font-size:13.6px; line-height:1.55;
+  }
+  .msg-hive{ display:flex; gap:12px; }
+  .hive-avatar{
+    width:26px; height:26px; border-radius:7px; flex-shrink:0; margin-top:2px;
+    background:var(--panel-2); border:1px solid var(--border-soft);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .msg-hive .content{
+    border-left:2px solid var(--border);
+    padding-left:14px; font-size:13.6px; line-height:1.65; color:#E7E8EA;
+    padding-top:1px;
+  }
+  .msg-hive .content p{ margin-bottom:10px; }
+  .msg-hive .content code{
+    font-family:'JetBrains Mono',monospace; background:var(--panel-2);
+    padding:1px 5px; border-radius:4px; font-size:12.3px; color:var(--accent);
+  }
+
+  /* typing indicator */
+  .thinking{ display:flex; align-items:center; gap:10px; margin-top:4px; }
+  .hex-loader{ width:16px; height:16px; position:relative; }
+  .hex-loader svg{ width:100%; height:100%; animation: spin 2.2s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .hex-loader path{ stroke:var(--accent); stroke-dasharray:8 4; }
+  .thinking-text{ font-size:12px; color:var(--text-faint); }
+  .thinking-text span{ animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:.4;} 50%{opacity:1;} }
+
+  /* ---- Composer ---- */
+  .composer-wrap{ padding:16px 24px 22px 24px; display:flex; justify-content:center; }
+  .composer{
+    width:100%; max-width:680px; background:var(--panel);
+    border:1px solid var(--border); border-radius:14px;
+    padding:12px 14px; transition: border-color .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  .composer:focus-within{ border-color:var(--accent-dim); box-shadow:0 0 0 3px rgba(242,193,78,.07); }
+  .composer textarea{
+    width:100%; background:none; border:none; outline:none; resize:none;
+    color:var(--text); font-family:inherit; font-size:13.6px; line-height:1.5;
+    height:22px; max-height:120px;
+  }
+  .composer textarea::placeholder{ color:var(--text-faint); }
+  .composer-row{ display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+  .composer-tools{ display:flex; gap:6px; }
+  .tool-btn{
+    width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center;
+    color:var(--text-faint); cursor:pointer; transition: all .2s var(--ease);
+  }
+  .tool-btn:hover{ background:var(--panel-2); color:var(--text-dim); }
+  .send-btn{
+    width:28px; height:28px; border-radius:8px; background:var(--accent);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    color:#0D0E11; transition: transform .15s var(--ease), background .15s;
+  }
+  .send-btn:hover{ transform:scale(1.06); }
+  .send-btn:active{ transform:scale(.94); }
+
+  /* ---- Canvas panel ---- */
+  .canvas-panel{
+    background:var(--panel); border-left:1px solid var(--border-soft);
+    overflow:hidden; display:flex; flex-direction:column;
+  }
+  .app.canvas-open .canvas-panel{ }
+  .canvas-header{
+    height:52px; border-bottom:1px solid var(--border-soft);
+    display:flex; align-items:center; justify-content:space-between; padding:0 16px;
+    flex-shrink:0;
+  }
+  .canvas-title{ font-size:12.5px; font-weight:500; color:var(--text-dim); display:flex; align-items:center; gap:8px; }
+  .canvas-body{ padding:18px; overflow-y:auto; flex:1; }
+  .canvas-body .card{
+    background:var(--panel-2); border:1px solid var(--border-soft); border-radius:10px;
+    padding:14px; margin-bottom:10px; font-size:12.5px; color:var(--text-dim);
+  }
+  .canvas-body pre{
+    font-family:'JetBrains Mono',monospace; font-size:11.8px; color:#D8DAE0;
+    background:#101115; padding:12px; border-radius:8px; overflow-x:auto; line-height:1.6;
+  }
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:4px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- Icon rail -->
+  <div class="rail">
+    <svg class="rail-logo" viewBox="0 0 32 32" fill="none">
+      <path d="M16 2L28 9V23L16 30L4 23V9L16 2Z" stroke="#F2C14E" stroke-width="1.6" fill="none"/>
+      <path d="M16 9L22 12.5V19.5L16 23L10 19.5V12.5L16 9Z" fill="#F2C14E"/>
+    </svg>
+    <div class="rail-icon active" title="Chat">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </div>
+    <div class="rail-icon" title="Projects">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    </div>
+    <div class="rail-icon" title="Voice / Call">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .6 2.9a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.9.5 2.9.6a2 2 0 0 1 1.8 2.1z"/></svg>
+    </div>
+    <div class="rail-spacer"></div>
+    <div class="rail-icon" title="Settings">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </div>
+    <div class="rail-avatar">A</div>
+  </div>
+
+  <!-- Conversation list -->
+  <div class="conv-list">
+    <div class="conv-list-header">
+      <div class="conv-list-title">Hive</div>
+      <div class="new-chat-btn" title="New chat">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      </div>
+    </div>
+    <div class="conv-search">Search chats…</div>
+    <div class="conv-group-label">Today</div>
+    <div class="conv-item active">Electron design system tokens</div>
+    <div class="conv-item">Windows build signing setup</div>
+    <div class="conv-group-label">Previous 7 Days</div>
+    <div class="conv-item">Rewriting the onboarding copy</div>
+    <div class="conv-item">Vector DB comparison for RAG</div>
+    <div class="conv-item">Q3 roadmap outline</div>
+    <div class="conv-item">Debugging IPC main/renderer</div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="model-pill" onclick="document.getElementById('app').classList.toggle('canvas-open')">
+          <div class="model-dot"></div>
+          Hive 2 · Reasoning
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-icon" title="Share">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 3.9M15.4 6.6L8.6 10.5"/></svg>
+        </div>
+        <div class="topbar-icon" title="Canvas" onclick="document.getElementById('app').classList.toggle('canvas-open')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="thread">
+      <div class="thread-inner">
+        <div class="msg msg-user">
+          <div class="bubble">Set up a design system for my Electron app — dark, minimal, one accent color.</div>
+        </div>
+        <div class="msg msg-hive">
+          <div class="hive-avatar">
+            <svg width="13" height="13" viewBox="0 0 32 32"><path d="M16 2L28 9V23L16 30L4 23V9L16 2Z" fill="none" stroke="#F2C14E" stroke-width="2.2"/></svg>
+          </div>
+          <div class="content">
+            <p>Here's a token set: <code>--bg: #0D0E11</code>, <code>--accent: #F2C14E</code>, one type family, 8px spacing scale. I generated the theme file — check the canvas panel on the right.</p>
+          </div>
+        </div>
+        <div class="msg msg-hive">
+          <div class="hive-avatar">
+            <svg width="13" height="13" viewBox="0 0 32 32"><path d="M16 2L28 9V23L16 30L4 23V9L16 2Z" fill="none" stroke="#F2C14E" stroke-width="2.2"/></svg>
+          </div>
+          <div class="thinking">
+            <div class="hex-loader">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" stroke-width="1.8"/></svg>
+            </div>
+            <div class="thinking-text"><span>Writing theme.css…</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="composer-wrap">
+      <div class="composer">
+        <textarea placeholder="Message Hive…"></textarea>
+        <div class="composer-row">
+          <div class="composer-tools">
+            <div class="tool-btn" title="Attach">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21.4 11.1l-8.9 8.9a5 5 0 0 1-7.1-7.1l9.2-9.2a3.3 3.3 0 0 1 4.7 4.7L10.1 17a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8"/></svg>
+            </div>
+            <div class="tool-btn" title="Tools">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 1 1 5.4-5.4z"/></svg>
+            </div>
+          </div>
+          <div class="send-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0D0E11" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Canvas panel -->
+  <div class="canvas-panel">
+    <div class="canvas-header">
+      <div class="canvas-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/></svg>
+        theme.css
+      </div>
+    </div>
+    <div class="canvas-body">
+      <div class="card">Generated file · 42 lines</div>
+      <pre>:root{
+  --bg: #0D0E11;
+  --panel: #17181C;
+  --accent: #F2C14E;
+  --text: #F5F6F7;
+  --radius: 10px;
+}
+
+.button--primary{
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: 8px;
+}</pre>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Auto-open canvas after a beat to show the slide animation
+  setTimeout(()=> document.getElementById('app').classList.add('canvas-open'), 1400);
+</script>
+</body>
+</html>

@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HIVE · Mascot Pack — HEX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F5EEDF; --panel:#FBF6EA; --cream:#FFF8EA;
+  --ink:#241B0E; --ink50:rgba(36,27,14,.5); --ink35:rgba(36,27,14,.35);
+  --line:rgba(36,27,14,.14);
+  --honey:#FFB23E; --honey-d:#E8940F; --honey-tint:#FFE3AA; --red:#E5484D;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%}
+body{
+  font-family:'Bricolage Grotesque',sans-serif; background:var(--paper); color:var(--ink);
+  display:flex; flex-direction:column; overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--honey); color:var(--ink)}
+button{font-family:inherit; color:inherit; background:none; border:none; cursor:pointer}
+kbd{font:500 9.5px 'IBM Plex Mono'; border:1px solid var(--ink35); border-radius:5px; padding:1px 5px 2px; color:var(--ink50)}
+
+/* ---------- header ---------- */
+header{
+  display:flex; align-items:center; gap:14px; padding:10px 20px;
+  border-bottom:1.5px solid var(--ink); flex:none;
+}
+.mark{display:flex; align-items:center; gap:10px}
+.mark h1{font-size:21px; font-weight:800; letter-spacing:-.02em}
+.mark .sub{font:500 9px 'IBM Plex Mono'; letter-spacing:.14em; color:var(--ink50); line-height:1.5; text-transform:uppercase}
+header .right{margin-left:auto; display:flex; align-items:center; gap:14px}
+.spec{font:500 10px 'IBM Plex Mono'; letter-spacing:.1em; color:var(--ink50); text-transform:uppercase}
+.chipbtn{
+  display:flex; align-items:center; gap:6px; font:500 10px 'IBM Plex Mono'; letter-spacing:.08em;
+  border:1.5px solid var(--ink); border-radius:999px; padding:6px 12px; background:var(--cream);
+  transition:background .15s, transform .1s;
+}
+.chipbtn:hover{background:var(--honey-tint)}
+.chipbtn:active{transform:translateY(1px)}
+#sndBtn .x{display:none}
+#sndBtn.muted .w{display:none}
+#sndBtn.muted .x{display:block}
+
+/* ---------- layout ---------- */
+main{flex:1; display:grid; grid-template-columns:1fr 332px; gap:16px; padding:16px 20px; min-height:0}
+.stage-col{display:flex; flex-direction:column; gap:12px; min-height:0}
+
+/* ---------- stage ---------- */
+#stage{
+  position:relative; flex:1; min-height:0; overflow:hidden;
+  border:1.5px solid var(--ink); border-radius:20px; background:var(--panel);
+  background-image:url("data:image/svg+xml,%3Csvg width='56' height='98' viewBox='0 0 28 49' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23241B0E' stroke-opacity='.055'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L.99 31.75v-15l13-7.5zM3 17.45v14.1l10.99 6.34 11.01-6.35v-14.1L14 11.11z'/%3E%3C/g%3E%3C/svg%3E");
+  background-size:56px 98px;
+}
+#stage.dark{
+  background-color:#221A0F;
+  background-image:url("data:image/svg+xml,%3Csvg width='56' height='98' viewBox='0 0 28 49' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23FFF6E4' stroke-opacity='.07'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L.99 31.75v-15l13-7.5zM3 17.45v14.1l10.99 6.34 11.01-6.35v-14.1L14 11.11z'/%3E%3C/g%3E%3C/svg%3E");
+}
+#cv{position:absolute; inset:0; width:100%; height:100%; touch-action:none}
+.stage-tag{
+  position:absolute; top:14px; left:16px; font:600 9.5px 'IBM Plex Mono'; letter-spacing:.16em;
+  color:var(--ink50); pointer-events:none; text-transform:uppercase;
+}
+.stage-hint{
+  position:absolute; bottom:13px; left:16px; font:500 10px 'IBM Plex Mono'; letter-spacing:.06em;
+  color:var(--ink50); pointer-events:none;
+}
+#stage.dark .stage-tag, #stage.dark .stage-hint{color:rgba(255,246,228,.5)}
+#chipDark{position:absolute; top:12px; right:14px; z-index:5}
+#chipDark.on{background:var(--honey); border-color:var(--ink); color:var(--ink)}
+#stage.dark #chipDark{border-color:rgba(255,246,228,.6); color:rgba(255,246,228,.85)}
+#stage.dark #chipDark.on{color:var(--ink); border-color:var(--ink)}
+
+/* speech bubble */
+.bubble{
+  position:absolute; z-index:4; max-width:250px; pointer-events:none;
+  background:#FFFDF4; border:1.5px solid var(--ink); border-radius:14px;
+  padding:9px 13px 10px; font-size:13.5px; font-weight:600; line-height:1.35;
+  box-shadow:3px 4px 0 rgba(36,27,14,.10);
+  opacity:0; transform:scale(.85); transform-origin:0 100%; transition:opacity .22s, transform .22s;
+}
+.bubble.on{opacity:1; transform:scale(1)}
+.bubble.flip{transform-origin:100% 100%}
+.bubble:after{
+  content:''; position:absolute; left:20px; bottom:-7.5px; width:12px; height:12px;
+  background:#FFFDF4; border-right:1.5px solid var(--ink); border-bottom:1.5px solid var(--ink);
+  transform:rotate(45deg);
+}
+.bubble.flip:after{left:auto; right:20px}
+
+/* ---------- scale check ---------- */
+.sizes{display:flex; align-items:flex-end; gap:18px; flex:none; padding:2px 4px}
+.sz-label{font:600 9.5px 'IBM Plex Mono'; letter-spacing:.16em; color:var(--ink50); padding-bottom:16px}
+.sz-item{display:flex; flex-direction:column; align-items:center; gap:5px}
+.sz-item canvas{border:1.5px solid var(--ink); border-radius:10px; background:var(--cream); display:block}
+.sz-item span{font:500 9px 'IBM Plex Mono'; color:var(--ink50)}
+.sz-note{margin-left:auto; padding-bottom:16px; font:500 10px 'IBM Plex Mono'; color:var(--ink35)}
+@media (max-width:700px){ .sz-note{display:none} }
+
+/* ---------- rail ---------- */
+#rail{min-height:0; overflow-y:auto; padding:2px 6px 12px 2px; scrollbar-width:thin; scrollbar-color:var(--ink35) transparent}
+#rail::-webkit-scrollbar{width:5px}
+#rail::-webkit-scrollbar-thumb{background:var(--ink35); border-radius:4px}
+.sec{padding:13px 0 15px; border-top:1px solid var(--line)}
+.sec:first-child{border-top:none; padding-top:4px}
+.sec h3{
+  display:flex; justify-content:space-between; align-items:baseline;
+  font:600 10px 'IBM Plex Mono'; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--ink); margin-bottom:10px;
+}
+.sec h3 .dim{color:var(--ink35); letter-spacing:.1em}
+.acts{display:flex; gap:8px; flex-wrap:wrap}
+.btn{
+  display:inline-flex; align-items:center; gap:7px;
+  font-weight:600; font-size:13px; padding:8px 13px;
+  border:1.5px solid var(--ink); border-radius:10px; background:var(--cream);
+  transition:background .14s, color .14s, transform .08s;
+}
+.btn:hover{background:var(--ink); color:var(--cream)}
+.btn:hover kbd{border-color:rgba(255,248,234,.4); color:rgba(255,248,234,.7)}
+.btn:active{transform:translateY(1px)}
+.btn.prime{background:var(--honey)}
+.btn.prime:hover{background:var(--honey-d); color:var(--ink)}
+.hint2{font-size:11.5px; color:var(--ink50); margin-top:9px; line-height:1.45}
+.hint2.mono{font:500 9.5px 'IBM Plex Mono'; letter-spacing:.04em}
+
+/* expression rows */
+.erow{
+  width:100%; display:flex; align-items:center; gap:11px; text-align:left;
+  padding:5px 8px; border-radius:12px; transition:background .12s;
+}
+.erow:hover{background:rgba(36,27,14,.05)}
+.erow.sel{background:var(--honey-tint); box-shadow:inset 0 0 0 1.5px var(--ink)}
+.erow canvas{width:44px; height:44px; border:1.5px solid var(--ink); border-radius:11px; background:var(--cream); flex:none}
+.erow .ename{font-weight:600; font-size:13.5px}
+.erow kbd{margin-left:auto}
+.erow.sel kbd{border-color:var(--ink35)}
+
+/* talk form */
+#talkForm{display:flex; gap:8px}
+#talkInp{
+  flex:1; min-width:0; font:500 13px 'Bricolage Grotesque'; color:var(--ink);
+  background:var(--cream); border:1.5px solid var(--ink); border-radius:10px; padding:8px 11px; outline:none;
+}
+#talkInp:focus{box-shadow:0 0 0 2.5px var(--honey-tint)}
+#talkInp::placeholder{color:var(--ink35)}
+
+/* footer */
+footer{
+  flex:none; display:flex; justify-content:space-between; gap:12px;
+  border-top:1.5px solid var(--ink); padding:8px 20px;
+  font:500 10px 'IBM Plex Mono'; letter-spacing:.06em; color:var(--ink50);
+}
+
+/* toast */
+#toasts{position:fixed; left:20px; bottom:48px; z-index:50; display:flex; flex-direction:column; gap:8px}
+.toast{
+  background:var(--ink); color:var(--cream); font:500 11.5px 'IBM Plex Mono';
+  padding:9px 14px; border-radius:10px; opacity:0; transform:translateY(8px);
+  transition:.28s; box-shadow:3px 4px 0 rgba(36,27,14,.18);
+}
+.toast.in{opacity:1; transform:none}
+
+@media (max-width:920px){
+  body{overflow:auto}
+  main{grid-template-columns:1fr}
+  #stage{height:60vh; flex:none}
+  .spec{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mark">
+    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 1.4 21.2 6.7v10.6L12 22.6 2.8 17.3V6.7z" fill="#E8940F"/>
+      <path d="M12 6.2 17.3 9.3v6.2L12 18.6l-5.3-3.1V9.3z" fill="#F5EEDF"/>
+    </svg>
+    <h1>HIVE</h1>
+    <div class="sub">mascot pack<br>HEX · v1.0</div>
+  </div>
+  <div class="right">
+    <span class="spec" id="fpsSpec">RIG 26PTS · -- FPS</span>
+    <button class="chipbtn" id="sndBtn" aria-label="toggle sound">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 5 6 9H2v6h4l5 4z" fill="currentColor" stroke="none"/>
+        <path class="w" d="M15.5 8.5a5 5 0 0 1 0 7"/>
+        <path class="w" d="M18.5 5.5a9 9 0 0 1 0 13"/>
+        <g class="x"><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></g>
+      </svg>
+      SOUND
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="stage-col">
+    <div id="stage">
+      <canvas id="cv"></canvas>
+      <span class="stage-tag">HEX — LIVE RIG</span>
+      <span class="stage-hint">click = poke · drag = stretch &amp; throw · hover his head = pet</span>
+      <button class="chipbtn" id="chipDark">
+        <svg width="11" height="11" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg>
+        DARK CHECK
+      </button>
+      <div class="bubble" id="bubble"><span id="btext"></span></div>
+    </div>
+    <div class="sizes">
+      <span class="sz-label">SCALE CHECK</span>
+      <div class="sz-item"><canvas id="sz0" style="width:96px;height:96px"></canvas><span>96 px</span></div>
+      <div class="sz-item"><canvas id="sz1" style="width:64px;height:64px"></canvas><span>64 px</span></div>
+      <div class="sz-item"><canvas id="sz2" style="width:40px;height:40px"></canvas><span>40 px</span></div>
+      <span class="sz-note">he stays crisp at any size — he's drawn, not an image</span>
+    </div>
+  </div>
+
+  <aside id="rail">
+    <div class="sec">
+      <h3><span>01 · Expressions</span><span class="dim">keys 1–0</span></h3>
+      <div id="exprList"></div>
+    </div>
+    <div class="sec">
+      <h3><span>02 · Actions</span></h3>
+      <div class="acts">
+        <button class="btn" id="btnWave">Wave <kbd>W</kbd></button>
+        <button class="btn" id="btnDance">Dance <kbd>D</kbd></button>
+        <button class="btn" id="btnSleep">Sleep <kbd>S</kbd></button>
+      </div>
+      <p class="hint2">…or interact with him directly on stage — poke, grab, throw, pet.</p>
+    </div>
+    <div class="sec">
+      <h3><span>03 · Make him talk</span><span class="dim">key T</span></h3>
+      <form id="talkForm">
+        <input id="talkInp" maxlength="64" placeholder="type something…" autocomplete="off">
+        <button class="btn" type="submit" aria-label="say it">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h14m0 0-5-5m5 5-5 5"/></svg>
+        </button>
+      </form>
+    </div>
+    <div class="sec">
+      <h3><span>04 · Export</span></h3>
+      <div class="acts">
+        <button class="btn prime" id="btnPng">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 19h16"/></svg>
+          PNG 1024
+        </button>
+        <button class="btn prime" id="btnSheet">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 19h16"/></svg>
+          SPRITE SHEET
+        </button>
+      </div>
+      <p class="hint2 mono">transparent backgrounds · 10 poses · generated locally</p>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  <span>HEX — honey-blob rig · canvas 2d · springs &amp; squash · runs entirely in your browser</span>
+  <span>HIVE LABS</span>
+</footer>
+
+<div id="toasts"></div>
+
+<script>
+'use strict';
+/* ================= helpers & palette ================= */
+const HONEY='#FFB23E', HONEY_D='#E8940F', CREAM='#FFF6E4', INK='#241B0E', RED='#E5484D';
+const TAU=Math.PI*2;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,k)=>a+(b-a)*k;
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const $=id=>document.getElementById(id);
+
+/* ================= expression library ================= */
+const EXPR={
+  happy:    {label:'Happy',    eyes:'open', open:.72, pupil:1,   mouth:'smile', mw:1.05, curve:1,   blush:.45},
+  excited:  {label:'Excited',  eyes:'open', open:1.25,pupil:.72, brow:.45, mouth:'grin', mw:1.05, blush:.6, spark:1},
+  cool:     {label:'Cool',     eyes:'visor',                     mouth:'smile', mw:.8,  curve:.5},
+  love:     {label:'In love',  eyes:'heart',                     mouth:'grin',  mw:1,   blush:1, hearts:1},
+  wink:     {label:'Wink',     eyes:'wink', open:1, pupil:1,     mouth:'grin',  mw:.95, blush:.35},
+  surprised:{label:'Shook',    eyes:'open', open:1.42,pupil:.72, brow:.5, mouth:'o'},
+  sad:      {label:'Sad',      eyes:'open', open:.62, pupil:1, lookY:.55, brow:-.6, mouth:'frown', mw:.85, droop:1},
+  sleepy:   {label:'Sleepy',   eyes:'open', open:.3,  pupil:.9, lookY:.3, lid:1, mouth:'o', mw:.55, droop:1},
+  think:    {label:'Thinking', eyes:'open', open:.9,  pupil:1, lookX:.7, lookY:-.65, mouth:'flat', mw:.7, dots:1},
+  neutral:  {label:'Neutral',  eyes:'open', open:1,   pupil:1,   mouth:'smile', mw:.8, curve:.4},
+};
+const ORDER=['happy','excited','cool','love','wink','surprised','sad','sleepy','think','neutral'];
+/* transient overlays — merged on top of the base expression */
+const OV={
+  wave:  {eyes:'open', open:.78, pupil:1, mouth:'smile', mw:1.1, curve:1.1, blush:.5},
+  dance: {eyes:'open', open:1.1, pupil:.85, mouth:'grin', mw:1, blush:.6, spark:1},
+  pet:   {eyes:'arc', blush:1, mouth:'smile', mw:.7, curve:.7},
+  sleep: {eyes:'sleep', mouth:'o', mw:.42, droop:1, lookY:0},
+  squish:{eyes:'arc', mouth:'flat', mw:.7},
+  strain:{eyes:'open', open:1.18, pupil:1.15, brow:.3, mouth:'wavy', mw:.7},
+  panic: {eyes:'open', open:1.45, pupil:.68, brow:.55, mouth:'wavy', mw:.8},
+  poke:  {eyes:'open', open:1.42, pupil:.72, brow:.5, mouth:'o', mw:.55},
+};
+
+/* ================= state ================= */
+const S={
+  base:'happy',
+  pos:{x:0,y:0}, vel:{x:0,y:0}, home:{x:0,y:0},
+  R:120, N:26, rim:[], rimV:[],
+  lean:0, sq:1, sqV:0,
+  blinkA:0, nextBlink:1600, blink:1,
+  look:{x:0,y:0},
+  drag:false, dragT:0, moved:0, pStart:null, grabOff:{x:0,y:0},
+  pet:0, mspd:0, sleeping:false,
+  pokeT:0, landT:0, airborne:false,
+  action:null, ant:{x:0,y:0,vx:0,vy:0},
+  parts:[], talking:false,
+  dotT:0, zT:0, hT:0, dotI:0,
+  mouse:{x:-9999,y:-9999}, pointer:{x:0,y:0},
+  r:{left:0,top:0,width:0,height:0}, init:false,
+};
+let W=0,H=0,DPR=1,dark=false,tNow=0,frame=0;
+
+/* ================= stage canvas ================= */
+const stage=$('stage'), cv=$('cv'), cx=cv.getContext('2d');
+function initRim(){ S.rim=new Array(S.N).fill(1); S.rimV=new Array(S.N).fill(0); }
+function resize(){
+  DPR=Math.min(2,devicePixelRatio||1);
+  const r=stage.getBoundingClientRect(); S.r=r;
+  W=r.width; H=r.height;
+  cv.width=W*DPR; cv.height=H*DPR;
+  S.R=clamp(Math.min(W,H)*0.165,68,130);
+  if(!S.init){ S.pos.x=S.home.x=W/2; S.pos.y=S.home.y=H*0.52; S.init=true; }
+}
+addEventListener('resize',()=>{ resize(); refreshAuxRects(); });
+addEventListener('scroll',refreshAuxRects,{passive:true});
+
+/* ================= sound (tiny synth, no assets) ================= */
+let AC=null, soundOn=true;
+function ac(){ try{ if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended') AC.resume(); }catch(e){} return AC; }
+function blip(f0,f1,dur,vol=0.05,type='sine'){
+  if(!soundOn||!ac())return;
+  const t=AC.currentTime, o=AC.createOscillator(), g=AC.createGain();
+  o.type=type; o.frequency.setValueAtTime(f0,t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(30,f1),t+dur);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0008,t+dur);
+  o.connect(g).connect(AC.destination); o.start(t); o.stop(t+dur+0.03);
+}
+const pluck=(f,v=0.045)=>blip(f,f*0.99,0.17,v,'triangle');
+ $('sndBtn').addEventListener('click',e=>{ soundOn=!soundOn; e.currentTarget.classList.toggle('muted',!soundOn); if(soundOn)blip(660,880,.1,.04); });
+
+/* ================= face resolution ================= */
+function faceParams(){
+  const e={...EXPR[S.base]};
+  const apply=o=>{ for(const k in o) e[k]=o[k]; };
+  if(S.action&&S.action.type==='wave') apply(OV.wave);
+  if(S.action&&S.action.type==='dance') apply(OV.dance);
+  if(S.pet>0.35) apply(OV.pet);
+  if(S.sleeping) apply(OV.sleep);
+  if(S.landT>0) apply(OV.squish);
+  if(S.pokeT>0) apply(OV.poke);
+  if(S.drag) apply(OV.strain);
+  if(!S.drag&&Math.hypot(S.vel.x,S.vel.y)>9) apply(OV.panic);
+  return e;
+}
+
+/* ================= drawing primitives ================= */
+function hexPath(g,x,y,r,rot){
+  g.beginPath();
+  for(let i=0;i<6;i++){ const a=rot+i/6*TAU, px=x+Math.cos(a)*r, py=y+Math.sin(a)*r; i?g.lineTo(px,py):g.moveTo(px,py); }
+  g.closePath();
+}
+function rr(g,x,y,w,h,r){
+  g.beginPath();
+  g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r);
+  g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath();
+}
+function heartPath(g,x,y,s){
+  g.beginPath();
+  g.moveTo(x,y+s*0.34);
+  g.bezierCurveTo(x-s*0.6,y-s*0.06,x-s*0.42,y-s*0.5,x,y-s*0.16);
+  g.bezierCurveTo(x+s*0.42,y-s*0.5,x+s*0.6,y-s*0.06,x,y+s*0.34);
+  g.closePath();
+}
+function star4(g,x,y,s){
+  g.beginPath();
+  g.moveTo(x,y-s); g.quadraticCurveTo(x,y,x+s,y); g.quadraticCurveTo(x,y,x,y+s);
+  g.quadraticCurveTo(x,y,x-s,y); g.quadraticCurveTo(x,y,x,y-s);
+  g.closePath();
+}
+
+function drawAntenna(g,R,ant,t,E){
+  const by=-R*0.94, tx=ant.x, ty=by-R*0.52+(E.droop?R*0.2:0)+ant.y;
+  const cxx=ant.x*0.35, cyy=by-R*0.34;
+  g.lineCap='round';
+  g.beginPath(); g.moveTo(0,by); g.quadraticCurveTo(cxx,cyy,tx,ty);
+  g.lineWidth=R*0.105; g.strokeStyle=INK; g.stroke();
+  g.beginPath(); g.moveTo(0,by); g.quadraticCurveTo(cxx,cyy,tx,ty);
+  g.lineWidth=R*0.055; g.strokeStyle=HONEY; g.stroke();
+  const pulse=E.dots?1+0.13*Math.sin(t*9):1;
+  hexPath(g,tx,ty,R*0.145*pulse,t*0.7);
+  g.fillStyle=HONEY_D; g.fill();
+  g.lineWidth=R*0.035; g.strokeStyle=INK; g.stroke();
+  if(E.dots){ g.globalAlpha=0.22+0.22*Math.sin(t*9); hexPath(g,tx,ty,R*0.145*pulse,t*0.7); g.fillStyle=CREAM; g.fill(); g.globalAlpha=1; }
+}
+
+function drawArm(g,R,side,angDeg){ /* gooey pseudopod — drawn behind the body */
+  const sx=side*R*0.70, sy=R*0.13, len=R*0.62, a=angDeg*Math.PI/180;
+  const hx=sx+side*Math.cos(a)*len, hy=sy+Math.sin(a)*len;
+  g.lineCap='round';
+  g.beginPath(); g.moveTo(sx,sy); g.quadraticCurveTo(sx+side*len*0.46,sy-len*0.62,hx,hy);
+  g.lineWidth=R*0.30; g.strokeStyle=INK; g.stroke();
+  g.beginPath(); g.moveTo(sx,sy); g.quadraticCurveTo(sx+side*len*0.46,sy-len*0.62,hx,hy);
+  g.lineWidth=R*0.20; g.strokeStyle=HONEY; g.stroke();
+}
+
+function drawFace(g,R,E,lk,blink,t,talkOpen){
+  const eyeY=-R*0.17, ex=R*0.42, lw=Math.max(2,R*0.04);
+  const eyes=E.eyes||'open';
+  g.lineCap='round';
+  const openEye=x=>{
+    const ry=R*0.195*(E.open??1)*(eyes==='open'?blink:1), rx=R*0.15;
+    if(ry<R*0.035){ /* blink line */
+      g.beginPath(); g.moveTo(x-rx,eyeY); g.quadraticCurveTo(x,eyeY+R*0.05,x+rx,eyeY);
+      g.lineWidth=lw; g.strokeStyle=INK; g.stroke(); return;
+    }
+    g.beginPath(); g.ellipse(x+lk.x*R*0.03,eyeY+lk.y*R*0.03,rx,ry,0,0,TAU);
+    g.fillStyle=CREAM; g.fill(); g.lineWidth=R*0.032; g.strokeStyle=INK; g.stroke();
+    g.save(); g.beginPath(); g.ellipse(x+lk.x*R*0.03,eyeY+lk.y*R*0.03,rx*0.95,ry*0.95,0,0,TAU); g.clip();
+    const px=x+lk.x*R*0.085, py=eyeY+lk.y*R*0.085, pr=R*0.088*(E.pupil??1);
+    g.beginPath(); g.arc(px,py,pr,0,TAU); g.fillStyle=INK; g.fill();
+    g.beginPath(); g.arc(px-pr*0.32,py-pr*0.32,pr*0.32,0,TAU); g.fillStyle=CREAM; g.fill();
+    g.restore();
+    if(E.lid){ g.beginPath(); g.ellipse(x,eyeY,rx*0.99,ry*0.99,0,Math.PI,TAU); g.lineWidth=R*0.05; g.strokeStyle=INK; g.stroke(); }
+  };
+  const arcEye=(x,down)=>{
+    const r=R*0.13;
+    g.beginPath(); g.moveTo(x-r,eyeY+R*0.03);
+    g.quadraticCurveTo(x,eyeY+(down?R*0.17:-R*0.19),x+r,eyeY+R*0.03);
+    g.lineWidth=R*0.055; g.strokeStyle=INK; g.stroke();
+  };
+  const heartEye=x=>{
+    const s=R*0.27;
+    heartPath(g,x,eyeY,s);
+    g.fillStyle=RED; g.fill(); g.lineWidth=R*0.03; g.strokeStyle=INK; g.stroke();
+    g.beginPath(); g.arc(x-s*0.16,eyeY-s*0.14,R*0.03,0,TAU); g.fillStyle=CREAM; g.fill();
+  };
+  if(eyes==='open'){ openEye(-ex); openEye(ex); }
+  else if(eyes==='wink'){ arcEye(-ex,false); openEye(ex); }
+  else if(eyes==='arc'){ arcEye(-ex,false); arcEye(ex,false); }
+  else if(eyes==='sleep'){ arcEye(-ex,true); arcEye(ex,true); }
+  else if(eyes==='heart'){ heartEye(-ex); heartEye(ex); }
+  else if(eyes==='visor'){
+    const w=R*0.64,h=R*0.30;
+    rr(g,-w,eyeY-h/2,w*2,h,R*0.11); g.fillStyle=INK; g.fill();
+    g.strokeStyle='rgba(255,246,228,.9)'; g.lineWidth=R*0.045;
+    g.beginPath(); g.moveTo(-R*0.40,eyeY+R*0.02); g.lineTo(-R*0.22,eyeY-R*0.07); g.stroke();
+    g.beginPath(); g.moveTo(R*0.28,eyeY+R*0.05); g.lineTo(R*0.40,eyeY); g.stroke();
+  }
+  if(E.brow&&eyes!=='visor'){ /* brows: + lifts, − tilts inner ends up (sad) */
+    const lift=E.brow>0?E.brow*R*0.11:0, tilt=E.brow<0?-E.brow:0, y=eyeY-R*0.30-lift;
+    g.lineWidth=R*0.045; g.strokeStyle=INK;
+    [[-ex,1],[ex,-1]].forEach(([x,sg])=>{
+      g.beginPath(); g.moveTo(x-sg*R*0.11,y); g.lineTo(x+sg*R*0.11,y-tilt*R*0.10); g.stroke();
+    });
+  }
+  if(E.blush){
+    g.fillStyle=`rgba(233,110,43,${0.5*E.blush})`;
+    g.beginPath(); g.ellipse(-R*0.62,R*0.10,R*0.105,R*0.055,-0.25,0,TAU); g.fill();
+    g.beginPath(); g.ellipse(R*0.62,R*0.10,R*0.105,R*0.055,0.25,0,TAU); g.fill();
+  }
+  /* mouth */
+  const my=R*0.335;
+  if(talkOpen>0.04){
+    g.beginPath(); g.ellipse(0,my,R*0.115,R*0.045+R*0.16*talkOpen,0,0,TAU);
+    g.fillStyle=INK; g.fill(); return;
+  }
+  const w=(E.mw??1)*R*0.30;
+  g.strokeStyle=INK; g.lineWidth=Math.max(2,R*0.05); g.lineCap='round'; g.fillStyle=INK;
+  switch(E.mouth){
+    case 'smile':
+      g.beginPath(); g.moveTo(-w,my-R*0.04);
+      g.quadraticCurveTo(0,my+(E.curve??0.8)*R*0.20,w,my-R*0.04); g.stroke(); break;
+    case 'frown':
+      g.beginPath(); g.moveTo(-w,my+R*0.02);
+      g.quadraticCurveTo(0,my-R*0.15,w,my+R*0.02); g.stroke(); break;
+    case 'grin':{
+      g.beginPath(); g.moveTo(-w,my-R*0.03);
+      g.quadraticCurveTo(0,my+R*0.05,w,my-R*0.03);
+      g.quadraticCurveTo(w*0.62,my+R*0.33,0,my+R*0.33);
+      g.quadraticCurveTo(-w*0.62,my+R*0.33,-w,my-R*0.03);
+      g.closePath(); g.fill();
+      g.save(); g.clip();
+      g.beginPath(); g.ellipse(0,my+R*0.37,w*0.55,R*0.10,0,0,TAU);
+      g.fillStyle='#E0685C'; g.fill(); g.restore(); break;
+    }
+    case 'o':{
+      const r=R*0.085*(E.mw??1)+R*0.02;
+      g.beginPath(); g.ellipse(0,my,r*0.85,r*1.15,0,0,TAU); g.fill(); break;
+    }
+    case 'flat':
+      g.beginPath(); g.moveTo(-w,my); g.quadraticCurveTo(0,my+R*0.03,w,my); g.stroke(); break;
+    case 'wavy':{
+      const n=8, ww=R*0.24;
+      g.beginPath(); g.moveTo(-ww,my);
+      for(let i=1;i<=n;i++) g.lineTo(-ww+i/n*ww*2, my+Math.sin(i/n*Math.PI*2.2)*R*0.045);
+      g.lineWidth=R*0.05; g.stroke(); break;
+    }
+    default:
+      g.beginPath(); g.moveTo(-w*0.7,my); g.quadraticCurveTo(0,my+R*0.12,w*0.7,my); g.stroke();
+  }
+}
+
+/* master renderer — used by stage, thumbnails, scale check and exports */
+function renderBlob(g,o){
+  const {x,y,R,E,t}=o, rim=o.rim, sq=o.sq??1, lean=o.lean??0, N=rim?rim.length:26;
+  let lk;
+  if(E.lookX!==undefined) lk={x:E.lookX,y:E.lookY||0};
+  else { lk={x:(o.look&&o.look.x)||0, y:(o.look&&o.look.y)||0}; lk.y+=E.lookY||0; }
+  g.save(); g.translate(x,y);
+  if(o.stretch&&o.stretch.s>0.004){
+    g.rotate(o.stretch.a); g.scale(1+o.stretch.s,1-o.stretch.s*0.85); g.rotate(-o.stretch.a);
+  }
+  g.rotate(lean);
+  g.scale(1+(1-sq)*0.75,sq);
+  drawAntenna(g,R,o.ant||{x:0,y:0},t,E);
+  if(o.arms) o.arms.forEach(a=>drawArm(g,R,a.side,a.ang));
+  /* body */
+  g.beginPath();
+  const pt=i=>{ const a=i/N*TAU;
+    const r=rim?rim[i]:(1+0.02*Math.sin(3*a+t*1.6)+0.014*Math.sin(5*a-t*1.1)+0.008*Math.sin(8*a+t*2.3));
+    return [Math.cos(a)*R*r, Math.sin(a)*R*r];
+  };
+  const p0=pt(0), p1=pt(1);
+  g.moveTo((p0[0]+p1[0])/2,(p0[1]+p1[1])/2);
+  for(let i=1;i<=N;i++){ const c=pt(i%N), n=pt((i+1)%N); g.quadraticCurveTo(c[0],c[1],(c[0]+n[0])/2,(c[1]+n[1])/2); }
+  g.closePath();
+  g.fillStyle=HONEY; g.fill();
+  g.save(); g.clip(); /* volume shading */
+  let gr=g.createRadialGradient(-R*0.35,-R*0.5,R*0.05,-R*0.35,-R*0.5,R*1.3);
+  gr.addColorStop(0,'rgba(255,250,235,.5)'); gr.addColorStop(.55,'rgba(255,250,235,0)');
+  g.fillStyle=gr; g.fillRect(-R*1.5,-R*1.5,R*3,R*3);
+  gr=g.createLinearGradient(0,R*0.25,0,R*1.05);
+  gr.addColorStop(0,'rgba(150,80,0,0)'); gr.addColorStop(1,'rgba(150,80,0,.20)');
+  g.fillStyle=gr; g.fillRect(-R*1.5,-R*1.5,R*3,R*3);
+  g.restore();
+  g.lineWidth=Math.max(2.4,R*0.042); g.strokeStyle=INK; g.stroke();
+  drawFace(g,R,E,lk,o.blink??1,t,o.talk||0);
+  g.restore();
+}
+
+/* ================= particles ================= */
+function spawn(p){ S.parts.push(p); }
+function updateParts(dt){
+  for(const p of S.parts){
+    p.age+=dt; p.life-=dt;
+    p.x+=p.vx*dt; p.y+=p.vy*dt;
+    if(p.type==='heart') p.x+=Math.sin(p.age*0.005)*0.028*dt;
+  }
+  S.parts=S.parts.filter(p=>p.life>0);
+}
+function drawParts(g){
+  for(const p of S.parts){
+    const al=clamp(p.life/p.dur,0,1);
+    g.globalAlpha=al;
+    if(p.type==='heart'){
+      heartPath(g,p.x,p.y,p.s*(0.7+0.3*al));
+      g.fillStyle=RED; g.fill(); g.lineWidth=1.5; g.strokeStyle=INK; g.stroke();
+    }else if(p.type==='z'){
+      g.save(); g.translate(p.x,p.y); g.rotate(p.rot);
+      g.font=`600 ${p.s*(0.7+0.7*(p.age/p.dur))}px 'IBM Plex Mono',monospace`;
+      g.fillStyle=dark?'#FFF6E4':INK; g.fillText('z',0,0); g.restore();
+    }else if(p.type==='spark'){
+      star4(g,p.x,p.y,p.s*(0.5+0.7*al)); g.fillStyle=HONEY_D; g.fill();
+    }else if(p.type==='dot'){
+      g.beginPath(); g.arc(p.x,p.y,p.s*(0.5+Math.min(1,p.age/140)*0.8),0,TAU);
+      g.fillStyle=dark?'#FFF6E4':INK; g.fill();
+    }
+  }
+  g.globalAlpha=1;
+}
+
+/* ================= interaction ================= */
+function hitBlob(x,y){
+  const R=S.R, dx=(x-S.pos.x)/(R*1.08), dy=(y-S.pos.y)/(R*1.08*S.sq);
+  return dx*dx+dy*dy<1;
+}
+function impact(st){
+  S.sqV-=clamp(st*0.018,0.05,0.28); S.landT=0.4;
+  if(st>3.5) blip(160,58,0.13,clamp(st*0.008,0.02,0.09));
+}
+function poke(x,y){
+  S.pokeT=0.55;
+  const a=Math.atan2(y-S.pos.y,x-S.pos.x);
+  let i=Math.round(a/TAU*S.N); i=(i+S.N)%S.N;
+  for(let k=-4;k<=4;k++){ const w=Math.exp(-k*k/4.5); S.rimV[(i+k+S.N)%S.N]-=0.16*w; }
+  blip(380,170,0.09,0.06);
+  for(let j=0;j<3;j++){ const an=rnd(0,TAU);
+    spawn({type:'spark',x:x,y:y,vx:Math.cos(an)*0.09,vy:Math.sin(an)*0.09-0.02,life:480,dur:480,s:rnd(4,7),age:0});
+  }
+  if(Math.random()<0.35) say(pick(['boop!','hehe','oi!','again!','hi!']));
+}
+function wake(bubble){
+  if(!S.sleeping) return;
+  S.sleeping=false; S.pokeT=0.5;
+  $('btnSleep').firstChild.textContent='Sleep ';
+  if(bubble) say("zzz— wha— oh. hi.");
+}
+function doWave(){
+  if(S.sleeping) wake(false);
+  S.action={type:'wave',t0:tNow,hop:-1}; S.sqV-=0.09;
+  blip(620,880,0.12,0.05); setTimeout(()=>blip(880,1180,0.12,0.04),110);
+}
+function doDance(){
+  if(S.sleeping) wake(false);
+  S.action={type:'dance',t0:tNow,hop:-1};
+}
+function toggleSleep(){
+  if(S.sleeping){ wake(true); return; }
+  S.sleeping=true; S.action=null; S.pet=0;
+  $('btnSleep').firstChild.textContent='Wake ';
+  blip(240,90,0.28,0.04);
+}
+cv.addEventListener('pointerdown',e=>{
+  ac();
+  const x=e.clientX-S.r.left, y=e.clientY-S.r.top;
+  if(hitBlob(x,y)){
+    S.drag=true; S.dragT=performance.now(); S.moved=0;
+    S.pStart={x:e.clientX,y:e.clientY};
+    S.grabOff.x=x-S.pos.x; S.grabOff.y=y-S.pos.y;
+    if(S.sleeping) wake(false);
+    S.pet=0;
+    cv.setPointerCapture(e.pointerId); e.preventDefault();
+  }
+});
+addEventListener('pointermove',e=>{
+  const d=Math.hypot(e.clientX-S.mouse.x,e.clientY-S.mouse.y);
+  if(S.mouse.x>-9000) S.mspd=S.mspd*0.7+d*0.3;
+  S.mouse.x=e.clientX; S.mouse.y=e.clientY;
+  if(S.drag&&S.pStart) S.moved=Math.hypot(e.clientX-S.pStart.x,e.clientY-S.pStart.y);
+});
+addEventListener('pointerup',e=>{
+  if(!S.drag) return;
+  S.drag=false;
+  if(S.moved<7&&performance.now()-S.dragT<350) poke(e.clientX-S.r.left,e.clientY-S.r.top);
+});
+
+/* ================= simulation ================= */
+function update(dt,t){
+  const d=Math.min(2.5,dt/16.667), R=S.R;
+  const m={x:S.mouse.x-S.r.left, y:S.mouse.y-S.r.top};
+  S.pointer=m;
+  const E=faceParams();
+  /* gaze */
+  let tx,ty;
+  if(E.lookX===undefined){
+    tx=clamp((m.x-S.pos.x)/240,-1.15,1.15);
+    ty=clamp((m.y-S.pos.y)/240,-1.15,1.15)+(E.lookY||0);
+  } else { tx=E.lookX; ty=E.lookY||0; }
+  S.look.x=lerp(S.look.x,clamp(tx,-1.2,1.2),0.12*d);
+  S.look.y=lerp(S.look.y,clamp(ty,-1.2,1.2),0.12*d);
+  /* blink */
+  if(S.blinkA>0) S.blinkA-=dt/1000;
+  S.nextBlink-=dt;
+  if(S.nextBlink<0){ S.blinkA=0.15; S.nextBlink=Math.random()<0.14?230:rnd(2200,5600); }
+  S.blink=S.blinkA>0?Math.abs(1-2*(S.blinkA/0.15)):1;
+  /* timers */
+  S.pokeT=Math.max(0,S.pokeT-dt/1000);
+  S.landT=Math.max(0,S.landT-dt/1000);
+  /* action timelines */
+  if(S.action){
+    const a=S.action, p=t-a.t0;
+    if(a.type==='wave'&&p>1.8) S.action=null;
+    if(a.type==='dance'){
+      if(p>2.7) S.action=null;
+      else{ const hop=Math.floor(p/0.45);
+        if(hop!==a.hop){ a.hop=hop; S.sqV-=0.10; pluck([523,659,784,659,880,659][hop%6]); } }
+    }
+  }
+  /* movement */
+  if(S.drag){
+    const gx=m.x-S.grabOff.x, gy=m.y-S.grabOff.y;
+    const nx=S.pos.x+(gx-S.pos.x)*Math.min(1,0.42*d);
+    const ny=S.pos.y+(gy-S.pos.y)*Math.min(1,0.42*d);
+    S.vel.x=(nx-S.pos.x)/d; S.vel.y=(ny-S.pos.y)/d;
+    S.pos.x=nx; S.pos.y=ny;
+  } else {
+    S.vel.x+=(S.home.x-S.pos.x)*0.0042*d;
+    S.vel.y+=(S.home.y-S.pos.y)*0.0042*d;
+    const dmp=Math.pow(0.93,d); S.vel.x*=dmp; S.vel.y*=dmp;
+    S.pos.x+=S.vel.x*d; S.pos.y+=S.vel.y*d;
+    const pad=R*0.72;
+    if(S.pos.x<pad){ S.pos.x=pad; if(Math.abs(S.vel.x)>2)impact(Math.abs(S.vel.x)); S.vel.x*=-0.62; }
+    if(S.pos.x>W-pad){ S.pos.x=W-pad; if(Math.abs(S.vel.x)>2)impact(Math.abs(S.vel.x)); S.vel.x*=-0.62; }
+    if(S.pos.y<pad){ S.pos.y=pad; if(Math.abs(S.vel.y)>2)impact(Math.abs(S.vel.y)); S.vel.y*=-0.62; }
+    if(S.pos.y>H-pad){ S.pos.y=H-pad; if(Math.abs(S.vel.y)>2)impact(Math.abs(S.vel.y)); S.vel.y*=-0.62; }
+  }
+  const sp=Math.hypot(S.vel.x,S.vel.y);
+  S.airborne=!S.drag&&sp>9;
+  /* squash spring */
+  S.sqV+=(1-S.sq)*0.22*d; S.sqV*=Math.pow(0.78,d);
+  S.sq=clamp(S.sq+S.sqV*d,0.5,1.55);
+  /* lean */
+  const lt=clamp(S.vel.x*0.010,-0.26,0.26)+(S.pet>0.35?Math.sin(t*2.6)*0.05:0);
+  S.lean=lerp(S.lean,lt,0.10*d);
+  /* jelly rim */
+  for(let i=0;i<S.N;i++){
+    const a=i/S.N*TAU;
+    const rest=1+0.020*Math.sin(3*a+t*1.6)+0.014*Math.sin(5*a-t*1.1)+0.008*Math.sin(8*a+t*2.3);
+    S.rimV[i]+=(rest-S.rim[i])*0.16*d;
+    S.rimV[i]+=((S.rim[(i+S.N-1)%S.N]+S.rim[(i+1)%S.N])/2-S.rim[i])*0.30*d;
+    S.rimV[i]*=Math.pow(0.80,d);
+  }
+  for(let i=0;i<S.N;i++) S.rim[i]+=S.rimV[i]*d;
+  /* petting */
+  const inside=hitBlob(m.x,m.y);
+  S.mspd*=Math.pow(0.85,d);
+  if(!S.drag&&inside&&m.y<S.pos.y-R*0.15&&S.mspd<3.2) S.pet+=dt/1000;
+  else S.pet=Math.max(0,S.pet-dt/450);
+  if(S.pet>1.1&&Math.random()<0.025)
+    spawn({type:'heart',x:S.pos.x+rnd(-R*0.4,R*0.4),y:S.pos.y-R*1.0,vx:0,vy:-0.04,life:1500,dur:1500,s:rnd(7,10),age:0});
+  /* antenna — lagging spring */
+  const rx=clamp(-S.vel.x*2.0,-R*0.42,R*0.42);
+  const ry=clamp((E.droop?R*0.26:R*0.02)+S.vel.y*1.4,-R*0.4,R*0.4);
+  S.ant.vx+=(rx-S.ant.x)*0.02*d; S.ant.vy+=(ry-S.ant.y)*0.02*d;
+  S.ant.vx*=Math.pow(0.86,d); S.ant.vy*=Math.pow(0.86,d);
+  S.ant.x+=S.ant.vx*d; S.ant.y+=S.ant.vy*d;
+  /* ambient particles driven by the face */
+  if(E.dots){ S.dotT-=dt; if(S.dotT<0){ S.dotT=460; S.dotI=(S.dotI+1)%3;
+    spawn({type:'dot',x:S.pos.x+R*(0.5+0.14*S.dotI),y:S.pos.y-R*1.05,vx:0.01,vy:-0.02,life:1500,dur:1500,s:3+S.dotI*1.5,age:0}); } }
+  if(S.sleeping){ S.zT-=dt; if(S.zT<0){ S.zT=880;
+    spawn({type:'z',x:S.pos.x+R*0.55,y:S.pos.y-R*0.95,vx:0.02,vy:-0.028,life:2600,dur:2600,s:rnd(11,15),rot:rnd(-0.3,0.3),age:0}); } }
+  if(E.hearts){ S.hT-=dt; if(S.hT<0){ S.hT=640;
+    spawn({type:'heart',x:S.pos.x+rnd(-R*0.8,R*0.8),y:S.pos.y-R*0.95,vx:rnd(-0.01,0.01),vy:-0.04,life:1600,dur:1600,s:rnd(7,11),age:0}); } }
+  if(E.spark&&Math.random()<0.07){ const a=rnd(0,TAU);
+    spawn({type:'spark',x:S.pos.x+Math.cos(a)*R*1.25,y:S.pos.y+Math.sin(a)*R*1.25,vx:Math.cos(a)*0.05,vy:Math.sin(a)*0.05-0.02,life:520,dur:520,s:rnd(4,8),age:0}); }
+  updateParts(dt);
+  cv.style.cursor=S.drag?'grabbing':(inside?'grab':'default');
+}
+
+/* ================= main render ================= */
+function renderMain(t){
+  cx.setTransform(DPR,0,0,DPR,0,0);
+  cx.clearRect(0,0,W,H);
+  const R=S.R, sp=Math.hypot(S.vel.x,S.vel.y), E=faceParams();
+  const bob=S.sleeping?Math.sin(t*1.15)*R*0.055:Math.sin(t*1.7)*R*0.028;
+  const breath=S.sleeping?Math.sin(t*1.15)*0.03:Math.sin(t*1.7)*0.012;
+  let arms=null;
+  if(S.action&&S.action.type==='wave') arms=[{side:1,ang:-48+Math.sin(t*13)*24}];
+  if(S.action&&S.action.type==='dance'){
+    const hp=((t-S.action.t0)/0.45)%1;
+    arms=[{side:1,ang:-78+Math.sin(t*7)*13},{side:-1,ang:-78-Math.sin(t*7)*13}];
+    var hopLift=Math.sin(hp*Math.PI)*R*0.30;
+  }
+  /* shadow */
+  const shScale=1-Math.max(0,-(bob-(hopLift||0)))/(R*1.3);
+  cx.fillStyle=dark?'rgba(0,0,0,.4)':'rgba(30,18,6,.15)';
+  cx.beginPath();
+  cx.ellipse(S.pos.x,S.pos.y+R*1.10*S.sq+R*0.05,R*(0.85+(1-S.sq)*0.6)*clamp(shScale,0.6,1),R*0.17,0,0,TAU);
+  cx.fill();
+  const st=sp>0.5?{a:Math.atan2(S.vel.y,S.vel.x),s:clamp(sp/30,0,0.30)}:null;
+  const talk=S.talking?0.18+0.82*Math.abs(Math.sin(t*11))*(0.55+0.45*Math.sin(t*2.6)):0;
+  renderBlob(cx,{
+    x:S.pos.x, y:S.pos.y+bob-(hopLift||0), R, E, t,
+    rim:S.rim, sq:S.sq*(1+breath), lean:S.lean, stretch:st,
+    look:S.look, blink:S.blink, ant:S.ant, talk, arms
+  });
+  drawParts(cx);
+}
+
+/* ================= thumbnails & scale check ================= */
+const minis=[], auxRects=new Map();
+function blinkFor(i,t){ const p=((t*0.28)+i*0.37)%1; return p<0.09?1-Math.sin(p/0.09*Math.PI):1; }
+function renderMini(c,key,R,look,t,blink,idx){
+  const g=c.getContext('2d'), w=c._w, h=c._h;
+  g.setTransform(c._dpr,0,0,c._dpr,0,0); g.clearRect(0,0,w,h);
+  const bob=Math.sin(t*1.7+idx)*R*0.05;
+  g.fillStyle='rgba(30,18,6,.15)';
+  g.beginPath(); g.ellipse(w/2,h/2+R*1.16,R*0.8,R*0.14,0,0,TAU); g.fill();
+  renderBlob(g,{x:w/2,y:h/2+R*0.12+bob,R,E:EXPR[key],t:t+idx*0.7,
+    look,blink:blinkFor(idx,t),ant:{x:Math.sin(t*1.3+idx)*R*0.05,y:0}});
+}
+function mouseLookFor(el){
+  const r=auxRects.get(el);
+  if(!r||S.mouse.x<-9000) return {x:0,y:0.08};
+  return {x:clamp((S.mouse.x-r.left-r.width/2)/160,-1,1),
+          y:clamp((S.mouse.y-r.top-r.height/2)/160,-1,1)};
+}
+function refreshAuxRects(){
+  document.querySelectorAll('canvas').forEach(c=>{
+    if(c.id==='cv') return;
+    auxRects.set(c,c.getBoundingClientRect());
+  });
+}
+setInterval(refreshAuxRects,900);
+
+function setupAuxCanvas(c,w,h){
+  c._w=w; c._h=h; c._dpr=Math.min(2,devicePixelRatio||1);
+  c.width=w*c._dpr; c.height=h*c._dpr;
+}
+function renderAux(t){
+  if(frame%2===0){
+    minis.forEach((c,i)=>renderMini(c,ORDER[i],14.5,mouseLookFor(c),t,1,i));
+    const sizes=[[ $('sz0'),96,29 ],[ $('sz1'),64,19 ],[ $('sz2'),40,12 ]];
+    sizes.forEach(([c,px,R],i)=>{
+      if(!c._w) setupAuxCanvas(c,px,px);
+      renderMini(c,S.base,R,mouseLookFor(c),t,1,10+i);
+    });
+  }
+  if(bubble.classList.contains('on')) positionBubble();
+}
+
+/* ================= speech bubble ================= */
+const bubble=$('bubble'), btext=$('btext');
+let typeTimer=null, hideTimer=null, talkStop=null;
+function positionBubble(){
+  const R=S.R;
+  let bx=S.pos.x+R*1.15, by=S.pos.y-R*1.55;
+  bubble.style.top=Math.max(10,by)+'px';
+  if(bx>W-260){
+    bubble.classList.add('flip');
+    bubble.style.left=(S.pos.x-R*1.15)+'px';
+    bubble.style.translate='-100% 0';
+  } else {
+    bubble.classList.remove('flip');
+    bubble.style.left=bx+'px';
+    bubble.style.translate='none';
+  }
+}
+function say(text){
+  if(S.sleeping) wake(false);
+  bubble.classList.add('on'); btext.textContent='';
+  clearInterval(typeTimer); clearTimeout(hideTimer); clearTimeout(talkStop);
+  S.talking=true;
+  let i=0;
+  typeTimer=setInterval(()=>{
+    i++; btext.textContent=text.slice(0,i);
+    if(i>=text.length){
+      clearInterval(typeTimer);
+      talkStop=setTimeout(()=>S.talking=false,350);
+      hideTimer=setTimeout(()=>bubble.classList.remove('on'),2100+text.length*24);
+    }
+  },34);
+}
+
+/* ================= export ================= */
+function download(c,name){
+  c.toBlob(b=>{
+    const u=URL.createObjectURL(b), a=document.createElement('a');
+    a.href=u; a.download=name; a.click();
+    setTimeout(()=>URL.revokeObjectURL(u),3000);
+  });
+}
+ $('btnPng').addEventListener('click',()=>{
+  const c=document.createElement('canvas'); c.width=c.height=1024;
+  renderBlob(c.getContext('2d'),{x:512,y:560,R:330,E:{...EXPR[S.base]},t:1.35,look:{x:0,y:0.06},blink:1,ant:{x:0,y:0}});
+  download(c,'hex-mascot.png');
+  toast('saved hex-mascot.png — 1024×1024, transparent');
+});
+ $('btnSheet').addEventListener('click',()=>{
+  const c=document.createElement('canvas'); c.width=1250; c.height=580;
+  const g=c.getContext('2d');
+  ORDER.forEach((k,i)=>{
+    const gx=(i%5)*250+125, gy=(i<5?140:390);
+    renderBlob(g,{x:gx,y:gy,R:78,E:{...EXPR[k]},t:1+i*0.9,look:{x:0,y:0.05},blink:1,ant:{x:0,y:0}});
+    g.font="600 12px 'IBM Plex Mono',monospace"; g.fillStyle=INK;
+    g.textAlign='center'; g.fillText(EXPR[k].label.toUpperCase(),gx,gy+108);
+  });
+  download(c,'hex-mascot-sheet.png');
+  toast('saved hex-mascot-sheet.png — 10 poses, 250px cells');
+});
+function toast(m){
+  const el=document.createElement('div'); el.className='toast'; el.textContent=m;
+  $('toasts').appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('in'));
+  setTimeout(()=>{ el.classList.remove('in'); setTimeout(()=>el.remove(),320); },2400);
+}
+
+/* ================= rail: expressions & actions ================= */
+const rowEls={};
+ORDER.forEach((k,i)=>{
+  const b=document.createElement('button');
+  b.className='erow'; b.dataset.k=k;
+  const c=document.createElement('canvas'); setupAuxCanvas(c,44,44);
+  b.appendChild(c); minis.push(c);
+  const n=document.createElement('span'); n.className='ename'; n.textContent=EXPR[k].label;
+  b.appendChild(n);
+  const kb=document.createElement('kbd'); kb.textContent=(i+1)%10; b.appendChild(kb);
+  b.addEventListener('click',()=>selectExpr(k));
+  $('exprList').appendChild(b);
+  rowEls[k]=b;
+});
+function selectExpr(k){
+  S.base=k; S.sleeping=false; S.action=null; S.pet=0;
+  $('btnSleep').firstChild.textContent='Sleep ';
+  Object.values(rowEls).forEach(r=>r.classList.remove('sel'));
+  rowEls[k].classList.add('sel');
+}
+selectExpr('happy');
+ $('btnWave').addEventListener('click',doWave);
+ $('btnDance').addEventListener('click',doDance);
+ $('btnSleep').addEventListener('click',toggleSleep);
+ $('chipDark').addEventListener('click',e=>{
+  dark=!dark; stage.classList.toggle('dark',dark);
+  e.currentTarget.classList.toggle('on',dark);
+});
+ $('talkForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const v=$('talkInp').value.trim();
+  if(v){ say(v); $('talkInp').value=''; }
+  else say(pick(['bee good!','0x48 0x49 — that spells “HI”','buzz buzz','thinking in hex','hex & chill']));
+});
+addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT') return;
+  const map={'1':'happy','2':'excited','3':'cool','4':'love','5':'wink','6':'surprised','7':'sad','8':'sleepy','9':'think','0':'neutral'};
+  if(map[e.key]) selectExpr(map[e.key]);
+  else if(e.key==='w'||e.key==='W') doWave();
+  else if(e.key==='d'||e.key==='D') doDance();
+  else if(e.key==='s'||e.key==='S') toggleSleep();
+  else if(e.key==='t'||e.key==='T'){ e.preventDefault(); $('talkInp').focus(); }
+});
+
+/* ================= main loop ================= */
+let last=performance.now(), fN=0, fT=0;
+function loop(now){
+  const dt=Math.min(40,now-last); last=now; tNow=now/1000;
+  update(dt,tNow);
+  renderMain(tNow);
+  renderAux(tNow);
+  frame++;
+  fN++; fT+=dt;
+  if(fT>500){ $('fpsSpec').textContent=`RIG ${S.N}PTS · ${Math.round(fN*1000/fT)} FPS`; fN=0; fT=0; }
+  requestAnimationFrame(loop);
+}
+resize(); initRim(); refreshAuxRects();
+requestAnimationFrame(loop);
+
+/* greeting */
+setTimeout(doWave,700);
+setTimeout(()=>say("hey! i'm Hex — poke me, drag me, make me talk."),950);
+</script>
+</body>
+</html>

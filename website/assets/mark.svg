@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="hive-gold" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE9A8"/>
+      <stop offset=".45" stop-color="#F2C14E"/>
+      <stop offset="1" stop-color="#B97E0F"/>
+    </linearGradient>
+    <linearGradient id="hive-glow" x1="32" y1="2" x2="32" y2="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F2C14E" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#F2C14E" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="hive-core" cx=".5" cy=".38" r=".75">
+      <stop offset="0" stop-color="#FFF6D6"/>
+      <stop offset=".55" stop-color="#F2C14E"/>
+      <stop offset="1" stop-color="#8A5E08"/>
+    </radialGradient>
+  </defs>
+
+  <!-- outer hex -->
+  <path d="M32 3 56.5 17.2v29.6L32 61 7.5 46.8V17.2L32 3Z" stroke="url(#hive-gold)" stroke-width="2.6" stroke-linejoin="round" fill="#0A0A0B"/>
+  <!-- inner hex hairline -->
+  <path d="M32 9.5 50.8 20.4v23.2L32 54.5 13.2 43.6V20.4L32 9.5Z" stroke="url(#hive-glow)" stroke-width="1" stroke-linejoin="round" opacity=".55"/>
+
+  <!-- bee wings -->
+  <ellipse cx="24.2" cy="24.5" rx="6.4" ry="8.2" transform="rotate(-24 24.2 24.5)" fill="#F5F3EA" opacity=".92"/>
+  <ellipse cx="39.8" cy="24.5" rx="6.4" ry="8.2" transform="rotate(24 39.8 24.5)" fill="#F5F3EA" opacity=".92"/>
+  <ellipse cx="24.6" cy="25.2" rx="3.6" ry="5.2" transform="rotate(-24 24.6 25.2)" fill="#0A0A0B" opacity=".08"/>
+  <ellipse cx="39.4" cy="25.2" rx="3.6" ry="5.2" transform="rotate(24 39.4 25.2)" fill="#0A0A0B" opacity=".08"/>
+
+  <!-- bee body -->
+  <rect x="26.5" y="18" width="11" height="26" rx="5.5" fill="url(#hive-core)"/>
+  <!-- stripes -->
+  <path d="M26.7 27.5h10.6v3.6H26.7zM26.7 33.6h10.6v3.6H26.7z" fill="#0A0A0B"/>
+  <!-- stinger -->
+  <path d="M32 44.2 29.6 48.6 32 50.2 34.4 48.6 32 44.2Z" fill="#F2C14E"/>
+  <!-- head -->
+  <circle cx="32" cy="17.2" r="3.6" fill="#0A0A0B" stroke="#F2C14E" stroke-width="1.4"/>
+  <!-- antennae -->
+  <path d="M30.2 14.2 28 10.8M33.8 14.2 36 10.8" stroke="#F2C14E" stroke-width="1.4" stroke-linecap="round"/>
+  <circle cx="28" cy="10.4" r="1.1" fill="#F2C14E"/>
+  <circle cx="36" cy="10.4" r="1.1" fill="#F2C14E"/>
+  <!-- eyes -->
+  <circle cx="30.7" cy="17" r=".9" fill="#F2C14E"/>
+  <circle cx="33.3" cy="17" r=".9" fill="#F2C14E"/>
+</svg>

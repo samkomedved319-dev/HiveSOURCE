@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hive APIs — Built by Samko | AI Workspace APIs & Desktop Systems</title>
+  <meta name="description" content="Hive APIs is a startup studio by founder Samko — building a unified AI workspace: chat, web search with citations, voice, and desktop automation. Portfolio, stack, and contact." />
+  <meta name="theme-color" content="#050505" />
+  <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+  <meta property="og:title" content="Hive APIs — Founder Portfolio" />
+  <meta property="og:description" content="One founder, one hive: AI workspace APIs, desktop apps, and realtime systems. Clean, fast, local-first." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <!-- scroll progress -->
+  <div class="progress" id="progress" aria-hidden="true"></div>
+
+  <!-- cursor glow -->
+  <div class="cursor-dot" id="cursorDot" aria-hidden="true"></div>
+  <div class="cursor-ring" id="cursorRing" aria-hidden="true"></div>
+
+  <!-- preloader -->
+  <div class="loader" id="loader" aria-hidden="true">
+    <div class="loader-inner">
+      <img src="./assets/mark.svg" alt="" class="loader-mark" />
+      <div class="loader-bar"><span></span></div>
+      <p class="mono">npm run hive…</p>
+    </div>
+  </div>
+
+  <!-- hive particle canvas -->
+  <canvas id="hive-canvas" aria-hidden="true"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- NAV -->
+  <header class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="#top" class="brand" aria-label="Hive APIs home">
+        <img src="./assets/mark.svg" alt="Hive APIs logo" class="brand-mark" />
+        <span class="brand-text">HIVE<em>APIS</em></span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#product" data-nav>Product</a>
+        <a href="#work" data-nav>Work</a>
+        <a href="#stack" data-nav>Stack</a>
+        <a href="#founder" data-nav>Founder</a>
+        <a href="#journey" data-nav>Journey</a>
+      </nav>
+      <div class="nav-cta">
+        <button class="btn ghost sm" id="copyEmailTop" type="button">Copy email</button>
+        <a href="#contact" class="btn primary sm magnetic">Start a project →</a>
+        <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+    <div class="mobile-menu" id="mobileMenu">
+      <a href="#product">Product</a>
+      <a href="#work">Work</a>
+      <a href="#stack">Stack</a>
+      <a href="#founder">Founder</a>
+      <a href="#journey">Journey</a>
+      <a href="#contact" class="btn primary">Start a project →</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <div class="pill reveal">
+            <span class="pulse"></span>
+            <span class="mono">HIVE APIS · FOUNDED & BUILT BY SAMKO · V1.0.0</span>
+          </div>
+          <h1 class="reveal d1">APIs that feel<br />like a <span class="gold">hive&nbsp;mind.</span></h1>
+          <p class="lede reveal d2">I’m Samko, founder of <strong>Hive APIs</strong> — a one-person startup studio building the AI workspace I always wanted: chat, cited web search, voice, and desktop automation in one fast, local-first hive.</p>
+          <div class="hero-actions reveal d3">
+            <a href="#work" class="btn primary lg magnetic">See the work ↓</a>
+            <a href="#contact" class="btn outline lg magnetic">Work with me</a>
+          </div>
+          <div class="hero-meta mono reveal d4">
+            <span><i>●</i> local-first</span>
+            <span><i>●</i> cited answers</span>
+            <span><i>●</i> no fake reviews — just shipped code</span>
+          </div>
+          <dl class="hero-stats reveal d5">
+            <div><dt data-count="5">0</dt><dd>core services<br />shipped</dd></div>
+            <div><dt><span data-count="100">0</span>%</dt><dd>TypeScript<br />codebase</dd></div>
+            <div><dt> &lt;<span data-count="200">0</span>ms</dt><dd>UI interaction<br />target</dd></div>
+            <div><dt data-count="1">0</dt><dd>founder, designer<br />& engineer</dd></div>
+          </dl>
+        </div>
+
+        <div class="hero-visual reveal d2">
+          <div class="orb" aria-hidden="true"></div>
+          <div class="hex-float h1" aria-hidden="true"></div>
+          <div class="hex-float h2" aria-hidden="true"></div>
+          <div class="hex-float h3" aria-hidden="true"></div>
+          <div class="logo-card tilt">
+            <div class="logo-glow" aria-hidden="true"></div>
+            <img src="./assets/mark.svg" alt="Custom Hive cyber-bee logo" class="hero-logo" />
+            <div class="logo-row">
+              <img src="./assets/logo.svg" alt="Hive APIs lockup" class="logo-lockup" />
+            </div>
+            <div class="terminal" role="log" aria-label="Demo terminal">
+              <div class="term-bar"><span></span><span></span><span></span><em class="mono">samko@hive — zsh</em></div>
+              <div class="term-body mono"><span class="prompt">$</span> <span id="typer"></span><span class="caret">▊</span></div>
+              <div class="term-foot mono" id="termFoot">✓ hive online · search · voice · system bridge</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="scroll-hint mono" aria-hidden="true">scroll<span></span></div>
+    </section>
+
+    <!-- MARQUEE -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track mono" id="marqueeTrack">
+        <span>Electron</span><b>⬢</b><span>React 19</span><b>⬢</b><span>Vite</span><b>⬢</b><span>Tailwind v4</span><b>⬢</b><span>OpenRouter</span><b>⬢</b><span>LiveKit</span><b>⬢</b><span>Edge TTS</span><b>⬢</b><span>Zustand</span><b>⬢</b><span>Motion</span><b>⬢</b><span>TypeScript</span><b>⬢</b>
+      </div>
+    </div>
+
+    <!-- PRODUCT -->
+    <section class="section" id="product">
+      <div class="wrap">
+        <p class="kicker mono reveal">01 — WHAT HIVE APIS IS</p>
+        <div class="sec-head">
+          <h2 class="reveal">One hive.<br />Every AI primitive.</h2>
+          <p class="reveal d1">Not a demo farm. Hive is a real desktop workspace with a clean API layer underneath — so chat, search, voice and OS actions compose like one system.</p>
+        </div>
+        <div class="cards">
+          <article class="card tilt reveal">
+            <div class="icon">◈</div>
+            <h3>Unified AI gateway</h3>
+            <p>One <code>ai.chat</code> bridge with model switching, streaming-ready responses, and structured errors. Swap providers without rewriting UI.</p>
+            <div class="tags mono"><span>openrouter</span><span>ipc</span><span>stream</span></div>
+          </article>
+          <article class="card tilt reveal d1">
+            <div class="icon">◎</div>
+            <h3>Search that cites</h3>
+            <p>Web plugin first, DuckDuckGo + Wikipedia fallback. Every answer returns <code>citations[]</code> rendered as source cards — no hallucinating links.</p>
+            <div class="tags mono"><span>web-search</span><span>citations</span><span>fallback</span></div>
+          </article>
+          <article class="card tilt reveal d2">
+            <div class="icon">◉</div>
+            <h3>Voice & realtime</h3>
+            <p>Push-to-talk, neural TTS, and LiveKit rooms. The Hex mascot reacts — listening, thinking, speaking — with procedural audio blips.</p>
+            <div class="tags mono"><span>livekit</span><span>edge-tts</span><span>webaudio</span></div>
+          </article>
+          <article class="card tilt reveal d3">
+            <div class="icon">⬢</div>
+            <h3>Desktop system bridge</h3>
+            <p>Secure preload + <code>system.exec</code>, app launching, and a Canvas panel for code + browser steps. Local-first, permission-gated.</p>
+            <div class="tags mono"><span>electron</span><span>preload</span><span>canvas</span></div>
+          </article>
+        </div>
+
+        <div class="showcase reveal">
+          <div class="show-copy">
+            <p class="mono gold-text">FLAGSHIP — HIVE DESKTOP v1.0.0</p>
+            <h3>The workspace that started the APIs</h3>
+            <p>Icon rail, conversation memory, agent switching (Hive CEO · Apollo · Athena), mascot companion with soft-body physics, and an animated cyber-bee launch screen. Everything you see here became a reusable API.</p>
+            <ul class="check">
+              <li>Animated launch: logo glow + <span class="mono">npm run HIVE</span> typing + version tag</li>
+              <li>Mascot states: idle / thinking / searching / coding / done / error</li>
+              <li>Per-conversation transcripts persisted locally</li>
+            </ul>
+            <div class="row">
+              <a class="btn primary magnetic" href="#work">Explore the build</a>
+              <a class="btn ghost" href="#contact">Ask for a demo</a>
+            </div>
+          </div>
+          <figure class="shot">
+            <img src="../hive-screenshot.png" alt="Hive desktop workspace screenshot" loading="lazy" onerror="this.closest('.shot').classList.add('shot-fallback'); this.remove()" />
+            <figcaption class="mono">hive desktop — chat · canvas · buddy overlay</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- WORK -->
+    <section class="section alt" id="work">
+      <div class="wrap">
+        <p class="kicker mono reveal">02 — PORTFOLIO (SHIPPED, NOT MOCKED)</p>
+        <div class="sec-head">
+          <h2 class="reveal">Selected work.</h2>
+          <p class="reveal d1">Every card below is a real module from this repo — not a concept shot. Ask me and I’ll walk you through the code live.</p>
+        </div>
+        <div class="work-grid">
+          <article class="work reveal">
+            <div class="work-top mono"><span>P.01</span><span class="status live">● live in app</span></div>
+            <h3>Hex Mascot Engine</h3>
+            <p>26-point soft-body canvas engine, procedural faces, drag / poke / pet physics, speech flaps, and a Grok-style banter personality layer.</p>
+            <div class="tags mono"><span>canvas-2d</span><span>physics</span><span>personality</span></div>
+            <div class="work-foot mono"><span>src/renderer/companion</span><span>→</span></div>
+          </article>
+          <article class="work reveal d1">
+            <div class="work-top mono"><span>P.02</span><span class="status live">● live in app</span></div>
+            <h3>Search Synthesis Pipeline</h3>
+            <p>OpenRouter web plugin → structured <code>SearchResult</code> → citation cards. Graceful fallback chain, IPC-typed end to end.</p>
+            <div class="tags mono"><span>openrouter</span><span>ipc</span><span>citations</span></div>
+            <div class="work-foot mono"><span>src/main/search-service</span><span>→</span></div>
+          </article>
+          <article class="work reveal d2">
+            <div class="work-top mono"><span>P.03</span><span class="status live">● live in app</span></div>
+            <h3>Launch System & Brand</h3>
+            <p>Cyber-bee mark, terminal typing, dynamic version from <code>package.json</code>, zero-flash reveal into the workspace.</p>
+            <div class="tags mono"><span>motion</span><span>branding</span><span>ux</span></div>
+            <div class="work-foot mono"><span>components/launch</span><span>→</span></div>
+          </article>
+          <article class="work reveal d3">
+            <div class="work-top mono"><span>P.04</span><span class="status soon">○ in progress</span></div>
+            <h3>Hive APIs — Public Layer</h3>
+            <p>Extracting the internal bridges into a documented public API: chat, search, voice, system. This site is its home.</p>
+            <div class="tags mono"><span>sdk</span><span>docs</span><span>startup</span></div>
+            <div class="work-foot mono"><span>website/ · roadmap</span><span>→</span></div>
+          </article>
+        </div>
+        <div class="honest reveal">
+          <strong>No fake reviews. No bought logos.</strong>
+          <span>Hive is early and honest — the proof is the repo, the build, and a live demo. If you want social proof, let’s ship your pilot and earn it.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- STACK -->
+    <section class="section" id="stack">
+      <div class="wrap stack-grid">
+        <div>
+          <p class="kicker mono reveal">03 — STACK & PRINCIPLES</p>
+          <h2 class="reveal">Boring where it counts.<br />Fast where it shows.</h2>
+          <p class="reveal d1 muted">Type-safe IPC, tiny stores, GPU-friendly CSS. I pick proven tools and sweat the interaction details — physics, timing, easing — so the app feels alive but never janky.</p>
+          <ul class="principles">
+            <li class="reveal"><b>01</b><div><strong>Local-first, secure by default</strong><span>contextBridge only, no node in renderer, permission-gated exec.</span></div></li>
+            <li class="reveal d1"><b>02</b><div><strong>Cited or it didn’t happen</strong><span>search answers ship with sources or they don’t ship.</span></div></li>
+            <li class="reveal d2"><b>03</b><div><strong>Motion with meaning</strong><span>every animation signals state — searching, thinking, done.</span></div></li>
+          </ul>
+        </div>
+        <div class="code-card reveal d1 tilt">
+          <div class="term-bar"><span></span><span></span><span></span><em class="mono">hive — api preview</em></div>
+<pre class="mono"><code><span class="c">// one call, full hive</span>
+<span class="k">const</span> res = <span class="k">await</span> hive.<span class="f">chat</span>({
+  agent: <span class="s">'hive-ceo'</span>,
+  messages,
+  webSearch: <span class="k">true</span>
+});
+
+res.content;    <span class="c">// synthesized answer</span>
+res.citations;  <span class="c">// [{ title, url, snippet }]</span>
+
+<span class="k">await</span> hive.voice.<span class="f">speak</span>(res.content);
+hive.system.<span class="f">exec</span>(<span class="s">'code ./demo'</span>);</code></pre>
+          <div class="chips mono"><span>TypeScript</span><span>strict IPC</span><span>fallback-safe</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOUNDER -->
+    <section class="section alt" id="founder">
+      <div class="wrap founder-grid">
+        <div class="founder-card reveal tilt">
+          <div class="avatar">
+            <img src="./assets/mark.svg" alt="" aria-hidden="true" />
+            <span>S</span>
+          </div>
+          <h3>Samko</h3>
+          <p class="mono gold-text">FOUNDER · DESIGN ENGINEER · SLOVAKIA / REMOTE</p>
+          <p class="muted">I design and build Hive end-to-end — brand, motion, frontend, Electron main process, AI plumbing, and docs. One owner, zero handoffs, full accountability.</p>
+          <div class="avail mono"><span class="pulse"></span> open for 1 pilot project — Nov 2026</div>
+        </div>
+        <div>
+          <p class="kicker mono reveal">04 — FOUNDER</p>
+          <h2 class="reveal">Hi, I’m Samko.<br />I build the whole hive.</h2>
+          <p class="reveal d1 muted">I started Hive because AI tools felt scattered — five tabs, zero memory, no citations. So I built a desktop workspace where everything composes, then turned the internals into <strong>Hive APIs</strong> so other builders can use the same primitives.</p>
+          <div class="now reveal d2">
+            <h4 class="mono">NOW BUILDING</h4>
+            <ul>
+              <li><span>▸</span> Public Hive APIs SDK + docs site</li>
+              <li><span>▸</span> Realtime voice rooms for teams</li>
+              <li><span>▸</span> One-click deploy templates for the desktop shell</li>
+            </ul>
+          </div>
+          <div class="row reveal d3">
+            <a class="btn primary magnetic" href="#contact">Work with the founder</a>
+            <button class="btn outline" id="copyEmail" type="button">hello@hiveapis.dev ⧉</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- JOURNEY -->
+    <section class="section" id="journey">
+      <div class="wrap">
+        <p class="kicker mono reveal">05 — JOURNEY</p>
+        <h2 class="reveal">Built in the open.</h2>
+        <ol class="timeline">
+          <li class="reveal"><span class="mono">2024 — spark</span><h4>Scratch-your-own-itch prototype</h4><p class="muted">Chat + local notes + first Electron shell. Ugly, fast, mine.</p></li>
+          <li class="reveal d1"><span class="mono">2025 — hive forms</span><h4>Agents, search, mascot physics</h4><p class="muted">Apollo / Athena agents, citation pipeline, Hex soft-body engine, voice experiments.</p></li>
+          <li class="reveal d2"><span class="mono">2026 — v1.0.0 & Hive APIs</span><h4>Desktop ships, APIs open up</h4><p class="muted">Launch screen, hardened IPC, this portfolio. Next: public SDK + pilot customers.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="section alt" id="contact">
+      <div class="wrap contact">
+        <p class="kicker mono reveal">06 — CONTACT</p>
+        <h2 class="reveal">Have something worth<br />building <span class="gold">together?</span></h2>
+        <p class="reveal d1 muted">I take one pilot at a time — AI workspace integrations, desktop shells, voice features, or a full Hive-powered build. Tell me what you’re making; I’ll reply within 48 hours with a plan, a price, and a date.</p>
+        <div class="contact-grid">
+          <form class="form reveal d1" id="contactForm">
+            <label>Your name<input name="name" required placeholder="Jane Builder" autocomplete="name" /></label>
+            <label>Email<input name="email" type="email" required placeholder="jane@company.com" autocomplete="email" /></label>
+            <label>What are we building?<textarea name="msg" rows="4" required placeholder="A desktop companion for our support team that can search our docs and cite sources…"></textarea></label>
+            <button class="btn primary lg magnetic" type="submit">Send → opens your email</button>
+            <p class="mono form-note" id="formNote">no spam · no newsletter · founder replies directly</p>
+          </form>
+          <aside class="direct reveal d2">
+            <h4 class="mono">DIRECT</h4>
+            <button class="mail" id="copyEmail2" type="button"><span>hello@hiveapis.dev</span><em>⧉ copy</em></button>
+            <div class="socials">
+              <a href="https://github.com" target="_blank" rel="noreferrer">GitHub ↗</a>
+              <a href="https://x.com" target="_blank" rel="noreferrer">X ↗</a>
+              <a href="https://linkedin.com" target="_blank" rel="noreferrer">LinkedIn ↗</a>
+            </div>
+            <div class="mini mono">
+              <div><span>location</span><b>Slovakia · remote worldwide</b></div>
+              <div><span>rate</span><b>pilot-fixed, quoted in 48h</b></div>
+              <div><span>stack</span><b>electron · react · ts · ai</b></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <a href="#top" class="brand"><img src="./assets/mark.svg" alt="" class="brand-mark" /><span class="brand-text">HIVE<em>APIS</em></span></a>
+      <p class="mono muted">© 2026 Hive APIs · founded & built by Samko · custom hex-bee mark, no stock logos</p>
+      <a href="#top" class="mono to-top">back to top ↑</a>
+    </div>
+  </footer>
+
+  <script src="./script.js" defer></script>
+</body>
+</html>

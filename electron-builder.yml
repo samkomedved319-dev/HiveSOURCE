@@ -1,0 +1,12 @@
+appId: com.projecthive.app
+productName: Hive
+directories:
+  output: release
+files:
+  - dist/**/*
+win:
+  target: nsis
+  icon: resources/icon.ico
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
