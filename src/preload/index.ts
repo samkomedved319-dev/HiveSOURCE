@@ -62,6 +62,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => ipcRenderer.removeListener('buddy:notch-mode', handler)
     },
   },
+  shortcuts: {
+    setGlobal: (next: { hivebox?: string; buddy?: string }) => ipcRenderer.send('shortcuts:set', next),
+  },
   app: {
     getVersion: () => ipcRenderer.invoke('app:getVersion'),
   },

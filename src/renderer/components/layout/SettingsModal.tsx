@@ -1,8 +1,18 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useChatStore } from '../../stores/chatStore'
 import { useAgentStore } from '../../stores/agentStore'
 import MascotPicker from '../mascot/MascotPicker'
 import { getBuddyMascotId, getMascot } from '../mascot/mascotLibrary'
+import {
+  DEFAULT_SHORTCUTS,
+  SHORTCUT_META,
+  bindingFromEvent,
+  formatBinding,
+  loadShortcuts,
+  saveShortcuts,
+  toAccelerator,
+  type ShortcutId,
+} from '../../shortcuts'
 
 interface SettingsModalProps {
   onClose: () => void
@@ -53,6 +63,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   // Appearance Settings
   const [accentColor, setAccentColor] = useState(localStorage.getItem('hive_accent_color') || '#F2C14E')
   const [reducedMotion, setReducedMotion] = useState(localStorage.getItem('hive_reduced_motion') === 'true')
+  const [shortcuts, setShortcuts] = useState(loadShortcuts)
+  const [recording, setRecording] = useState<ShortcutId | null>(null)
 
   // Feedback states
   const [toastMessage, setToastMessage] = useState<string | null>(null)
@@ -60,6 +72,20 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   const { activeAgent } = useAgentStore()
   const { clearMessages, getMessages } = useChatStore()
+
+  useEffect(() => {
+    if (!recording) return
+    const onKey = (e: KeyboardEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const next = bindingFromEvent(e)
+      if (!next) return
+      setShortcuts((prev) => ({ ...prev, [recording]: next }))
+      setRecording(null)
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [recording])
 
   const showToast = (msg: string) => {
     setToastMessage(msg)
@@ -89,6 +115,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     localStorage.setItem('hive_system_prompt', systemPrompt)
     localStorage.setItem('hive_accent_color', '#F2C14E')
     localStorage.setItem('hive_reduced_motion', reducedMotion ? 'true' : 'false')
+    saveShortcuts(shortcuts)
+    window.electronAPI?.shortcuts?.setGlobal?.({
+      hivebox: toAccelerator(shortcuts.hivebox),
+      buddy: toAccelerator(shortcuts.buddy),
+    })
 
     document.documentElement.style.setProperty('--accent', '#F2C14E')
 
@@ -148,6 +179,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     setBuddyEnabled(false)
     setBuddyModel('openai/gpt-4o-mini')
     setBuddyColor('#F08A24')
+    setShortcuts({ ...DEFAULT_SHORTCUTS })
     document.documentElement.style.setProperty('--accent', '#F2C14E')
     showToast('Preferences reset to defaults')
   }
@@ -832,16 +864,20 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             {/* SHORTCUTS TAB */}
             {activeTab === 'shortcuts' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <ShortcutItem keys={['Ctrl', 'K']} description="Command palette" />
-                <ShortcutItem keys={['Ctrl', 'N']} description="New chat" />
-                <ShortcutItem keys={['Ctrl', 'B']} description="Toggle conversation list sidebar" />
-                <ShortcutItem keys={['Ctrl', 'Shift', 'H']} description="Toggle HiveBox crew panel" />
-                <ShortcutItem keys={['Ctrl', ',']} description="Open settings" />
-                <ShortcutItem keys={['Ctrl', 'Shift', 'J']} description="Pop the Hive Buddy notch (voice + PC control)" />
-                <ShortcutItem keys={['Enter']} description="Send message" />
-                <ShortcutItem keys={['Shift', 'Enter']} description="Insert newline into composer" />
-                <ShortcutItem keys={['@']} description="Mention a bot in a group (Discord-style)" />
-                <ShortcutItem keys={['Esc']} description="Close active dialog or modal" />
+                <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 4 }}>
+                  Click a row, then press the keys. Save to apply.
+                </div>
+                {SHORTCUT_META.map((row) => (
+                  <ShortcutRow
+                    key={row.id}
+                    label={row.label}
+                    keys={formatBinding(shortcuts[row.id])}
+                    listening={recording === row.id}
+                    onClick={() => setRecording(row.id)}
+                  />
+                ))}
+                <ShortcutRow label="Send message" keys={['Enter']} />
+                <ShortcutRow label="Newline" keys={['Shift', 'Enter']} />
               </div>
             )}
           </div>
@@ -1014,38 +1050,57 @@ function SettingRow({
   )
 }
 
-function ShortcutItem({ keys, description }: { keys: string[]; description: string }) {
+function ShortcutRow({
+  label,
+  keys,
+  listening,
+  onClick,
+}: {
+  label: string
+  keys: string[]
+  listening?: boolean
+  onClick?: () => void
+}) {
   return (
-    <div
+    <button
+      type="button"
+      onClick={onClick}
       style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '8px 10px',
         borderRadius: 6,
-        background: 'var(--panel-2)',
-        border: '1px solid var(--border-soft)',
+        background: listening ? 'rgba(242,193,78,0.12)' : 'var(--panel-2)',
+        border: `1px solid ${listening ? 'var(--accent)' : 'var(--border-soft)'}`,
+        cursor: onClick ? 'pointer' : 'default',
+        fontFamily: 'inherit',
+        width: '100%',
       }}
     >
-      <span style={{ fontSize: 12, color: 'var(--text)' }}>{description}</span>
+      <span style={{ fontSize: 12, color: 'var(--text)' }}>{label}</span>
       <div style={{ display: 'flex', gap: 4 }}>
-        {keys.map((k) => (
-          <kbd
-            key={k}
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              background: 'var(--bg)',
-              border: '1px solid var(--border)',
-              borderRadius: 4,
-              padding: '2px 6px',
-              color: 'var(--text-dim)',
-            }}
-          >
-            {k}
-          </kbd>
-        ))}
+        {listening ? (
+          <span style={{ fontSize: 11, color: 'var(--accent)' }}>press keys…</span>
+        ) : (
+          keys.map((k) => (
+            <kbd
+              key={k}
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+                background: 'var(--bg)',
+                border: '1px solid var(--border)',
+                borderRadius: 4,
+                padding: '2px 6px',
+                color: 'var(--text-dim)',
+              }}
+            >
+              {k}
+            </kbd>
+          ))
+        )}
       </div>
-    </div>
+    </button>
   )
 }

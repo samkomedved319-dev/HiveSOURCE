@@ -101,6 +101,9 @@ export interface ElectronAPI {
     onPhase?: (cb: (p: string) => void) => () => void
     onNotchMode?: (cb: (m: string) => void) => () => void
   }
+  shortcuts?: {
+    setGlobal?: (next: { hivebox?: string; buddy?: string }) => void
+  }
   app?: {
     getVersion?: () => Promise<string>
   }

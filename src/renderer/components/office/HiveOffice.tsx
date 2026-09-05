@@ -14,6 +14,23 @@ class WebGLGate extends Component<{ children: React.ReactNode; fallback: React.R
 
 type FloorMsg = { t: number; who: string; text: string; color?: string }
 
+function readable(raw: string) {
+  let t = raw.replace(/\r/g, '')
+  t = t.replace(/```[\s\S]*?```/g, (block) => {
+    const inner = block.replace(/^```\w*\n?/, '').replace(/```$/, '').trim()
+    return inner.length > 280 ? inner.slice(0, 280) + '…' : inner
+  })
+  t = t.replace(/^\s{0,3}#{1,6}\s+/gm, '')
+  t = t.replace(/\*\*([^*]+)\*\*/g, '$1')
+  t = t.replace(/\*([^*]+)\*/g, '$1')
+  t = t.replace(/`([^`]+)`/g, '$1')
+  t = t.replace(/^\s*[-*]\s+/gm, '• ')
+  t = t.replace(/\n{3,}/g, '\n\n')
+  t = t.replace(/[ \t]+\n/g, '\n').trim()
+  if (t.length > 900) t = t.slice(0, 900).replace(/\s+\S*$/, '') + '…'
+  return t
+}
+
 export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: boolean }) {
   const [moods, setMoods] = useState<Record<string, AgentMood>>({})
   const [log, setLog] = useState<FloorMsg[]>([])
@@ -21,6 +38,7 @@ export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: 
   const [task, setTask] = useState('')
   const [busy, setBusy] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
+  const drafts = useRef<Record<string, string>>({})
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight })
@@ -31,9 +49,20 @@ export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: 
       const who = ev.producerName || 'Hive'
       const key = who.toLowerCase()
       setMoods((p) => ({ ...p, [key]: moodFromEvent(ev) }))
-      if (ev.type === 'model.answer' && ev.text) {
+      if (ev.type === 'inference.stream' && ev.text) {
+        drafts.current[who] = (drafts.current[who] || '') + ev.text
+      }
+      if (ev.type === 'model.answer') {
+        const raw = (ev.text || drafts.current[who] || '').trim()
+        delete drafts.current[who]
+        const text = readable(raw)
+        if (!text) return
         const color = FLOOR_CREW.find((a) => a.name.toLowerCase() === key)?.color
-        setLog((p) => [...p, { t: Date.now(), who, text: ev.text.replace(/\s+/g, ' ').trim(), color }].slice(-40))
+        setLog((p) => {
+          const last = p[p.length - 1]
+          if (last && last.who === who && last.text === text) return p
+          return [...p, { t: Date.now(), who, text, color }].slice(-24)
+        })
       }
       if (ev.type === 'inference.started' || ev.type === 'function_call.started') setMeeting(true)
       if (ev.type === 'model.answer' && who === 'Hive') window.setTimeout(() => setMeeting(false), 2800)
@@ -62,32 +91,46 @@ export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: 
   }
 
   return (
-    <div style={{ height: '100%', width: '100%', minHeight: 0, display: 'grid', gridTemplateRows: 'minmax(0,1fr) 240px', background: '#0b0c0e', overflow: 'hidden' }}>
+    <div style={{ height: '100%', width: '100%', minHeight: 0, display: 'grid', gridTemplateRows: 'minmax(0,1fr) 280px', background: '#0b0c0e', overflow: 'hidden' }}>
       <div style={{ position: 'relative', minHeight: 0 }}>
         <WebGLGate fallback={<div style={{ height: '100%', display: 'grid', placeItems: 'center', color: 'var(--text-dim)' }}>WebGL unavailable</div>}>
           <Office3D moods={moods} bubbles={{}} meeting={meeting} />
         </WebGLGate>
-        <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 8, zIndex: 3 }}>
-          {onBack && (
-            <button type="button" onClick={onBack} style={{ background: '#141414', border: '1px solid var(--border-soft)', color: 'var(--text)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13 }}>
-              Chat
-            </button>
-          )}
-        </div>
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            style={{ position: 'absolute', top: 10, left: 10, zIndex: 3, background: '#141414', border: '1px solid var(--border-soft)', color: 'var(--text)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13 }}
+          >
+            Chat
+          </button>
+        )}
       </div>
 
       <div style={{ borderTop: '1px solid var(--border-soft)', display: 'flex', flexDirection: 'column', minHeight: 0, background: '#101114' }}>
-        <div style={{ padding: '8px 14px 0', fontSize: 11, letterSpacing: '.12em', color: 'var(--text-faint)' }}>OFFICE</div>
-        <div ref={scroller} style={{ flex: 1, overflow: 'auto', padding: '8px 14px', minHeight: 0 }}>
+        <div ref={scroller} style={{ flex: 1, overflow: 'auto', padding: '14px 18px 8px', minHeight: 0 }}>
           {log.length === 0 && (
-            <div style={{ color: 'var(--text-dim)', fontSize: 13.5, lineHeight: 1.5 }}>
-              This chat talks to the floor. They sit and type at idle. On a task they walk to the glass room.
+            <div style={{ color: 'var(--text-dim)', fontSize: 14, lineHeight: 1.5, maxWidth: 640 }}>
+              Floor chat. Idle they sit. A task sends them to the glass room. Replies land here, not in the main thread.
             </div>
           )}
           {log.map((row) => (
-            <div key={row.t + row.who} style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 650, color: row.color || (row.who === 'You' ? 'var(--text)' : 'var(--accent)') }}>{row.who}</div>
-              <div style={{ fontSize: 13.5, color: 'var(--text)', lineHeight: 1.45, marginTop: 2 }}>{row.text}</div>
+            <div key={row.t + row.who} style={{ marginBottom: 14, maxWidth: 720 }}>
+              <div style={{ fontSize: 12, fontWeight: 650, letterSpacing: '.02em', color: row.color || (row.who === 'You' ? 'var(--text)' : 'var(--accent)'), marginBottom: 4 }}>
+                {row.who}
+              </div>
+              <div
+                style={{
+                  fontSize: 15,
+                  color: 'var(--text)',
+                  lineHeight: 1.55,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  overflowWrap: 'anywhere',
+                }}
+              >
+                {row.text}
+              </div>
             </div>
           ))}
         </div>
@@ -96,24 +139,24 @@ export default function HiveOffice({ onBack }: { onBack?: () => void; compact?: 
             e.preventDefault()
             void sendTask()
           }}
-          style={{ display: 'flex', gap: 8, padding: '8px 12px 12px' }}
+          style={{ display: 'flex', gap: 8, padding: '8px 14px 14px' }}
         >
           <input
             value={task}
             onChange={(e) => setTask(e.target.value)}
-            placeholder="Message the office…"
+            placeholder="Task the floor…"
             style={{
               flex: 1,
               background: 'var(--panel)',
               border: '1px solid var(--border)',
               color: 'var(--text)',
               borderRadius: 10,
-              padding: '10px 12px',
+              padding: '11px 14px',
               fontFamily: 'inherit',
-              fontSize: 14,
+              fontSize: 15,
             }}
           />
-          <button type="submit" disabled={busy} style={{ background: 'var(--accent)', color: 'var(--accent-fg)', border: 'none', borderRadius: 10, padding: '10px 14px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button type="submit" disabled={busy} style={{ background: 'var(--accent)', color: 'var(--accent-fg)', border: 'none', borderRadius: 10, padding: '11px 16px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
             Send
           </button>
         </form>

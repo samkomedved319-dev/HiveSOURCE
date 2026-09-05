@@ -12,10 +12,25 @@ import { startHiveRuntime } from './mozaik'
 import { registerCloudComputerHandlers } from './cloud-computer'
 import { registerWorkspaceHandlers } from './workspace-service'
 
-let mainWindow: BrowserWindow | null = null
-let tray: Tray | null = null
-let isQuitting = false
-let pendingAuthUrl: string | null = null
+function hushMozaikCloudLogs() {
+  const skip = (args: unknown[]) => {
+    const s = args.map((a) => (typeof a === 'string' ? a : '')).join(' ')
+    return /mozaik cloud|mosaic cloud|no api key|telemetry disabled/i.test(s)
+  }
+  const wrap =
+    (fn: (...a: unknown[]) => void) =>
+    (...args: unknown[]) => {
+      if (skip(args)) return
+      fn(...args)
+    }
+  console.log = wrap(console.log.bind(console)) as typeof console.log
+  console.info = wrap(console.info.bind(console)) as typeof console.info
+  console.warn = wrap(console.warn.bind(console)) as typeof console.warn
+}
+
+hushMozaikCloudLogs()
+process.env.MOZAIK_TELEMETRY = process.env.MOZAIK_TELEMETRY || '0'
+
 
 const isDev = !app.isPackaged
 const HIVE_WEB_LOGIN = 'https://samkomedved319-dev.github.io/hive/?desktop=1'
@@ -193,21 +208,42 @@ app.whenReady().then(() => {
   const launchUrl = process.argv.find((a) => a.startsWith('hive://'))
   if (launchUrl) pendingAuthUrl = launchUrl
 
-  try {
-    globalShortcut.register('CommandOrControl+Shift+H', () => {
-      if (mainWindow?.isVisible?.() && mainWindow?.isFocused?.()) mainWindow?.hide()
-      else { mainWindow?.show(); mainWindow?.focus() }
-    })
-    globalShortcut.register('CommandOrControl+Shift+Space', () => {
-      try {
-        if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) {
-          mainWindow.webContents.send('buddy:summon')
-        } else {
-          showNotch()
+  const registerGlobals = (hivebox = 'CommandOrControl+Shift+H', buddy = 'CommandOrControl+Shift+J') => {
+    try {
+      globalShortcut.unregisterAll()
+    } catch {}
+    try {
+      globalShortcut.register(hivebox, () => {
+        if (mainWindow?.isVisible?.() && mainWindow?.isFocused?.()) mainWindow?.hide()
+        else {
+          mainWindow?.show()
+          mainWindow?.focus()
         }
-      } catch {}
-    })
-  } catch {}
+      })
+    } catch {}
+    try {
+      globalShortcut.register(buddy, () => {
+        try {
+          if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) {
+            mainWindow.webContents.send('buddy:summon')
+          } else {
+            showNotch()
+          }
+        } catch {}
+      })
+    } catch {}
+    try {
+      globalShortcut.register(buddy.includes('J') ? buddy : 'CommandOrControl+Shift+J', () => {
+        try {
+          showNotch()
+        } catch {}
+      })
+    } catch {}
+  }
+  registerGlobals()
+  ipcMain.on('shortcuts:set', (_e, next: { hivebox?: string; buddy?: string }) => {
+    registerGlobals(next?.hivebox || 'CommandOrControl+Shift+H', next?.buddy || 'CommandOrControl+Shift+J')
+  })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

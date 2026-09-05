@@ -161,6 +161,44 @@ function escapeSendKeys(text: string): string {
     .replace(/'/g, "''")
 }
 
+function flashCursorRing() {
+  try {
+    const p = screen.getCursorScreenPoint()
+    const size = 72
+    const glow = new BrowserWindow({
+      width: size,
+      height: size,
+      x: p.x - size / 2,
+      y: p.y - size / 2,
+      transparent: true,
+      frame: false,
+      alwaysOnTop: true,
+      skipTaskbar: true,
+      focusable: false,
+      show: false,
+      hasShadow: false,
+      resizable: false,
+      webPreferences: { offscreen: false },
+    })
+    glow.setIgnoreMouseEvents(true, { forward: true })
+    const html = encodeURIComponent(`<!doctype html><html><body style="margin:0;background:transparent;overflow:hidden">
+<div style="width:72px;height:72px;border-radius:50%;border:3px solid #F2C14E;box-shadow:0 0 18px 6px rgba(242,193,78,.55);animation:p .7s ease-out forwards"></div>
+<style>@keyframes p{0%{transform:scale(.45);opacity:1}100%{transform:scale(1.35);opacity:0}}</style>
+</body></html>`)
+    glow.loadURL('data:text/html;charset=utf-8,' + html)
+    glow.once('ready-to-show', () => {
+      try {
+        glow.showInactive()
+      } catch {}
+    })
+    setTimeout(() => {
+      try {
+        if (!glow.isDestroyed()) glow.destroy()
+      } catch {}
+    }, 800)
+  } catch {}
+}
+
 export function registerBuddyHandlers(getWindow: () => BrowserWindow | null) {
   getMainWindow = getWindow
   // Global push-to-talk summon: bare Ctrl+Shift is modifiers-only and cannot
@@ -198,6 +236,8 @@ export function registerBuddyHandlers(getWindow: () => BrowserWindow | null) {
         '[Win32.HiveBuddyMouse]::mouse_event(0x04,0,0,0,[System.UIntPtr]::Zero)',
       ].join('; ')
       await execPromise(script, { timeout: 20000, shell: 'powershell.exe' })
+      flashCursorRing()
+      setBuddyMood('steer')
       return { ok: true }
     } catch (err: any) {
       return { ok: false, error: err?.message || 'Click failed' }

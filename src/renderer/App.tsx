@@ -18,6 +18,7 @@ import FeedbackModal from './components/layout/FeedbackModal'
 import CommandPalette from './components/layout/CommandPalette'
 import CloudComputerPanel from './components/layout/CloudComputerPanel'
 import { AnimatePresence } from 'motion/react'
+import { loadShortcuts, matchesBinding, toAccelerator } from './shortcuts'
 import { useChatStore } from './stores/chatStore'
 import { useAgentStore } from './stores/agentStore'
 import { BUDDY_SETTINGS_EVENT, isBuddyEnabled } from './components/mascot/CursorBuddy'
@@ -217,38 +218,38 @@ export default function App() {
   // Keyboard shortcuts (capture so they work even from the composer)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const ctrl = e.ctrlKey || e.metaKey
-      if (!ctrl) return
-      const k = e.key.toLowerCase()
-      if (k === 'b' && !e.shiftKey) {
+      const map = loadShortcuts()
+      if (matchesBinding(e, map.sidebar)) {
         e.preventDefault()
         setIsConvListOpen((prev) => !prev)
-      }
-      if (k === 'n' && !e.shiftKey) {
+      } else if (matchesBinding(e, map.newChat)) {
         e.preventDefault()
         handleNewChat()
-      }
-      if (k === ',' ) {
+      } else if (matchesBinding(e, map.settings)) {
         e.preventDefault()
         setShowSettings(true)
-      }
-      if (k === 'k' && !e.shiftKey) {
+      } else if (matchesBinding(e, map.palette)) {
         e.preventDefault()
         setShowPalette(true)
-      }
-      if (k === 'h' && e.shiftKey) {
+      } else if (matchesBinding(e, map.hivebox)) {
         e.preventDefault()
         setIsCanvasOpen((prev) => !prev)
-      }
-      if (e.shiftKey && k === 'j') {
+      } else if (matchesBinding(e, map.buddy)) {
         e.preventDefault()
-        setIsConvListOpen((prev) => !prev)
         setMainView('chat')
         setActiveTab('chat')
       }
     }
     window.addEventListener('keydown', handleKeyDown, true)
     return () => window.removeEventListener('keydown', handleKeyDown, true)
+  }, [])
+
+  useEffect(() => {
+    const map = loadShortcuts()
+    window.electronAPI?.shortcuts?.setGlobal?.({
+      hivebox: toAccelerator(map.hivebox),
+      buddy: toAccelerator(map.buddy),
+    })
   }, [])
 
   useEffect(() => {

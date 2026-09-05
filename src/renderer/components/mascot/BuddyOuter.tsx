@@ -25,9 +25,9 @@ export default function BuddyOuter() {
       off = window.electronAPI?.buddy?.onPhase?.((p: string) => {
         if (
           p === 'idle' || p === 'listening' || p === 'thinking' || p === 'clicking' ||
-          p === 'typing' || p === 'running' || p === 'done' || p === 'error'
+          p === 'typing' || p === 'running' || p === 'done' || p === 'error' || p === 'steer'
         ) {
-          setPhase(p)
+          setPhase(p === 'steer' ? 'clicking' : p)
         }
       })
     } catch {}
@@ -51,7 +51,7 @@ export default function BuddyOuter() {
         alignItems: 'center',
         justifyContent: 'center',
         background: 'transparent',
-        filter: 'drop-shadow(0 6px 18px rgba(0,0,0,0.55))',
+        filter: phase === 'clicking' ? 'drop-shadow(0 0 16px #F2C14E)' : 'drop-shadow(0 6px 18px rgba(0,0,0,0.55))',
       }}
     >
       <BloubEngineAvatar size={60} crop={122} botState={getBuddyPhaseState(phase)} ink={color || getBuddyColor()} fps={60} />
