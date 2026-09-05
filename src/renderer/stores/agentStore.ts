@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Agent } from '../types'
+import { resolveAgentMascotId } from '../components/mascot/mascotLibrary'
 
 interface AgentState {
   agents: Agent[]
@@ -71,7 +72,9 @@ const loadSavedAgents = (): Agent[] => {
     try {
       const parsed = JSON.parse(saved)
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed
+        const migrated = parsed.map((a: Agent) => ({ ...a, avatar: resolveAgentMascotId(a) }))
+        localStorage.setItem('hive_agents_v2', JSON.stringify(migrated))
+        return migrated
       }
     } catch {}
   }

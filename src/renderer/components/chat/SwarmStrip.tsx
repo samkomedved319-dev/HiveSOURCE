@@ -5,11 +5,11 @@ import type { StateId } from '../../bot/states'
 
 export type SwarmStatus = 'idle' | 'searching' | 'thinking' | 'arguing' | 'done' | 'error'
 
-const AGENTS: { name: string; mascot: string }[] = [
-  { name: 'Scout', mascot: 'bloub-blue' },
-  { name: 'Hive', mascot: 'bloub-gold' },
-  { name: 'Pulse', mascot: 'bloub-rose' },
-  { name: 'Critic', mascot: 'bloub-violet' },
+const AGENTS: { name: string; mascot: string; job: string }[] = [
+  { name: 'Scout', mascot: 'bloub-blue', job: 'research' },
+  { name: 'Hive', mascot: 'bloub-gold', job: 'answer' },
+  { name: 'Pulse', mascot: 'bloub-rose', job: 'check' },
+  { name: 'Critic', mascot: 'bloub-violet', job: 'review' },
 ]
 
 const POSE: Record<SwarmStatus, StateId> = {
@@ -22,7 +22,7 @@ const POSE: Record<SwarmStatus, StateId> = {
 }
 
 const LABEL: Record<SwarmStatus, string> = {
-  idle: '',
+  idle: 'ready',
   searching: 'searching',
   thinking: 'thinking',
   arguing: 'reviewing',
@@ -31,18 +31,12 @@ const LABEL: Record<SwarmStatus, string> = {
 }
 
 export default function SwarmStrip({ status }: { status: Record<string, SwarmStatus> }) {
-  const busy = AGENTS.some((a) => {
-    const st = status[a.name]
-    return st && st !== 'idle'
-  })
-  if (!busy) return null
-
   return (
     <div
       style={{
         display: 'flex',
-        gap: 18,
-        padding: '8px 16px 4px',
+        gap: 22,
+        padding: '10px 16px 6px',
         justifyContent: 'center',
         alignItems: 'flex-end',
         flexShrink: 0,
@@ -51,21 +45,21 @@ export default function SwarmStrip({ status }: { status: Record<string, SwarmSta
       {AGENTS.map((a) => {
         const st = status[a.name] || 'idle'
         const m = getMascot(a.mascot)
-        const live = st !== 'idle'
+        const busy = st !== 'idle'
         return (
-          <div key={a.name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, opacity: live ? 1 : 0.35, minWidth: 56 }}>
+          <div key={a.name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, minWidth: 64, opacity: busy ? 1 : 0.78 }}>
             <BloubEngineAvatar
-              size={44}
+              size={48}
               crop={118}
               ink={m.ink}
               paper={m.paper}
               shapeId={m.shape}
               botState={POSE[st]}
-              live={live}
-              fps={30}
+              live
+              fps={busy ? 30 : 18}
             />
-            <span style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 600 }}>{a.name}</span>
-            <span style={{ fontSize: 10, color: 'var(--text-faint)', height: 12 }}>{LABEL[st]}</span>
+            <span style={{ fontSize: 11, color: 'var(--text)', fontWeight: 650 }}>{a.name}</span>
+            <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>{busy ? LABEL[st] : a.job}</span>
           </div>
         )
       })}

@@ -3,7 +3,7 @@ import { useAgentStore } from '../../stores/agentStore'
 import type { Agent } from '../../types'
 import BloubEngineAvatar from '../mascot/BloubEngineAvatar'
 import MascotPicker from '../mascot/MascotPicker'
-import { DEFAULT_MASCOT_ID, getMascot } from '../mascot/mascotLibrary'
+import { DEFAULT_MASCOT_ID, getMascot, resolveAgentMascotId } from '../mascot/mascotLibrary'
 
 interface BotsPanelProps {
   onBack: () => void
@@ -135,10 +135,10 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
                     size={40}
                     crop={118}
                     live={false}
-                    ink={getMascot(agent.avatar).ink}
-                    paper={getMascot(agent.avatar).paper}
-                    botState={getMascot(agent.avatar).pose}
-                    shapeId={getMascot(agent.avatar).shape}
+                    ink={getMascot(resolveAgentMascotId(agent)).ink}
+                    paper={getMascot(resolveAgentMascotId(agent)).paper}
+                    botState="idle"
+                    shapeId={getMascot(resolveAgentMascotId(agent)).shape}
                   />
                 </button>
                 <div style={{ flex: 1, minWidth: 0 }}>

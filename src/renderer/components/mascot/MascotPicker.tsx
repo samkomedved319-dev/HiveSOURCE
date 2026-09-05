@@ -18,16 +18,19 @@ export default function MascotPicker({
           letterSpacing: '.06em',
           textTransform: 'uppercase',
           color: 'var(--text-faint)',
-          marginBottom: 8,
+          marginBottom: 4,
         }}
       >
         Premade Bloub mascots
       </div>
+      <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: '0 0 10px' }}>
+        Every face is a real Bloub. Thinking / searching / done play while that bot works.
+      </p>
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))',
-          gap: 8,
+          gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))',
+          gap: 10,
         }}
       >
         {BLOUB_MASCOTS.map((m) => {
@@ -39,29 +42,29 @@ export default function MascotPicker({
               title={m.hint}
               onClick={() => onChange(m.id)}
               style={{
-                background: on ? 'var(--panel-2)' : 'transparent',
+                background: on ? 'rgba(242,193,78,0.08)' : 'var(--panel-2)',
                 border: on ? '1px solid var(--accent)' : '1px solid var(--border-soft)',
-                borderRadius: 12,
-                padding: '10px 6px 8px',
+                borderRadius: 16,
+                padding: '14px 8px 10px',
                 cursor: 'pointer',
                 color: 'var(--text)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
               }}
             >
               <BloubEngineAvatar
-                size={52}
-                crop={118}
+                size={64}
+                crop={120}
                 ink={m.ink}
                 paper={m.paper}
-                botState={m.pose}
+                botState="idle"
                 shapeId={m.shape}
                 live={on}
                 fps={24}
               />
-              <span style={{ fontSize: 11, fontWeight: on ? 700 : 500 }}>{m.name}</span>
+              <span style={{ fontSize: 12, fontWeight: on ? 700 : 500 }}>{m.name}</span>
             </button>
           )
         })}
