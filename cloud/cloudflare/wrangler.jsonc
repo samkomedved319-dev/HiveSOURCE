@@ -1,0 +1,10 @@
+{
+  "name": "hive-cloud-computer",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-05",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [{ "name": "HIVEBOX", "class_name": "HiveBox" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["HiveBox"] }]
+}
