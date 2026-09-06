@@ -2,9 +2,9 @@
   "version": "0.0.1.6",
   "downloadUrl": "https://github.com/samkomedved319-dev/Hive-Desktop/releases/download/0.0.1.6/Hive-Setup-0.0.1.6.exe",
   "notes": [
-    { "type": "fix", "text": "Sign in opens hivetools.pro inside Hive — not GitHub." },
-    { "type": "fix", "text": "Updating or signing in again no longer resets your Hive Free 1M token pool." },
-    { "type": "improve", "text": "Usage meter is account-synced and animated." },
-    { "type": "improve", "text": "Hey? is one reply. Loop agents only run when you Start them." }
+    { "type": "fix", "text": "Hive Free uses only GLM 5.3. Nemotron (zero credits) is gone." },
+    { "type": "fix", "text": "Bring your own OpenRouter, OpenAI, or Anthropic key in Settings." },
+    { "type": "new", "text": "Loop agents are back in the main chat strip." },
+    { "type": "improve", "text": "Updating or signing in again no longer resets your Hive Free 1M token pool." }
   ]
 }
