@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.1.3 — 2026-09-06
+
+- First-login tutorial
+- Buddy Model: Fast / Auto / No
+- Integrations, Auth, and Chrome extension hidden from Settings
+- Uninstall wipes app data so a reinstall asks for login
+- Update and restart still applies from GitHub Releases
+
 ## 0.0.1.2 — 2026-09-06
 
 - Update and restart in one click (downloads the installer, applies it, relaunches Hive)

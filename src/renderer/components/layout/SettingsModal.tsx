@@ -42,9 +42,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   // Hive Buddy (cursor companion + push-to-talk overlay)
   const [buddyEnabled, setBuddyEnabled] = useState(localStorage.getItem('hive_buddy_enabled') === 'true')
-  const [buddyModel, setBuddyModel] = useState(
-    localStorage.getItem('hive_buddy_model') || localStorage.getItem('hive_model') || 'openai/gpt-4o-mini'
-  )
+  const [buddyModel, setBuddyModel] = useState(() => {
+    const raw = localStorage.getItem('hive_buddy_model') || 'auto'
+    if (raw === 'fast' || raw === 'auto' || raw === 'no') return raw
+    return 'auto'
+  })
   const [buddyColor, setBuddyColor] = useState(localStorage.getItem('hive_buddy_color') || '#F08A24')
   const [buddyMascot, setBuddyMascot] = useState(getBuddyMascotId())
 
@@ -194,7 +196,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     setAccentColor('#F2C14E')
     setReducedMotion(false)
     setBuddyEnabled(false)
-    setBuddyModel('openai/gpt-4o-mini')
+    setBuddyModel('auto')
     setBuddyColor('#F08A24')
     setShortcuts({ ...DEFAULT_SHORTCUTS })
     document.documentElement.style.setProperty('--accent', '#F2C14E')
@@ -274,11 +276,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 onClick={() => setActiveTab('appearance')}
               />
               <NavButton
-                active={activeTab === 'integrations'}
-                label="Integrations & Auth"
-                onClick={() => setActiveTab('integrations')}
-              />
-              <NavButton
                 active={activeTab === 'shortcuts'}
                 label="Shortcuts"
                 onClick={() => setActiveTab('shortcuts')}
@@ -316,7 +313,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               {activeTab === 'general' && 'General Preferences'}
               {activeTab === 'models' && 'Models & Thinking Behavior'}
               {activeTab === 'appearance' && 'Appearance & Tokens'}
-              {activeTab === 'integrations' && 'Cloud, datasets & extensions'}
               {activeTab === 'shortcuts' && 'Keyboard Shortcuts'}
             </span>
             <button
@@ -468,28 +464,31 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
                 <SettingRow
                   label="Buddy Model"
-                  description="LLM answering Buddy overlay requests"
+                  description="How Buddy answers when you talk to it"
                 >
-                  <select
-                    value={buddyModel}
-                    onChange={(e) => setBuddyModel(e.target.value)}
-                    style={{
-                      background: 'var(--panel-2)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 6,
-                      padding: '5px 8px',
-                      color: 'var(--text)',
-                      fontSize: 12,
-                      outline: 'none',
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    <option value="openai/gpt-4o-mini">Hive 2 Mini (Default)</option>
-                    <option value="openai/gpt-4o">Hive 2 (GPT-4o)</option>
-                    <option value="anthropic/claude-3.5-sonnet">Hive 3.5 Sonnet</option>
-                    <option value="google/gemini-flash-1.5">Hive Flash</option>
-                    <option value="meta-llama/llama-3.3-70b-instruct">Hive Open 70B</option>
-                  </select>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {(['fast', 'auto', 'no'] as const).map((id) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setBuddyModel(id)}
+                        style={{
+                          background: buddyModel === id ? 'var(--accent)' : 'var(--panel-2)',
+                          color: buddyModel === id ? 'var(--accent-fg)' : 'var(--text)',
+                          border: buddyModel === id ? 'none' : '1px solid var(--border)',
+                          borderRadius: 8,
+                          padding: '5px 12px',
+                          fontSize: 12,
+                          fontWeight: 650,
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          textTransform: 'capitalize',
+                        }}
+                      >
+                        {id === 'fast' ? 'Fast' : id === 'auto' ? 'Auto' : 'No'}
+                      </button>
+                    ))}
+                  </div>
                 </SettingRow>
 
                 <SettingRow
@@ -751,8 +750,9 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               </>
             )}
 
-            {/* INTEGRATIONS TAB */}
-            {activeTab === 'integrations' && (
+            {/* INTEGRATIONS TAB — kept in source, hidden from users.
+            {activeTab === 'integrations' && ( */}
+            {false && activeTab === 'integrations' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {/* 1. Google Authentication Login */}
                 <div

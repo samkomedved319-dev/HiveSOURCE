@@ -18,6 +18,7 @@ import FeedbackModal from './components/layout/FeedbackModal'
 import CommandPalette from './components/layout/CommandPalette'
 import CloudComputerPanel from './components/layout/CloudComputerPanel'
 import WhatsNewModal from './components/layout/WhatsNewModal'
+import FirstRunTour from './components/layout/FirstRunTour'
 import { HIVE_VERSION, LOCAL_WHATS_NEW, type ReleaseNote } from './hiveVersion'
 import { AnimatePresence } from 'motion/react'
 import { loadShortcuts, matchesBinding, toAccelerator } from './shortcuts'
@@ -102,6 +103,7 @@ export default function App() {
   useEffect(() => {
     const seen = localStorage.getItem('hive_last_seen_version')
     if (seen !== HIVE_VERSION) setShowWhatsNew(true)
+    if (localStorage.getItem('hive_tutorial_done') !== '1') setShowTour(true)
   }, [])
 
   useEffect(() => {
@@ -154,6 +156,7 @@ export default function App() {
   const [showFeedback, setShowFeedback] = useState(false)
   const [showPalette, setShowPalette] = useState(false)
   const [showWhatsNew, setShowWhatsNew] = useState(false)
+  const [showTour, setShowTour] = useState(false)
   const [whatsNewNotes, setWhatsNewNotes] = useState<ReleaseNote[]>(LOCAL_WHATS_NEW)
   const [updateAvail, setUpdateAvail] = useState<{ latest: string; downloadUrl?: string } | null>(null)
   const [updating, setUpdating] = useState(false)
@@ -708,7 +711,16 @@ export default function App() {
         <SettingsModal onClose={() => setShowSettings(false)} />
       )}
 
-      {showWhatsNew && (
+      {showTour && (
+        <FirstRunTour
+          onDone={() => {
+            localStorage.setItem('hive_tutorial_done', '1')
+            setShowTour(false)
+          }}
+        />
+      )}
+
+      {!showTour && showWhatsNew && (
         <WhatsNewModal
           version={HIVE_VERSION}
           notes={whatsNewNotes}

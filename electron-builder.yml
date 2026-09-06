@@ -25,6 +25,7 @@ nsis:
   createStartMenuShortcut: true
   shortcutName: Hive
   runAfterFinish: true
+  deleteAppDataOnUninstall: true
 protocols:
   - name: Hive Auth
     schemes:

@@ -4,6 +4,8 @@ import { subscribeBotTicker } from './botTicker'
 import type { StateId } from '../../bot/states'
 import { getBuddyMascotId, getMascot } from './mascotLibrary'
 
+import { MODE_MODELS } from '../layout/TitleBar'
+
 export const BUDDY_SETTINGS_EVENT = 'hive:buddy-settings'
 export const BUDDY_PHASE_EVENT = 'hive:buddy-phase'
 export type BuddyLivePhase = 'idle' | 'listening' | 'thinking' | 'clicking' | 'typing' | 'running' | 'done' | 'error'
@@ -38,11 +40,24 @@ export function isBuddyEnabled(): boolean {
   }
 }
 
-export function getBuddyModel(): string {
+export function getBuddySpeed(): 'fast' | 'auto' | 'no' {
   try {
-    return localStorage.getItem('hive_buddy_model') || localStorage.getItem('hive_model') || 'openai/gpt-4o-mini'
+    const raw = localStorage.getItem('hive_buddy_model') || 'auto'
+    if (raw === 'fast' || raw === 'auto' || raw === 'no') return raw
+    return 'auto'
   } catch {
-    return 'openai/gpt-4o-mini'
+    return 'auto'
+  }
+}
+
+export function getBuddyModel(): string {
+  const speed = getBuddySpeed()
+  if (speed === 'no') return ''
+  if (speed === 'fast') return MODE_MODELS.fast
+  try {
+    return localStorage.getItem('hive_model') || MODE_MODELS.auto
+  } catch {
+    return MODE_MODELS.auto
   }
 }
 

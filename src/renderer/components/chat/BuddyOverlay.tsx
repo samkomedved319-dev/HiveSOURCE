@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import BloubEngineAvatar from '../mascot/BloubEngineAvatar'
-import { broadcastBuddyPhase, getBuddyModel, useBuddyColor, type BuddyLivePhase } from '../mascot/CursorBuddy'
+import { broadcastBuddyPhase, getBuddyModel, getBuddySpeed, useBuddyColor, type BuddyLivePhase } from '../mascot/CursorBuddy'
 import type { StateId } from '../../bot/states'
 
 type BuddyPhase = BuddyLivePhase
@@ -276,6 +276,11 @@ export default function BuddyOverlay({ embedded = false, startOpen = false, onCl
       if (await runSlash(text)) {
         setPhase('done')
         setTimeout(() => setPhase((p) => (p === 'done' ? 'idle' : p)), 2500)
+        return
+      }
+      if (getBuddySpeed() === 'no') {
+        push('out', 'Buddy replies are off. Set Buddy Model to Fast or Auto in Settings.')
+        setPhase('idle')
         return
       }
       await runAi(text)

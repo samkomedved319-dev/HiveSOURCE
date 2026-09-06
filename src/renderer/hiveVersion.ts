@@ -1,11 +1,10 @@
-export const HIVE_VERSION = '0.0.1.2'
+export const HIVE_VERSION = '0.0.1.3'
 
 export type ReleaseNote = { type: 'new' | 'fix' | 'improve'; text: string }
 
 export const LOCAL_WHATS_NEW: ReleaseNote[] = [
-  { type: 'new', text: 'Click Update and restart — Hive installs and comes back on its own.' },
-  { type: 'new', text: 'What’s New popup after each update, with what was added and fixed.' },
-  { type: 'improve', text: 'Hive logo in the left rail is branding now — it no longer opens the office.' },
-  { type: 'fix', text: 'Windows app, taskbar, and installer use the Hive bee instead of the Electron atom.' },
-  { type: 'fix', text: 'Installer build works with electron-builder 26 (no more invalid win config).' },
+  { type: 'new', text: 'First-login tutorial walks through chat, workers, office, and Buddy.' },
+  { type: 'improve', text: 'Buddy Model is Fast, Auto, or No — no more model names.' },
+  { type: 'improve', text: 'Integrations, Auth, and the Chrome extension section are hidden from Settings.' },
+  { type: 'fix', text: 'Uninstalling Hive clears login, so a reinstall asks you to sign in again.' },
 ]
