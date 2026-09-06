@@ -28,6 +28,26 @@ function isExhausted(status: number, body: string) {
   return t.includes('rate') || t.includes('quota') || t.includes('credit') || t.includes('insufficient') || t.includes('used up') || t.includes('limit')
 }
 
+function extractAssistantText(rawMsg: any): string {
+  if (!rawMsg) return ''
+  const parts: string[] = []
+  const push = (v: unknown) => {
+    if (typeof v === 'string' && v.trim()) parts.push(v.trim())
+  }
+  const c = rawMsg.content
+  if (typeof c === 'string') push(c)
+  else if (Array.isArray(c)) {
+    for (const p of c) {
+      if (typeof p === 'string') push(p)
+      else if (p && typeof p === 'object') push((p as any).text || (p as any).content)
+    }
+  }
+  if (parts.length) return parts.join('\n').trim()
+  push(rawMsg.reasoning_content)
+  push(rawMsg.reasoning)
+  return parts.join('\n').trim()
+}
+
 async function queryNim(
   messages: ChatMessage[]
 ): Promise<{ ok: boolean; content?: string; error?: string; model?: string }> {
@@ -118,11 +138,16 @@ export async function queryAIModel(
       chatUrls.push(u)
     }
   }
-  if (usingFree || API_KEY === HIVE_FREE_KEY) {
+  const hiveFree = usingFree || API_KEY === HIVE_FREE_KEY
+  if (hiveFree) {
+    // Hive Free key is TokenRouter-only. OpenRouter returns 401 "Missing Authentication header".
     for (const b of TOKENROUTER_BASES) pushUrl(`${b}/chat/completions`)
+  } else {
+    pushUrl(`${openRouterBase()}/chat/completions`)
+    if ((API_KEY || '').startsWith('sk-or-') || openRouterBase().includes('openrouter.ai')) {
+      pushUrl('https://openrouter.ai/api/v1/chat/completions')
+    }
   }
-  pushUrl(`${openRouterBase()}/chat/completions`)
-  pushUrl('https://openrouter.ai/api/v1/chat/completions')
 
   let activeMessages = [...messages]
   const recalled = await recallForPrompt(
@@ -215,7 +240,7 @@ export async function queryAIModel(
       if (res.ok) {
         const data = (await res.json()) as any
         const rawMsg = data.choices?.[0]?.message
-        const content = rawMsg?.content
+        const content = extractAssistantText(rawMsg)
         if (content && content.trim().length > 0) {
           const userQ = [...messages].reverse().find((m) => m.role === 'user')?.content || ''
           void rememberTurn(userQ, String(content))
@@ -225,7 +250,7 @@ export async function queryAIModel(
               estimateTokens(JSON.stringify(messages)) + estimateTokens(String(content))
             consumeFreeQuota(used)
           }
-          const rawAnns = rawMsg.annotations || []
+          const rawAnns = rawMsg?.annotations || []
           const citations: SearchCitation[] = []
 
           for (const ann of rawAnns) {
@@ -257,10 +282,11 @@ export async function queryAIModel(
             model: m,
           }
         }
+        lastError = `[${m}] empty reply`
       } else {
         const errText = await res.text()
         lastError = `[${m}] ${res.status}: ${errText}`
-        if (!isExhausted(res.status, errText)) continue
+        if (isExhausted(res.status, errText)) break
       }
     } catch (err: any) {
       lastError = err.message
