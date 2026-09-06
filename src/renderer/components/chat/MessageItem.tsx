@@ -92,7 +92,7 @@ export default React.memo(function MessageItem({
           {beforeCode.trim() && <p style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{formatInline(beforeCode.trim())}</p>}
           <div
             style={{
-              background: '#0D0E11',
+              background: 'var(--code-bg)',
               border: '1px solid var(--border-soft)',
               borderRadius: 8,
               overflow: 'hidden',
@@ -104,7 +104,7 @@ export default React.memo(function MessageItem({
               style={{
                 background: 'rgba(255,255,255,0.03)',
                 padding: '4px 12px',
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                borderBottom: '1px solid var(--border-soft)',
                 fontSize: 11,
                 color: 'var(--text-faint)',
                 textTransform: 'uppercase',
@@ -119,7 +119,7 @@ export default React.memo(function MessageItem({
                 padding: 12,
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: 13.5,
-                color: '#D8DAE0',
+                color: 'var(--code-text)',
                 lineHeight: 1.6,
                 overflowX: 'auto',
               }}
@@ -176,8 +176,8 @@ export default React.memo(function MessageItem({
         <div
           style={{
             maxWidth: '78%',
-            background: '#16181C',
-            color: '#E7E9EA',
+            background: 'var(--user-bubble-bg)',
+            color: 'var(--user-bubble-text)',
             padding: '12px 16px',
             borderRadius: 20,
             borderBottomRightRadius: 6,

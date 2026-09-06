@@ -84,8 +84,8 @@ export default function ChatInput({
         style={{
           width: '100%',
           maxWidth: 768,
-          background: '#16181C',
-          border: '1px solid #2F3336',
+          background: 'var(--composer-bg)',
+          border: '1px solid var(--composer-border)',
           borderRadius: 26,
           padding: '12px 16px',
           position: 'relative',

@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark light;
   --bg: #0b0c0e;
   --panel: #141518;
   --panel-2: #1b1d21;
@@ -11,8 +12,85 @@
   --accent-dim: #6b5a2a;
   --accent-fg: #0b0c0e;
   --link: #c8ccd4;
+  --composer-bg: #16181C;
+  --composer-border: #2F3336;
+  --user-bubble-bg: #16181C;
+  --user-bubble-text: #E7E9EA;
+  --code-bg: #0D0E11;
+  --code-text: #D8DAE0;
   --radius: 12px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Light Theme via data-theme attribute */
+[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f8fafc;
+  --panel: #ffffff;
+  --panel-2: #f1f5f9;
+  --border: rgba(15, 23, 42, 0.12);
+  --border-soft: rgba(15, 23, 42, 0.07);
+  --text: #0f172a;
+  --text-dim: #475569;
+  --text-faint: #94a3b8;
+  --accent: #d97706;
+  --accent-dim: #fef3c7;
+  --accent-fg: #ffffff;
+  --link: #2563eb;
+  --composer-bg: #ffffff;
+  --composer-border: #cbd5e1;
+  --user-bubble-bg: #e2e8f0;
+  --user-bubble-text: #0f172a;
+  --code-bg: #f1f5f9;
+  --code-text: #0f172a;
+}
+
+/* Explicit Dark Theme via data-theme attribute */
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0b0c0e;
+  --panel: #141518;
+  --panel-2: #1b1d21;
+  --border: color-mix(in oklab, #f4f1ea 12%, transparent);
+  --border-soft: color-mix(in oklab, #f4f1ea 8%, transparent);
+  --text: #f4f1ea;
+  --text-dim: #9a968c;
+  --text-faint: #6b675f;
+  --accent: #F2C14E;
+  --accent-dim: #6b5a2a;
+  --accent-fg: #0b0c0e;
+  --link: #c8ccd4;
+  --composer-bg: #16181C;
+  --composer-border: #2F3336;
+  --user-bubble-bg: #16181C;
+  --user-bubble-text: #E7E9EA;
+  --code-bg: #0D0E11;
+  --code-text: #D8DAE0;
+}
+
+/* System Light Mode Adaptation when no data-theme override is active */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    color-scheme: light;
+    --bg: #f8fafc;
+    --panel: #ffffff;
+    --panel-2: #f1f5f9;
+    --border: rgba(15, 23, 42, 0.12);
+    --border-soft: rgba(15, 23, 42, 0.07);
+    --text: #0f172a;
+    --text-dim: #475569;
+    --text-faint: #94a3b8;
+    --accent: #d97706;
+    --accent-dim: #fef3c7;
+    --accent-fg: #ffffff;
+    --link: #2563eb;
+    --composer-bg: #ffffff;
+    --composer-border: #cbd5e1;
+    --user-bubble-bg: #e2e8f0;
+    --user-bubble-text: #0f172a;
+    --code-bg: #f1f5f9;
+    --code-text: #0f172a;
+  }
 }
 
 * {

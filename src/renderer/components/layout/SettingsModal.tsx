@@ -61,6 +61,9 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   )
 
   // Appearance Settings
+  const [themeMode, setThemeMode] = useState<'system' | 'dark' | 'light'>(
+    () => (localStorage.getItem('hive_theme_mode') as 'system' | 'dark' | 'light') || 'system'
+  )
   const [accentColor, setAccentColor] = useState(localStorage.getItem('hive_accent_color') || '#F2C14E')
   const [reducedMotion, setReducedMotion] = useState(localStorage.getItem('hive_reduced_motion') === 'true')
   const [shortcuts, setShortcuts] = useState(loadShortcuts)
@@ -69,6 +72,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   // Feedback states
   const [updateNote, setUpdateNote] = useState('')
   const [checking, setChecking] = useState(false)
+  const [updating, setUpdating] = useState(false)
+  const [availableDownloadUrl, setAvailableDownloadUrl] = useState<string | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
 
@@ -115,6 +120,15 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       ...(openaiKey.trim() ? { OPENAI_API_KEY: openaiKey.trim() } : {}),
     })
     localStorage.setItem('hive_system_prompt', systemPrompt)
+    localStorage.setItem('hive_theme_mode', themeMode)
+    if (themeMode === 'system') {
+      const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light')
+    } else {
+      document.documentElement.setAttribute('data-theme', themeMode)
+    }
+    window.dispatchEvent(new Event('hive:theme-changed'))
+
     localStorage.setItem('hive_accent_color', '#F2C14E')
     localStorage.setItem('hive_reduced_motion', reducedMotion ? 'true' : 'false')
     saveShortcuts(shortcuts)
@@ -253,13 +267,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 label="Models & Reasoning"
                 onClick={() => setActiveTab('models')}
               />
-              {/* Appearance / design tokens — kept in source, hidden from users.
               <NavButton
                 active={activeTab === 'appearance'}
                 label="Appearance"
                 onClick={() => setActiveTab('appearance')}
               />
-              */}
               <NavButton
                 active={activeTab === 'integrations'}
                 label="Integrations & Auth"
@@ -274,7 +286,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           </div>
 
           <div style={{ padding: '0 8px', fontSize: 11, color: 'var(--text-faint)' }}>
-            Hive Desktop · v0.0.3
+            Hive Desktop · v0.0.1.1
           </div>
         </div>
 
@@ -341,36 +353,77 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               <>
                 <SettingRow
                   label="Updates"
-                  description="Compare this install with GitHub. New installers show up here."
+                  description="Auto-check and install new updates from GitHub without manual steps."
                 >
-                  <button
-                    type="button"
-                    disabled={checking}
-                    onClick={async () => {
-                      setChecking(true)
-                      try {
-                        const res = await window.electronAPI?.app?.checkUpdate?.()
-                        if (!res?.ok) setUpdateNote(res?.error || 'Check failed')
-                        else if (res.newer) setUpdateNote(`v${res.latest} is out (you have v${res.current}).`)
-                        else setUpdateNote(`You're on v${res.current} — latest.`)
-                      } catch (e) {
-                        setUpdateNote(e instanceof Error ? e.message : 'Check failed')
-                      }
-                      setChecking(false)
-                    }}
-                    style={{
-                      background: 'var(--panel)',
-                      border: '1px solid var(--border)',
-                      color: 'var(--text)',
-                      borderRadius: 8,
-                      padding: '6px 10px',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      fontSize: 12,
-                    }}
-                  >
-                    {checking ? 'Checking…' : 'Check now'}
-                  </button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      type="button"
+                      disabled={checking || updating}
+                      onClick={async () => {
+                        setChecking(true)
+                        setAvailableDownloadUrl(null)
+                        try {
+                          const res = await window.electronAPI?.app?.checkUpdate?.()
+                          if (!res?.ok) setUpdateNote(res?.error || 'Check failed')
+                          else if (res.newer) {
+                            setUpdateNote(`v${res.latest} is out!`)
+                            if (res.downloadUrl) setAvailableDownloadUrl(res.downloadUrl)
+                          } else {
+                            setUpdateNote(`You're on v${res.current} — latest.`)
+                          }
+                        } catch (e) {
+                          setUpdateNote(e instanceof Error ? e.message : 'Check failed')
+                        }
+                        setChecking(false)
+                      }}
+                      style={{
+                        background: 'var(--panel)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text)',
+                        borderRadius: 8,
+                        padding: '6px 10px',
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        fontSize: 12,
+                      }}
+                    >
+                      {checking ? 'Checking…' : 'Check now'}
+                    </button>
+
+                    {availableDownloadUrl && (
+                      <button
+                        type="button"
+                        disabled={updating}
+                        onClick={async () => {
+                          setUpdating(true)
+                          setUpdateNote('Downloading and applying update automatically… Hive will restart.')
+                          try {
+                            const res = await window.electronAPI?.app?.installUpdate?.(availableDownloadUrl)
+                            if (!res?.ok) {
+                              setUpdateNote(res?.error || 'Update failed')
+                              setUpdating(false)
+                            }
+                          } catch (err: any) {
+                            setUpdateNote(err.message || 'Update failed')
+                            setUpdating(false)
+                          }
+                        }}
+                        style={{
+                          background: 'var(--accent)',
+                          border: 'none',
+                          color: '#0b0c0e',
+                          fontWeight: 600,
+                          borderRadius: 8,
+                          padding: '6px 12px',
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          fontSize: 12,
+                        }}
+                      >
+                        {updating ? 'Updating…' : 'Update automatically'}
+                      </button>
+                    )}
+                  </div>
                 </SettingRow>
                 {updateNote && <div style={{ fontSize: 12, color: 'var(--accent)' }}>{updateNote}</div>}
 
@@ -642,6 +695,39 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             {/* APPEARANCE TAB */}
             {activeTab === 'appearance' && (
               <>
+                <SettingRow
+                  label="Theme"
+                  description="Choose light, dark, or adapt automatically to Windows system theme"
+                >
+                  <select
+                    value={themeMode}
+                    onChange={(e) => {
+                      const next = e.target.value as 'system' | 'dark' | 'light'
+                      setThemeMode(next)
+                      if (next === 'system') {
+                        const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light')
+                      } else {
+                        document.documentElement.setAttribute('data-theme', next)
+                      }
+                    }}
+                    style={{
+                      background: 'var(--panel-2)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 6,
+                      padding: '5px 8px',
+                      color: 'var(--text)',
+                      fontSize: 12,
+                      outline: 'none',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    <option value="system">Adapt to System</option>
+                    <option value="dark">Dark Theme</option>
+                    <option value="light">Light Theme</option>
+                  </select>
+                </SettingRow>
+
                 <SettingRow
                   label="Accent"
                   description="Hive uses a fixed gold accent. Colors are not customizable."

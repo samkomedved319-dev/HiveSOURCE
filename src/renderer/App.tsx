@@ -46,7 +46,26 @@ export default function App() {
   }, [hydrate])
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--accent', '#F2C14E')
+    const applyTheme = () => {
+      const mode = localStorage.getItem('hive_theme_mode') || 'system'
+      if (mode === 'system') {
+        const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light')
+      } else {
+        document.documentElement.setAttribute('data-theme', mode)
+      }
+    }
+    applyTheme()
+
+    const mediaQuery = window.matchMedia?.('(prefers-color-scheme: dark)')
+    const onSchemeChange = () => {
+      if ((localStorage.getItem('hive_theme_mode') || 'system') === 'system') {
+        applyTheme()
+      }
+    }
+    mediaQuery?.addEventListener?.('change', onSchemeChange)
+    window.addEventListener('hive:theme-changed', applyTheme)
+
     const payload: Record<string, string> = {}
     const or = localStorage.getItem('hive_custom_api_key') || ''
     if (or.trim()) {

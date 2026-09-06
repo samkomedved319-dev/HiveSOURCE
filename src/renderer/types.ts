@@ -111,9 +111,11 @@ export interface ElectronAPI {
       current?: string
       latest?: string
       newer?: boolean
+      downloadUrl?: string
       url?: string
       error?: string
     }>
+    installUpdate?: (url?: string) => Promise<{ ok: boolean; error?: string }>
   }
   tts?: {
     speak: (text: string) => Promise<{ ok: boolean; dataUrl?: string; error?: string }>

@@ -1,6 +1,6 @@
 {
   "name": "hive",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Hive - AI Agent Bot Desktop Application",
   "main": "dist/main/index.js",
   "author": "ProjectHive",
@@ -59,7 +59,7 @@
   "build": {
     "appId": "com.projecthive.app",
     "productName": "Hive",
-    "artifactName": "${productName}-Setup-${version}.${ext}",
+    "artifactName": "${productName}-Setup-0.0.1.1.${ext}",
     "directories": {
       "output": "release"
     },
@@ -69,6 +69,7 @@
     "npmRebuild": false,
     "win": {
       "target": "nsis",
+      "icon": "resources/icon.ico",
       "signAndEditExecutable": false
     },
     "nsis": {

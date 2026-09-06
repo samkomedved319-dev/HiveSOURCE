@@ -110,6 +110,7 @@ function createWindow() {
     maximizable: true,
     closable: true,
     title: 'Hive',
+    icon: path.join(__dirname, '../../resources/icon.ico'),
     backgroundColor: '#0b0c0e',
     show: false,
     webPreferences: {

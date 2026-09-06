@@ -285,7 +285,7 @@ export default function TitleBar({
         } as React.CSSProperties}
       >
         <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: "'JetBrains Mono', monospace" }}>
-          v{packageJson.version}
+          v0.0.1.1
         </span>
         {/* New chat */}
         {onNewChat && (
