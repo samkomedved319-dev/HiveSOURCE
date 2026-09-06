@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import { performWebSearch } from './search-service'
-import { openRouterKey, nvidiaNimKey, isHiveFreeKey, openRouterBase } from './keys'
+import { openRouterKey, nvidiaNimKey, isHiveFreeKey, openRouterBase, userLlmKey } from './keys'
 import { recallForPrompt, rememberTurn } from './mem0-service'
 import {
   HIVE_FREE_KEY,
@@ -25,7 +25,16 @@ export const NIM_MODELS = [
 function isExhausted(status: number, body: string) {
   if ([401, 402, 403, 429, 503].includes(status)) return true
   const t = body.toLowerCase()
-  return t.includes('rate') || t.includes('quota') || t.includes('credit') || t.includes('insufficient') || t.includes('used up') || t.includes('limit')
+  return (
+    t.includes('rate') ||
+    t.includes('quota') ||
+    t.includes('credit') ||
+    t.includes('insufficient') ||
+    t.includes('used up') ||
+    t.includes('limit') ||
+    t.includes('user not found') ||
+    t.includes('missing authentication')
+  )
 }
 
 function extractAssistantText(rawMsg: any): string {
@@ -100,18 +109,23 @@ export async function queryAIModel(
   modelChoice?: string,
   options?: ChatOptions
 ): Promise<{ ok: boolean; content?: string; error?: string; model?: string; citations?: SearchCitation[] }> {
-  const API_KEY = openRouterKey()
+  const userKey = userLlmKey()
   const nimKey = nvidiaNimKey()
-  const usingFree = isHiveFreeKey()
+  const requestedModel =
+    modelChoice && FREE_MODELS.includes(modelChoice) ? modelChoice : DEFAULT_FREE_MODEL
+  // Hive Free models always use the hosted TokenRouter key. A leftover sk-or- key
+  // in Settings hits OpenRouter and returns 401 User not found.
+  const hiveFree = !userKey || isHiveFreeKey() || FREE_MODELS.includes(requestedModel)
+  const API_KEY = hiveFree ? HIVE_FREE_KEY : openRouterKey()
+
   if (!API_KEY && !nimKey) {
     return {
       ok: false,
-      error:
-        'Hive Free is not ready. Restart the app, or paste your own key in Settings → Models.',
+      error: 'Hive Free is not ready. Restart the app, or paste your own key in Settings → Models.',
     }
   }
 
-  if (usingFree) {
+  if (hiveFree) {
     const est = estimateTokens(JSON.stringify(messages)) + 400
     const gate = assertFreeQuota(est)
     if (!gate.ok) return { ok: false, error: gate.error }
@@ -126,8 +140,6 @@ export async function queryAIModel(
     return nim
   }
 
-  // Hive Free: GLM 5.3 + Nemotron Nano Reasoning (TokenRouter)
-  const requestedModel = modelChoice && FREE_MODELS.includes(modelChoice) ? modelChoice : DEFAULT_FREE_MODEL
   const modelsToTry = [requestedModel, ...FREE_MODELS.filter((m) => m !== requestedModel)]
 
   const chatUrls: string[] = []
@@ -138,15 +150,14 @@ export async function queryAIModel(
       chatUrls.push(u)
     }
   }
-  const hiveFree = usingFree || API_KEY === HIVE_FREE_KEY
   if (hiveFree) {
-    // Hive Free key is TokenRouter-only. OpenRouter returns 401 "Missing Authentication header".
     for (const b of TOKENROUTER_BASES) pushUrl(`${b}/chat/completions`)
   } else {
     pushUrl(`${openRouterBase()}/chat/completions`)
     if ((API_KEY || '').startsWith('sk-or-') || openRouterBase().includes('openrouter.ai')) {
       pushUrl('https://openrouter.ai/api/v1/chat/completions')
     }
+    for (const b of TOKENROUTER_BASES) pushUrl(`${b}/chat/completions`)
   }
 
   let activeMessages = [...messages]
@@ -164,12 +175,10 @@ export async function queryAIModel(
   }
   let fallbackCitations: SearchCitation[] | undefined = undefined
 
-  // If webSearch is requested, check if we should prepare search fallback context
   let tryWebPlugin = !!options?.webSearch
   if (options?.webSearch) {
     const userQuery = [...messages].reverse().find((m) => m.role === 'user')?.content || ''
     if (userQuery) {
-      // Pre-fetch reliable fallback citations in parallel or for 402 recovery
       try {
         const fallbackRes = await performWebSearch(userQuery)
         if (fallbackRes.ok && fallbackRes.citations.length > 0) {
@@ -190,107 +199,112 @@ export async function queryAIModel(
   }
 
   let lastError = ''
-  for (const m of modelsToTry) {
-    requestBody.model = m
-    for (const url of chatUrls) {
-    try {
-      let res = await fetch(url, {
+  const tryOnce = async (url: string, key: string, model: string) => {
+    let res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${key}`,
+        'HTTP-Referer': 'https://hive.app',
+        'X-Title': 'Hive Desktop',
+      },
+      body: JSON.stringify(requestBody),
+    })
+
+    if (!res.ok && res.status === 402 && tryWebPlugin && fallbackCitations && fallbackCitations.length > 0) {
+      tryWebPlugin = false
+      delete requestBody.plugins
+      const contextSnippet = fallbackCitations
+        .map((c, i) => `[Source ${i + 1}]: ${c.title} (${c.url})\n${c.content}`)
+        .join('\n\n')
+      requestBody.messages = [
+        ...activeMessages.slice(0, -1),
+        {
+          role: 'system' as const,
+          content: `[Verified Live Web Search Context]:\n${contextSnippet}\n\nSynthesize an informative, razor-sharp Grok-style answer answering the user's inquiry based on these verified facts.`,
+        },
+        activeMessages[activeMessages.length - 1],
+      ]
+      res = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${API_KEY}`,
+          Authorization: `Bearer ${key}`,
           'HTTP-Referer': 'https://hive.app',
           'X-Title': 'Hive Desktop',
         },
         body: JSON.stringify(requestBody),
       })
-
-      // If OpenRouter rejects web plugin (e.g. 402 insufficient credits for plugin),
-      // seamlessly retry using standard free model with injected fallback search context!
-      if (!res.ok && res.status === 402 && tryWebPlugin && fallbackCitations && fallbackCitations.length > 0) {
-        tryWebPlugin = false
-        delete requestBody.plugins
-
-        const contextSnippet = fallbackCitations
-          .map((c, i) => `[Source ${i + 1}]: ${c.title} (${c.url})\n${c.content}`)
-          .join('\n\n')
-
-        const groundedMessages = [
-          ...activeMessages.slice(0, -1),
-          {
-            role: 'system' as const,
-            content: `[Verified Live Web Search Context]:\n${contextSnippet}\n\nSynthesize an informative, razor-sharp Grok-style answer answering the user's inquiry based on these verified facts.`,
-          },
-          activeMessages[activeMessages.length - 1],
-        ]
-
-        requestBody.messages = groundedMessages
-        res = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${API_KEY}`,
-            'HTTP-Referer': 'https://hive.app',
-            'X-Title': 'Hive Desktop',
-          },
-          body: JSON.stringify(requestBody),
-        })
-      }
-
-      if (res.ok) {
-        const data = (await res.json()) as any
-        const rawMsg = data.choices?.[0]?.message
-        const content = extractAssistantText(rawMsg)
-        if (content && content.trim().length > 0) {
-          const userQ = [...messages].reverse().find((m) => m.role === 'user')?.content || ''
-          void rememberTurn(userQ, String(content))
-          if (usingFree) {
-            const used =
-              Number(data.usage?.total_tokens) ||
-              estimateTokens(JSON.stringify(messages)) + estimateTokens(String(content))
-            consumeFreeQuota(used)
-          }
-          const rawAnns = rawMsg?.annotations || []
-          const citations: SearchCitation[] = []
-
-          for (const ann of rawAnns) {
-            if (ann.type === 'url_citation' && ann.url_citation) {
-              const u = ann.url_citation.url || ''
-              let domain = ''
-              try {
-                domain = new URL(u).hostname.replace(/^www\./, '')
-              } catch {
-                domain = 'web'
-              }
-              citations.push({
-                url: u,
-                title: ann.url_citation.title || domain || 'Source',
-                content: ann.url_citation.content || '',
-                domain,
-              })
-            }
-          }
-
-          // Use parsed citations or fallback citations
-          const finalCitations =
-            citations.length > 0 ? citations : fallbackCitations && fallbackCitations.length > 0 ? fallbackCitations : undefined
-
-          return {
-            ok: true,
-            content: content.trim(),
-            citations: finalCitations,
-            model: m,
-          }
-        }
-        lastError = `[${m}] empty reply`
-      } else {
-        const errText = await res.text()
-        lastError = `[${m}] ${res.status}: ${errText}`
-        if (isExhausted(res.status, errText)) break
-      }
-    } catch (err: any) {
-      lastError = err.message
     }
+    return res
+  }
+
+  for (const m of modelsToTry) {
+    requestBody.model = m
+    const keysToTry = hiveFree ? [HIVE_FREE_KEY] : [API_KEY, HIVE_FREE_KEY].filter(Boolean)
+    for (const key of keysToTry) {
+      const urls =
+        key === HIVE_FREE_KEY
+          ? TOKENROUTER_BASES.map((b) => `${b}/chat/completions`)
+          : chatUrls
+      for (const url of urls) {
+        try {
+          const res = await tryOnce(url, key, m)
+          if (res.ok) {
+            const data = (await res.json()) as any
+            const rawMsg = data.choices?.[0]?.message
+            const content = extractAssistantText(rawMsg)
+            if (content && content.trim().length > 0) {
+              const userQ = [...messages].reverse().find((mm) => mm.role === 'user')?.content || ''
+              void rememberTurn(userQ, String(content))
+              if (key === HIVE_FREE_KEY) {
+                const used =
+                  Number(data.usage?.total_tokens) ||
+                  estimateTokens(JSON.stringify(messages)) + estimateTokens(String(content))
+                consumeFreeQuota(used)
+              }
+              const rawAnns = rawMsg?.annotations || []
+              const citations: SearchCitation[] = []
+              for (const ann of rawAnns) {
+                if (ann.type === 'url_citation' && ann.url_citation) {
+                  const u = ann.url_citation.url || ''
+                  let domain = ''
+                  try {
+                    domain = new URL(u).hostname.replace(/^www\./, '')
+                  } catch {
+                    domain = 'web'
+                  }
+                  citations.push({
+                    url: u,
+                    title: ann.url_citation.title || domain || 'Source',
+                    content: ann.url_citation.content || '',
+                    domain,
+                  })
+                }
+              }
+              const finalCitations =
+                citations.length > 0
+                  ? citations
+                  : fallbackCitations && fallbackCitations.length > 0
+                    ? fallbackCitations
+                    : undefined
+              return {
+                ok: true,
+                content: content.trim(),
+                citations: finalCitations,
+                model: m,
+              }
+            }
+            lastError = `[${m}] empty reply`
+          } else {
+            const errText = await res.text()
+            lastError = `[${m}] ${res.status}: ${errText}`
+            if (isExhausted(res.status, errText)) break
+          }
+        } catch (err: any) {
+          lastError = err.message
+        }
+      }
     }
   }
 
@@ -301,7 +315,6 @@ export async function queryAIModel(
     return { ...nim, citations: fallbackCitations }
   }
 
-  // If all OpenRouter models fail but we have fallback search citations, return the synthesized search summary!
   if (fallbackCitations && fallbackCitations.length > 0) {
     const summary = fallbackCitations.map((c) => `• **${c.title}**: ${c.content}`).join('\n\n')
     return {
