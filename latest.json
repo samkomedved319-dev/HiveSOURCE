@@ -1,9 +1,10 @@
 {
   "version": "0.0.1.5",
-  "downloadUrl": "https://github.com/samkomedved319-dev/Hive-Desktop/releases/download/v0.0.1.5/Hive-Setup-0.0.1.5.exe",
+  "downloadUrl": "https://github.com/samkomedved319-dev/Hive-Desktop/releases/download/0.0.1.5/Hive-Setup-0.0.1.5.exe",
   "notes": [
     { "type": "new", "text": "Pick GLM 5.3 or Nemotron Nano from the model menu." },
     { "type": "new", "text": "Animated 1,000,000-token Hive Free meter." },
-    { "type": "new", "text": "Owner-only Admin panel: reset usage, grant tokens, approve people." }
+    { "type": "new", "text": "Owner-only Admin panel: reset usage, grant tokens, approve people." },
+    { "type": "fix", "text": "Hive Free chat talks to TokenRouter.com — no more 401 Missing Authentication header." }
   ]
 }
