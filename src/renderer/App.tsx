@@ -24,7 +24,6 @@ import { useChatStore } from './stores/chatStore'
 import { useAgentStore } from './stores/agentStore'
 import { BUDDY_SETTINGS_EVENT, isBuddyEnabled } from './components/mascot/CursorBuddy'
 import AuthGate from './components/auth/AuthGate'
-import DeniedScreen from './components/auth/DeniedScreen'
 import { useAuthStore } from './stores/authStore'
 import type { Message } from './types'
 
@@ -418,7 +417,6 @@ export default function App() {
     )
   }
   if (!session) return <AuthGate />
-  if (profile?.status === 'denied') return <DeniedScreen />
 
   return (
     <>
@@ -447,28 +445,6 @@ export default function App() {
         transition: 'grid-template-columns .45s var(--ease)',
       }}
     >
-      {profile?.status === 'pending' && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 8,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 30,
-            fontSize: 12,
-            gridColumn: '1 / -1',
-            height: 0,
-            color: 'var(--accent)',
-            background: 'rgba(242,193,78,0.1)',
-            border: '1px solid var(--accent-dim)',
-            borderRadius: 999,
-            padding: '5px 12px',
-            pointerEvents: 'none',
-          }}
-        >
-          On the Hive waitlist â€” same account as the website
-        </div>
-      )}
       {/* 1. Icon rail */}
       <IconRail
         activeTab={activeTab}

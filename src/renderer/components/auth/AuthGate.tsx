@@ -3,7 +3,6 @@ import { useAuthStore } from '../../stores/authStore'
 import { WEB_APP_URL } from '../../lib/supabase'
 
 export default function AuthGate() {
-  const waitlistWaiting = useAuthStore((s) => s.waitlistWaiting)
   const error = useAuthStore((s) => s.error)
   const info = useAuthStore((s) => s.info)
   const [waiting, setWaiting] = useState(false)
@@ -56,7 +55,7 @@ export default function AuthGate() {
         </svg>
         <div style={{ fontSize: 18, fontWeight: 650, marginBottom: 8 }}>Sign in to Hive</div>
         <p style={{ color: 'var(--text-dim)', fontSize: 13.5, lineHeight: 1.55, margin: '0 0 22px' }}>
-          Login happens on the Hive website — same account, same waitlist. Your browser will send you back here when you’re in.
+          Login happens on the Hive website. Sign in or create an account — this window unlocks when you are in.
         </p>
         <button
           type="button"
@@ -83,9 +82,6 @@ export default function AuthGate() {
         )}
         {error && <p style={{ color: '#F04438', fontSize: 13, marginTop: 12 }}>{error}</p>}
         {info && <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 12 }}>{info}</p>}
-        <p style={{ color: 'var(--text-faint)', fontSize: 12, marginTop: 18 }}>
-          {waitlistWaiting === 1 ? '1 person is on the waitlist' : `${waitlistWaiting} people are on the waitlist`}
-        </p>
       </div>
     </div>
   )

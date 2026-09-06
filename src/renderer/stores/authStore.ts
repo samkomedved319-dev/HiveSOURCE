@@ -22,7 +22,14 @@ interface AuthState {
 async function ensureProfile(user: User, name?: string): Promise<HiveProfile> {
   const res = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
   if (res.error) throw res.error
-  if (res.data) return res.data as HiveProfile
+  if (res.data) {
+    const existing = res.data as HiveProfile
+    if (existing.status !== 'approved') {
+      const up = await supabase.from('profiles').update({ status: 'approved' }).eq('id', user.id).select().single()
+      if (!up.error && up.data) return up.data as HiveProfile
+    }
+    return existing
+  }
   const email = user.email || ''
   const ins = await supabase
     .from('profiles')
@@ -30,7 +37,7 @@ async function ensureProfile(user: User, name?: string): Promise<HiveProfile> {
       id: user.id,
       email,
       display_name: name || email.split('@')[0] || 'Hive member',
-      status: 'pending',
+      status: 'approved',
     })
     .select()
     .single()

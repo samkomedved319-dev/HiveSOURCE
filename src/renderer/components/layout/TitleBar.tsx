@@ -50,13 +50,8 @@ export default function TitleBar({
   onFeedback,
   compact = false,
 }: TitleBarProps) {
-  const [max, setMax] = useState(false)
   const [showSelector, setShowSelector] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    window.electronAPI?.isMaximized?.().then(setMax).catch(() => {})
-  }, [])
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -412,114 +407,6 @@ export default function TitleBar({
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981' }} />
         </button>
         )}
-
-        <div style={{ width: 1, height: 16, background: 'var(--border-soft)', margin: '0 4px' }} />
-
-        {/* Window controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <button
-            type="button"
-            onClick={() => window.electronAPI?.minimize?.()}
-            title="Minimize"
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 6,
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-dim)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'background .15s, color .15s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--panel-2)'
-              e.currentTarget.style.color = 'var(--text)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.color = 'var(--text-dim)'
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M2 6h8" />
-            </svg>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              window.electronAPI?.maximize?.()
-              setTimeout(async () => {
-                const isMax = await window.electronAPI?.isMaximized?.()
-                setMax(!!isMax)
-              }, 100)
-            }}
-            title={max ? 'Restore' : 'Maximize'}
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 6,
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-dim)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'background .15s, color .15s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--panel-2)'
-              e.currentTarget.style.color = 'var(--text)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.color = 'var(--text-dim)'
-            }}
-          >
-            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4">
-              {max ? (
-                <path d="M3 1h6v6H3V1zm-2 4h2v6H9V9" />
-              ) : (
-                <rect x="2" y="2" width="8" height="8" rx="1" />
-              )}
-            </svg>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => window.electronAPI?.close?.()}
-            title="Close"
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 6,
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-dim)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'background .15s, color .15s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#e11d48'
-              e.currentTarget.style.color = '#ffffff'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.color = 'var(--text-dim)'
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" />
-            </svg>
-          </button>
-        </div>
       </div>
     </div>
   )

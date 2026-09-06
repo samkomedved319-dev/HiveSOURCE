@@ -101,9 +101,15 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 840,
-    minWidth: 980,
-    minHeight: 640,
-    frame: false,
+    minWidth: 900,
+    minHeight: 600,
+    frame: true,
+    autoHideMenuBar: true,
+    resizable: true,
+    minimizable: true,
+    maximizable: true,
+    closable: true,
+    title: 'Hive',
     backgroundColor: '#0b0c0e',
     show: false,
     webPreferences: {
@@ -147,13 +153,6 @@ function createWindow() {
   setTimeout(() => {
     if (mainWindow && !mainWindow.isVisible()) mainWindow.show()
   }, 1500)
-
-  mainWindow.on('close', (e) => {
-    if (!isQuitting) {
-      e.preventDefault()
-      mainWindow?.hide()
-    }
-  })
 
   mainWindow.on('closed', () => {
     mainWindow = null
@@ -266,7 +265,7 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => { isQuitting = true })
 app.on('will-quit', () => globalShortcut.unregisterAll())
-app.on('window-all-closed', () => { if (process.platform !== 'win32' || isQuitting) app.quit() })
+app.on('window-all-closed', () => { app.quit() })
 
 ipcMain.on('window:minimize', () => mainWindow?.minimize())
 ipcMain.on('window:maximize', () => {
