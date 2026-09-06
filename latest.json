@@ -1,9 +1,9 @@
 {
-  "version": "0.0.1.3",
-  "downloadUrl": "https://github.com/samkomedved319-dev/Hive-Desktop/releases/download/v0.0.1.3/Hive-Setup-0.0.1.3.exe",
+  "version": "0.0.1.5",
+  "downloadUrl": "https://github.com/samkomedved319-dev/Hive-Desktop/releases/download/v0.0.1.5/Hive-Setup-0.0.1.5.exe",
   "notes": [
-    { "type": "new", "text": "First-login tutorial after you sign in." },
-    { "type": "new", "text": "Update and restart in one click, with a What’s New popup." },
-    { "type": "improve", "text": "Installers now live on Hive-Desktop. Next update is 0.0.1.5." }
+    { "type": "new", "text": "Pick GLM 5.3 or Nemotron Nano from the model menu." },
+    { "type": "new", "text": "Animated 1,000,000-token Hive Free meter." },
+    { "type": "new", "text": "Owner-only Admin panel: reset usage, grant tokens, approve people." }
   ]
 }
