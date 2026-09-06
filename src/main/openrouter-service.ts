@@ -1,21 +1,19 @@
 import { ipcMain } from 'electron'
 import { performWebSearch } from './search-service'
-import { openRouterKey, nvidiaNimKey } from './keys'
+import { openRouterKey, nvidiaNimKey, isHiveFreeKey, openRouterBase } from './keys'
 import { recallForPrompt, rememberTurn } from './mem0-service'
+import {
+  HIVE_FREE_KEY,
+  TOKENROUTER_BASES,
+  HIVE_FREE_MODELS,
+  FREE_GLM,
+  assertFreeQuota,
+  consumeFreeQuota,
+  estimateTokens,
+} from './hive-free'
 
-const API_URL = 'https://openrouter.ai/api/v1/chat/completions'
-
-// Strictly free, verified high-performance OpenRouter AI models
-export const FREE_MODELS = [
-  'minimax/minimax-m3:free',
-  'nvidia/nemotron-3.5-lightning:free',
-  'nvidia/nemotron-3-super-120b-a12b:free',
-  'inclusionai/ling-3.0-flash-fin:free',
-  'dots-studio/dots-3-note-preview:free',
-  'liquid/lfm-2.5-2.6b:free',
-]
-
-export const DEFAULT_FREE_MODEL = FREE_MODELS[0]
+export const FREE_MODELS = HIVE_FREE_MODELS
+export const DEFAULT_FREE_MODEL = FREE_GLM
 
 export const NIM_MODELS = [
   'nvidia/nemotron-3.5-lightning-30b-a3b',
@@ -84,12 +82,19 @@ export async function queryAIModel(
 ): Promise<{ ok: boolean; content?: string; error?: string; model?: string; citations?: SearchCitation[] }> {
   const API_KEY = openRouterKey()
   const nimKey = nvidiaNimKey()
+  const usingFree = isHiveFreeKey()
   if (!API_KEY && !nimKey) {
     return {
       ok: false,
       error:
-        'Missing OpenRouter key. Open Settings → Models and paste a key from openrouter.ai/keys (sk-or-v1-…), then Save. Hive will not send a request without Authorization.',
+        'Hive Free is not ready. Restart the app, or paste your own key in Settings → Models.',
     }
+  }
+
+  if (usingFree) {
+    const est = estimateTokens(JSON.stringify(messages)) + 400
+    const gate = assertFreeQuota(est)
+    if (!gate.ok) return { ok: false, error: gate.error }
   }
 
   if (!API_KEY && nimKey) {
@@ -101,9 +106,23 @@ export async function queryAIModel(
     return nim
   }
 
-  // Always restrict strictly to FREE models
-  const requestedModel = modelChoice && modelChoice.includes(':free') ? modelChoice : DEFAULT_FREE_MODEL
+  // Hive Free: GLM 5.3 + Nemotron Nano Reasoning (TokenRouter)
+  const requestedModel = modelChoice && FREE_MODELS.includes(modelChoice) ? modelChoice : DEFAULT_FREE_MODEL
   const modelsToTry = [requestedModel, ...FREE_MODELS.filter((m) => m !== requestedModel)]
+
+  const chatUrls: string[] = []
+  const seen = new Set<string>()
+  const pushUrl = (u: string) => {
+    if (!seen.has(u)) {
+      seen.add(u)
+      chatUrls.push(u)
+    }
+  }
+  if (usingFree || API_KEY === HIVE_FREE_KEY) {
+    for (const b of TOKENROUTER_BASES) pushUrl(`${b}/chat/completions`)
+  }
+  pushUrl(`${openRouterBase()}/chat/completions`)
+  pushUrl('https://openrouter.ai/api/v1/chat/completions')
 
   let activeMessages = [...messages]
   const recalled = await recallForPrompt(
@@ -147,9 +166,10 @@ export async function queryAIModel(
 
   let lastError = ''
   for (const m of modelsToTry) {
+    requestBody.model = m
+    for (const url of chatUrls) {
     try {
-      requestBody.model = m
-      let res = await fetch(API_URL, {
+      let res = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -180,7 +200,7 @@ export async function queryAIModel(
         ]
 
         requestBody.messages = groundedMessages
-        res = await fetch(API_URL, {
+        res = await fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -199,6 +219,12 @@ export async function queryAIModel(
         if (content && content.trim().length > 0) {
           const userQ = [...messages].reverse().find((m) => m.role === 'user')?.content || ''
           void rememberTurn(userQ, String(content))
+          if (usingFree) {
+            const used =
+              Number(data.usage?.total_tokens) ||
+              estimateTokens(JSON.stringify(messages)) + estimateTokens(String(content))
+            consumeFreeQuota(used)
+          }
           const rawAnns = rawMsg.annotations || []
           const citations: SearchCitation[] = []
 
@@ -238,6 +264,7 @@ export async function queryAIModel(
       }
     } catch (err: any) {
       lastError = err.message
+    }
     }
   }
 

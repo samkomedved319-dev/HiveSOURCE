@@ -9,10 +9,10 @@ export interface ModelOption {
 }
 
 export const MODE_MODELS: Record<ThinkingMode, string> = {
-  fast: 'nvidia/nemotron-3.5-lightning:free',
-  auto: 'minimax/minimax-m3:free',
-  heavy: 'nvidia/nemotron-3-super-120b-a12b:free',
-  max: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+  fast: 'z-ai/glm-5.3-free',
+  auto: 'z-ai/glm-5.3-free',
+  heavy: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+  max: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
 }
 
 export const THINKING_MODES: { id: ThinkingMode; label: string; badge: string; desc: string }[] = [

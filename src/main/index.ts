@@ -5,6 +5,7 @@ import { registerKeyHandlers } from './keys'
 import { registerMem0Handlers } from './mem0-service'
 import { registerTelegramHandlers } from './telegram-service'
 import { registerOpenRouterHandlers } from './openrouter-service'
+import { registerQuotaHandlers } from './hive-free'
 import { registerLiveKitHandlers } from './livekit-service'
 import { registerSystemControlHandlers } from './system-service'
 import { registerBuddyHandlers, syncBuddyWithMain, showNotch } from './buddy-service'
@@ -225,6 +226,7 @@ app.whenReady().then(() => {
   registerMem0Handlers()
   registerTelegramHandlers()
   registerOpenRouterHandlers()
+  registerQuotaHandlers()
   registerLiveKitHandlers()
   registerSystemControlHandlers()
   registerBuddyHandlers(() => mainWindow)

@@ -74,6 +74,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('app:update-progress', handler)
       return () => ipcRenderer.removeListener('app:update-progress', handler)
     },
+    quota: () => ipcRenderer.invoke('quota:status'),
   },
   tts: {
     speak: (text: string) => ipcRenderer.invoke('tts:speak', text),

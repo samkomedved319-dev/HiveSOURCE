@@ -118,6 +118,15 @@ export interface ElectronAPI {
     }>
     installUpdate?: (url?: string) => Promise<{ ok: boolean; error?: string }>
     onUpdateProgress?: (cb: (p: { phase: string; percent?: number; error?: string }) => void) => () => void
+    quota?: () => Promise<{
+      ok: boolean
+      used?: number
+      limit?: number
+      remaining?: number
+      startedAt?: number
+      resetsAt?: number
+      models?: string[]
+    }>
   }
   tts?: {
     speak: (text: string) => Promise<{ ok: boolean; dataUrl?: string; error?: string }>

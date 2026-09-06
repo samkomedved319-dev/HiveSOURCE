@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
-import { openRouterKey } from './keys'
+import { openRouterKey, openRouterBase } from './keys'
+import { FREE_GLM } from './hive-free'
 
 export interface SearchCitation {
   url: string
@@ -17,15 +18,14 @@ export interface SearchResult {
   error?: string
 }
 
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
-const SEARCH_MODEL = 'minimax/minimax-m3:free'
+const SEARCH_MODEL = FREE_GLM
 
 /**
  * Perform OpenRouter Web Plugin search
  */
 async function searchViaOpenRouter(query: string): Promise<SearchResult | null> {
   try {
-    const res = await fetch(OPENROUTER_URL, {
+    const res = await fetch(`${openRouterBase()}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

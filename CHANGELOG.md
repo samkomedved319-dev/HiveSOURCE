@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.1.4 — 2026-09-06
+
+- Hive Free TokenRouter: `z-ai/glm-5.3-free` and `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`
+- 1,000,000 tokens per day; window starts on the first AI message and resets 24 hours later
+- Fast/Auto use GLM; Heavy/Max use Nemotron Nano
+- Public download page (no GitHub sign-in): website `/download-win.html`
+
 ## 0.0.1.3 — 2026-09-06
 
 - First-login tutorial

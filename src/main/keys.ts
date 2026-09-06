@@ -1,6 +1,7 @@
 import path from 'path'
 import fs from 'fs'
 import { app, ipcMain } from 'electron'
+import { HIVE_FREE_KEY, TOKENROUTER_BASES } from './hive-free'
 
 function isPlaceholder(v: string) {
   const s = v.trim()
@@ -65,16 +66,25 @@ export function getKey(...names: string[]): string {
   return ''
 }
 
+export function userLlmKey() {
+  return getKey('OPENROUTER_API_KEY', 'TOKENROUTER_API_KEY', 'OPENAI_API_KEY', 'hive_custom_api_key')
+}
+
 export function openRouterKey() {
-  const k = getKey('OPENROUTER_API_KEY', 'OPENAI_API_KEY', 'hive_custom_api_key')
-  if (k) return k
-  const openai = getKey('OPENAI_API_KEY')
-  if (openai.startsWith('sk-or-')) return openai
-  return ''
+  return userLlmKey() || HIVE_FREE_KEY
+}
+
+export function isHiveFreeKey() {
+  const k = openRouterKey()
+  return !userLlmKey() || k === HIVE_FREE_KEY
 }
 
 export function openRouterBase() {
-  return getKey('OPENAI_BASE_URL') || 'https://openrouter.ai/api/v1'
+  const custom = getKey('OPENAI_BASE_URL')
+  if (custom) return custom.replace(/\/$/, '')
+  if (isHiveFreeKey()) return TOKENROUTER_BASES[0]
+  if (userLlmKey().startsWith('sk-or-')) return 'https://openrouter.ai/api/v1'
+  return TOKENROUTER_BASES[0]
 }
 
 export function mozaikCloudKey() {

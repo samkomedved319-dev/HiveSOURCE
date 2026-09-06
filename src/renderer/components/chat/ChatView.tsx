@@ -308,7 +308,7 @@ export default function ChatView({
               addMessage(activeAgent.id, {
                 id: `m-err-${Date.now()}`,
                 agentId: activeAgent.id,
-                content: (res && 'error' in res && res.error) || `${mentionHandle(agent.name)} could not reply. Check OPENROUTER_API_KEY or NVIDIA_API_KEY.`,
+                content: (res && 'error' in res && res.error) || `${mentionHandle(agent.name)} could not reply. Hive Free may be busy — try again.`,
                 role: 'assistant',
                 timestamp: Date.now(),
                 type: 'text',
@@ -460,7 +460,7 @@ export default function ChatView({
         addMessage(activeAgent.id, {
           id: `m-err-${Date.now()}`,
           agentId: activeAgent.id,
-          content: (res && 'error' in res && res.error) || 'No reply. Check OPENROUTER_API_KEY.',
+          content: (res && 'error' in res && res.error) || 'No reply. Hive Free may be busy — try again.',
           role: 'assistant',
           timestamp: Date.now(),
           type: 'text',

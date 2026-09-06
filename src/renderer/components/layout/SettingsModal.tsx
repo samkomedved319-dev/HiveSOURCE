@@ -51,7 +51,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [buddyMascot, setBuddyMascot] = useState(getBuddyMascotId())
 
   // Model & Reasoning Settings
-  const [defaultModel, setDefaultModel] = useState(localStorage.getItem('hive_model') || 'openai/gpt-4o-mini')
+  const [defaultModel, setDefaultModel] = useState(localStorage.getItem('hive_model') || 'z-ai/glm-5.3-free')
+  const [quotaNote, setQuotaNote] = useState('Hive Free: 1,000,000 tokens per day. GLM 5.3 + Nemotron Nano.')
   const [customKey, setCustomKey] = useState(localStorage.getItem('hive_custom_api_key') || '')
   const [openaiKey, setOpenaiKey] = useState(localStorage.getItem('hive_openai_key') || '')
   const [anthropicKey, setAnthropicKey] = useState(localStorage.getItem('hive_anthropic_key') || '')
@@ -96,6 +97,17 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
   }, [recording])
+
+  useEffect(() => {
+    void window.electronAPI?.app?.quota?.().then((q) => {
+      if (!q?.ok) return
+      const used = q.used ?? 0
+      const limit = q.limit ?? 1_000_000
+      const left = q.remaining ?? Math.max(0, limit - used)
+      const reset = q.resetsAt ? new Date(q.resetsAt).toLocaleString() : 'after your first AI message'
+      setQuotaNote(`Hive Free: ${left.toLocaleString()} / ${limit.toLocaleString()} tokens left today. Window resets ${reset}. Models: GLM 5.3 and Nemotron Nano.`)
+    })
+  }, [])
 
   const showToast = (msg: string) => {
     setToastMessage(msg)
@@ -560,12 +572,11 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             {activeTab === 'models' && (
               <>
                 <div style={{ fontSize: 12.5, color: 'var(--text-dim)', lineHeight: 1.5, marginBottom: 12 }}>
-                  Paste your OpenRouter key below, or keep it in <code>.env</code> as <b>OPENROUTER_API_KEY</b>
-                  (the same key also works as OPENAI_API_KEY). Hive reads it on every message.
+                  Hive includes free TokenRouter models. You do not need your own key. {quotaNote}
                 </div>
                 <SettingRow
                   label="Default Model"
-                  description="Primary LLM selected for new conversations"
+                  description="Hive Free models — 1 million tokens per day"
                 >
                   <select
                     value={defaultModel}
@@ -581,11 +592,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                       fontFamily: 'inherit',
                     }}
                   >
-                    <option value="openai/gpt-4o-mini">Hive 2 Mini (Default)</option>
-                    <option value="openai/gpt-4o">Hive 2 (GPT-4o)</option>
-                    <option value="anthropic/claude-3.5-sonnet">Hive 3.5 Sonnet</option>
-                    <option value="google/gemini-flash-1.5">Hive Flash</option>
-                    <option value="meta-llama/llama-3.3-70b-instruct">Hive Open 70B</option>
+                    <option value="z-ai/glm-5.3-free">GLM 5.3 (Fast)</option>
+                    <option value="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free">Nemotron Nano (Reasoning)</option>
                   </select>
                 </SettingRow>
 

@@ -5,7 +5,8 @@ import {
   type InferenceRunnerConfig,
 } from '@mozaik-ai/core'
 import type { SearchCitation } from '../search-service'
-import { openRouterKey, mozaikCloudBase, mozaikCloudKey } from '../keys'
+import { openRouterKey, mozaikCloudBase, mozaikCloudKey, openRouterBase } from '../keys'
+import { FREE_GLM, FREE_NEMOTRON } from '../hive-free'
 
 export type HiveMood = 'idle' | 'searching' | 'thinking' | 'arguing' | 'done' | 'error'
 
@@ -92,7 +93,7 @@ function openRouterSpec(name: string) {
   }
 }
 
-export const HIVE_MODEL = 'minimax/minimax-m3:free'
+export const HIVE_MODEL = FREE_GLM
 
 export const {
   initializeRuntime,
@@ -109,7 +110,7 @@ export function startMozaikRuntime() {
   const cloudBase = mozaikCloudBase()
   const cloudKey = mozaikCloudKey()
   const apiKey = cloudKey || openRouterKey()
-  const baseURL = cloudBase || 'https://openrouter.ai/api/v1'
+  const baseURL = cloudBase || openRouterBase()
   if (apiKey && !process.env.OPENAI_API_KEY) process.env.OPENAI_API_KEY = apiKey
   if (!process.env.OPENAI_BASE_URL) process.env.OPENAI_BASE_URL = baseURL
   process.env.MOZAIK_TELEMETRY = process.env.MOZAIK_TELEMETRY || '0'
@@ -124,10 +125,8 @@ export function startMozaikRuntime() {
 
   const models: NonNullable<InferenceRunnerConfig['supportedModels']> = [
     HIVE_MODEL,
-    'nvidia/nemotron-3.5-lightning:free',
-    'inclusionai/ling-3.0-flash-fin:free',
-    'openai/gpt-4o-mini',
-    'gpt-4o-mini',
+    FREE_NEMOTRON,
+    FREE_GLM,
   ].map((name) => ({ endpoint, specification: openRouterSpec(name) }))
 
   initializeRuntime({
