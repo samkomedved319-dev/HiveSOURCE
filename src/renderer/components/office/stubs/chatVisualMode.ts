@@ -1,0 +1,1 @@
+export type UserChatVisualMode = 'off' | 'active' | 'thinking' | 'streaming';

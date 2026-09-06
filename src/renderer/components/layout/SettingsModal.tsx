@@ -799,7 +799,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                       type="button"
                       onClick={async () => {
                         if (window.electronAPI?.telegram?.generateAuthPin) {
-                          const newPin = await window.electronAPI.telegram.generateAuthPin()
+                          const newPin = await window.electronAPI?.telegram?.generateAuthPin()
                           setTelegramPin(newPin)
                         } else {
                           const gen = Math.floor(100000 + Math.random() * 900000).toString()

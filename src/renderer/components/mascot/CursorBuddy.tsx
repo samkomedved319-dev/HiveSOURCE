@@ -109,7 +109,7 @@ export default function CursorBuddy() {
       setMascotId(getBuddyMascotId())
       if (hasOuter) {
         try {
-          window.electronAPI.buddy?.setOuterEnabled?.(on)
+          window.electronAPI?.buddy?.setOuterEnabled?.(on)
         } catch {}
       }
     }

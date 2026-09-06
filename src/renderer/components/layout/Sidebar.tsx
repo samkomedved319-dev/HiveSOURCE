@@ -23,7 +23,10 @@ export default function Sidebar() {
     if (!tgChatId.trim()) { setTgStatus('Enter chat ID'); setTgOk(false); return }
     setTgLoading(true)
     try {
-      const fn = type === 'call' ? window.electronAPI.telegram.sendVoice : window.electronAPI.telegram.sendMessage
+      const api = window.electronAPI?.telegram
+      if (!api) throw new Error('Desktop bridge unavailable')
+      const fn = type === 'call' ? api.sendVoice : api.sendMessage
+      if (!fn) throw new Error('Telegram bridge unavailable')
       const res: any = await fn(tgChatId.trim(), tgMsg.trim() || 'Hello from Hive!')
       setTgStatus(res?.ok ? (type === 'call' ? 'Call sent' : 'Sent') : (res?.description || 'Failed'))
       setTgOk(!!res?.ok)

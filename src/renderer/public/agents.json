@@ -1,0 +1,172 @@
+{
+  "agents": [
+    {
+      "id": "lib-apollo",
+      "botId": "lib-apollo",
+      "name": "Apollo",
+      "role": "Lead Software Engineer",
+      "modelId": "nvidia/nemotron-3.5-lightning:free",
+      "logoUrl": "/logos/ops.svg",
+      "avatarColor": "#F97316",
+      "accentColor": "#FDBA74",
+      "homeZone": "center-desk",
+      "status": "idle",
+      "systemPrompt": "You are Apollo, Hive lead engineer.",
+      "hq": {
+        "panels": [
+          "chat",
+          "tools",
+          "settings"
+        ],
+        "tools": [
+          "code"
+        ],
+        "inbox": true,
+        "peerChat": true,
+        "mockReplies": [
+          "On it."
+        ]
+      }
+    },
+    {
+      "id": "lib-athena",
+      "botId": "lib-athena",
+      "name": "Athena",
+      "role": "Research Intelligence",
+      "modelId": "minimax/minimax-m3:free",
+      "logoUrl": "/logos/research.svg",
+      "avatarColor": "#3B82F6",
+      "accentColor": "#93C5FD",
+      "homeZone": "living",
+      "status": "idle",
+      "systemPrompt": "You are Athena, Hive researcher.",
+      "hq": {
+        "panels": [
+          "chat",
+          "inbox",
+          "settings"
+        ],
+        "tools": [
+          "research"
+        ],
+        "inbox": true,
+        "peerChat": true,
+        "mockReplies": [
+          "Brief ready."
+        ]
+      }
+    },
+    {
+      "id": "lib-hermes",
+      "botId": "lib-hermes",
+      "name": "Hermes",
+      "role": "Writer",
+      "modelId": "minimax/minimax-m3:free",
+      "logoUrl": "/logos/design.svg",
+      "avatarColor": "#14B8A6",
+      "accentColor": "#5EEAD4",
+      "homeZone": "cafeteria",
+      "status": "idle",
+      "systemPrompt": "You are Hermes, Hive writer.",
+      "hq": {
+        "panels": [
+          "chat",
+          "settings"
+        ],
+        "tools": [
+          "write"
+        ],
+        "inbox": true,
+        "peerChat": true,
+        "mockReplies": [
+          "Drafting."
+        ]
+      }
+    },
+    {
+      "id": "lib-hephaestus",
+      "botId": "lib-hephaestus",
+      "name": "Hephaestus",
+      "role": "Debugger",
+      "modelId": "nvidia/nemotron-3.5-lightning:free",
+      "logoUrl": "/logos/review.svg",
+      "avatarColor": "#EF4444",
+      "accentColor": "#FCA5A5",
+      "homeZone": "wall-desks",
+      "wallDeskSlot": 0,
+      "status": "idle",
+      "systemPrompt": "You are Hephaestus, Hive debugger.",
+      "hq": {
+        "panels": [
+          "chat",
+          "tools",
+          "settings"
+        ],
+        "tools": [
+          "debug"
+        ],
+        "inbox": true,
+        "peerChat": true,
+        "mockReplies": [
+          "Repro done."
+        ]
+      }
+    },
+    {
+      "id": "lib-iris",
+      "botId": "lib-iris",
+      "name": "Iris",
+      "role": "Designer",
+      "modelId": "minimax/minimax-m3:free",
+      "logoUrl": "/logos/design.svg",
+      "avatarColor": "#F43F5E",
+      "accentColor": "#FDA4AF",
+      "homeZone": "wall-desks",
+      "wallDeskSlot": 1,
+      "status": "idle",
+      "systemPrompt": "You are Iris, Hive designer.",
+      "hq": {
+        "panels": [
+          "chat",
+          "settings"
+        ],
+        "tools": [
+          "design"
+        ],
+        "inbox": true,
+        "peerChat": true,
+        "mockReplies": [
+          "Layout notes."
+        ]
+      }
+    },
+    {
+      "id": "lib-mnemosyne",
+      "botId": "lib-mnemosyne",
+      "name": "Mnemosyne",
+      "role": "Translator",
+      "modelId": "minimax/minimax-m3:free",
+      "logoUrl": "/logos/data.svg",
+      "avatarColor": "#E7E5E4",
+      "accentColor": "#A8A29E",
+      "homeZone": "wall-desks",
+      "wallDeskSlot": 2,
+      "status": "idle",
+      "systemPrompt": "You are Mnemosyne, Hive translator.",
+      "hq": {
+        "panels": [
+          "chat",
+          "settings"
+        ],
+        "tools": [
+          "translate"
+        ],
+        "inbox": true,
+        "peerChat": true,
+        "mockReplies": [
+          "Translated."
+        ]
+      }
+    }
+  ]
+}

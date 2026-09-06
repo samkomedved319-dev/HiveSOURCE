@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Agent } from '../types'
 import { resolveAgentMascotId } from '../components/mascot/mascotLibrary'
+import { PREMADE_BOTS } from '../components/bots/botLibrary'
 
 interface AgentState {
   agents: Agent[]
@@ -10,6 +11,7 @@ interface AgentState {
   removeAgent: (id: string) => void
   setActiveAgent: (agent: Agent) => void
   ensureCeoHierarchy: () => void
+  ensureOfficeTeamRoster: () => void
 }
 
 export const HIVE_CEO_SYSTEM_PROMPT = `You are Hive, the HEAD CEO & System Architect of this AI organization.
@@ -22,7 +24,7 @@ YOUR CORE RESPONSIBILITIES AS CEO:
    - If specialized agents are already created (e.g. Coder, Researcher, Debugger), you assign tasks to them and instruct them to execute and collaborate with each other.
    - If an agent needed for the job doesn't exist yet, you spawn or specify the exact new agent/worker required (Name, Role, Mandate, Model).
 3. Bot-to-Bot Collaboration: You facilitate communication between your bots (like in Grok / multi-agent swarm). Bots can debate, share code diffs, verify each other's work, and report the synthesized outcome back to you and the user.
-4. Tone & Philosophy: Inspired by Grok — witty, truth-seeking, razor-sharp, zero AI fluff or corporate apologies. You talk like an elite tech founder/architect.`
+4. Tone & Philosophy: Inspired by Grok â€” witty, truth-seeking, razor-sharp, zero AI fluff or corporate apologies. You talk like an elite tech founder/architect.`
 
 export const defaultAgents: Agent[] = [
   {
@@ -34,7 +36,7 @@ export const defaultAgents: Agent[] = [
     roleTitle: 'CEO & Head Architect',
     isCeo: true,
     model: 'minimax/minimax-m3:free',
-    mode: 'reasoning',
+    mode: 'auto',
     createdAt: Date.now(),
   },
   {
@@ -66,13 +68,26 @@ You perform deep web research, technical documentation synthesis, and verify arc
   },
 ]
 
+
+/** Hive office roster = PREMADE_BOTS (lib-*), not Grok teammate ids. */
+export const OFFICE_TEAM_AGENTS: Agent[] = PREMADE_BOTS.map((b, i) => ({
+  ...b,
+  createdAt: Date.now() + 10 + i,
+}))
 const loadSavedAgents = (): Agent[] => {
   const saved = localStorage.getItem('hive_agents_v2')
   if (saved) {
     try {
       const parsed = JSON.parse(saved)
       if (Array.isArray(parsed) && parsed.length > 0) {
-        const migrated = parsed.map((a: Agent) => ({ ...a, avatar: resolveAgentMascotId(a) }))
+        const migrated = parsed.map((a: Agent) => {
+          const mode =
+            a.mode === 'fast' || a.mode === 'auto' || a.mode === 'heavy' || a.mode === 'max'
+              ? a.mode
+              : ('auto' as Agent['mode'])
+          const withMode = { ...a, mode }
+          return { ...withMode, avatar: resolveAgentMascotId(withMode) }
+        })
         localStorage.setItem('hive_agents_v2', JSON.stringify(migrated))
         return migrated
       }
@@ -118,4 +133,25 @@ export const useAgentStore = create<AgentState>((set, get) => ({
       set({ agents: updated, activeAgent: updated[0] })
     }
   },
+  ensureOfficeTeamRoster: () => {
+    const { agents, activeAgent } = get()
+    const drop = new Set(['projects-manager', 'office3d', 'codder', 'agentops'])
+    const byId = new Map(
+      agents.filter((a) => !drop.has(a.id)).map((a) => [a.id, a] as const),
+    )
+    for (const team of OFFICE_TEAM_AGENTS) {
+      const prev = byId.get(team.id)
+      byId.set(team.id, prev ? { ...prev, ...team, avatar: prev.avatar || team.avatar } : team)
+    }
+    const updated = Array.from(byId.values())
+    localStorage.setItem('hive_agents_v2', JSON.stringify(updated))
+    const nextActive =
+      (activeAgent && !drop.has(activeAgent.id) && byId.get(activeAgent.id)) ||
+      byId.get('lib-apollo') ||
+      updated[0] ||
+      null
+    set({ agents: updated, activeAgent: nextActive })
+  },
 }))
+
+

@@ -1,0 +1,50 @@
+﻿.hive-office-native {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: #0b1220;
+}
+.hive-office-native__scene {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.hive-office-native__scene .scene-root {
+  width: 100%;
+  height: 100%;
+}
+.hive-office-native__scene .scene-root > canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+.hive-office-native__banner {
+  position: absolute;
+  z-index: 5;
+  top: 12px;
+  left: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #e2e8f0;
+  font: 12px/1.4 system-ui, sans-serif;
+}
+.hive-office-native__banner--error {
+  background: rgba(127, 29, 29, 0.92);
+}
+.scene-badge {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 4;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(11, 18, 32, 0.75);
+  color: #7dd3fc;
+  font: 11px/1.2 ui-monospace, monospace;
+  pointer-events: none;
+}

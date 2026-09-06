@@ -1,14 +1,15 @@
-import React, { useEffect, useMemo, useRef, Suspense } from 'react'
+import React, { useEffect, useMemo, useRef, Suspense, Component, type ReactNode } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, useGLTF, Html } from '@react-three/drei'
-import type { Group, Mesh, Object3D } from 'three'
+import type { Group, Mesh, Object3D, WebGLRenderer } from 'three'
 import { FLOOR_CREW, type AgentMood, type FloorAgent } from './crew'
 
 export { FLOOR_CREW }
 export type { AgentMood, FloorAgent }
 
 function asset(file: string) {
-  const base = (import.meta.env.BASE_URL || './').replace(/\/?$/, '/')
+  const raw = import.meta.env.BASE_URL || './'
+  const base = raw.endsWith('/') ? raw : `${raw}/`
   return `${base}office-assets/models/furniture/${file}`
 }
 
@@ -28,8 +29,52 @@ const MODELS = [
   'chairModernCushion.glb',
 ] as const
 
+// Best-effort preload so first paint is fast. Failures are fine —
+// SafePiece falls back to plain boxes per model.
+try {
+  for (const f of MODELS) {
+    try {
+      useGLTF.preload(asset(f))
+    } catch {}
+  }
+} catch {}
 
-function Piece({
+// Boundary that lives INSIDE <Canvas>. The outer DOM ErrorBoundary cannot
+// catch reconciler errors from react-three-fiber, which is exactly how a
+// single missing GLB used to turn the whole view black.
+class CanvasErrorBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { fallback: ReactNode; children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+  componentDidCatch(err: unknown) {
+    console.warn('[Office3D] inner scene error, using fallback furniture:', err)
+  }
+  render() {
+    return this.state.hasError ? this.props.fallback : this.props.children
+  }
+}
+
+class PieceErrorBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { fallback: ReactNode; children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+  componentDidCatch(err: unknown) {
+    console.warn('[Office3D] model failed, using box fallback:', err)
+  }
+  render() {
+    return this.state.hasError ? this.props.fallback : this.props.children
+  }
+}
+
+function PieceInner({
   file,
   position,
   rotation = [0, 0, 0],
@@ -52,6 +97,31 @@ function Piece({
     })
   }, [obj])
   return <primitive object={obj} position={position} rotation={rotation} scale={scale} />
+}
+
+// One model, isolated: a 404 / corrupt GLB degrades to a box desk piece,
+// never to a black canvas.
+function Piece(props: {
+  file: (typeof MODELS)[number]
+  position: [number, number, number]
+  rotation?: [number, number, number]
+  scale?: number
+}) {
+  const { position } = props
+  return (
+    <PieceErrorBoundary
+      fallback={
+        <mesh position={position} castShadow receiveShadow>
+          <boxGeometry args={[1.6, 0.7, 0.8]} />
+          <meshLambertMaterial color="#e6be8a" />
+        </mesh>
+      }
+    >
+      <Suspense fallback={null}>
+        <PieceInner {...props} />
+      </Suspense>
+    </PieceErrorBoundary>
+  )
 }
 
 function Box({
@@ -86,6 +156,57 @@ function Box({
         emissiveIntensity={emissiveIntensity}
       />
     </mesh>
+  )
+}
+
+function SafeLabel({ agent, isWorking, mood }: { agent: FloorAgent; isWorking: boolean; mood: string }) {
+  return (
+    <PieceErrorBoundary fallback={null}>
+      <Suspense fallback={null}>
+        <Html position={[0, 1.35, 0]} center distanceFactor={14} zIndexRange={[40, 0]}>
+          <div
+            style={{
+              background: 'rgba(15, 12, 9, 0.88)',
+              border: `1.5px solid ${isWorking ? agent.color : '#554636'}`,
+              borderRadius: 8,
+              padding: '3px 8px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              pointerEvents: 'none',
+              boxShadow: isWorking ? `0 0 10px ${agent.color}80` : '0 4px 8px rgba(0,0,0,0.5)',
+              transform: 'scale(0.9)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: agent.color,
+                  boxShadow: `0 0 6px ${agent.color}`,
+                }}
+              />
+              <span style={{ color: '#fff', fontWeight: 800, fontSize: 11, letterSpacing: '.02em' }}>
+                {agent.name}
+              </span>
+            </div>
+            <span
+              style={{
+                color: isWorking ? agent.color : '#b0a08e',
+                fontSize: 9,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+              }}
+            >
+              {isWorking ? mood : agent.job}
+            </span>
+          </div>
+        </Html>
+      </Suspense>
+    </PieceErrorBoundary>
   )
 }
 
@@ -196,49 +317,8 @@ function VoxelPerson({
         </mesh>
         <Box args={[0.07, 0.04, 0.07]} position={[0.16, 0.44, 0.02]} color={agent.color} emissive={agent.color} emissiveIntensity={mood === 'idle' ? 0.2 : 1.2} />
 
-        {/* 3D Floating Name & Status Badge */}
-        <Html position={[0, 1.35, 0]} center distanceFactor={14}>
-          <div
-            style={{
-              background: 'rgba(15, 12, 9, 0.88)',
-              border: `1.5px solid ${isWorking ? agent.color : '#554636'}`,
-              borderRadius: 8,
-              padding: '3px 8px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              pointerEvents: 'none',
-              boxShadow: isWorking ? `0 0 10px ${agent.color}80` : '0 4px 8px rgba(0,0,0,0.5)',
-              transform: 'scale(0.9)',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: agent.color,
-                  boxShadow: `0 0 6px ${agent.color}`,
-                }}
-              />
-              <span style={{ color: '#fff', fontWeight: 800, fontSize: 11, letterSpacing: '.02em' }}>
-                {agent.name}
-              </span>
-            </div>
-            <span
-              style={{
-                color: isWorking ? agent.color : '#b0a08e',
-                fontSize: 9,
-                fontWeight: 600,
-                textTransform: 'uppercase',
-              }}
-            >
-              {isWorking ? mood : agent.job}
-            </span>
-          </div>
-        </Html>
+        {/* 3D Floating Name & Status Badge (isolated so label failure can't black the scene) */}
+        <SafeLabel agent={agent} isWorking={isWorking} mood={mood} />
       </group>
     </group>
   )
@@ -336,25 +416,71 @@ function FallbackOffice({ moods, meeting }: { moods: Record<string, AgentMood>; 
   )
 }
 
+// Reports back only after real frames have rendered — NOT on context creation.
+// This is what lets the overlay stay on the 2D floor until 3D is proven visible.
+function ReadyProbe({ onReady }: { onReady: () => void }) {
+  const frames = useRef(0)
+  const done = useRef(false)
+  useFrame(() => {
+    if (done.current) return
+    frames.current += 1
+    if (frames.current >= 4) {
+      done.current = true
+      // Defer out of the frame loop into React land.
+      setTimeout(onReady, 0)
+    }
+  })
+  return null
+}
+
 export default function Office3D({
   moods,
   meeting,
   onReady,
+  onError,
 }: {
   moods: Record<string, AgentMood>
   bubbles?: Record<string, string>
   meeting: boolean
   onReady?: () => void
+  onError?: (msg: string) => void
 }) {
+  const readyRef = useRef(false)
+  const handleReady = () => {
+    if (readyRef.current) return
+    readyRef.current = true
+    onReady?.()
+  }
+
   return (
     <Canvas
       shadows
       camera={{ position: [10, 8, 12], fov: 40, near: 0.1, far: 80 }}
       dpr={[1, 1.25]}
-      gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+      gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', failIfMajorPerformanceCaveat: false }}
       onCreated={({ gl }) => {
-        gl.setClearColor('#c9a66b', 1)
-        onReady?.()
+        try {
+          gl.setClearColor('#c9a66b', 1)
+          // Surface context loss directly on the canvas element so we can
+          // report it even if the window-level listener misses it.
+          const el = gl.domElement
+          const onLost = (e: Event) => {
+            e.preventDefault()
+            console.warn('[Office3D] canvas context lost')
+            try {
+              onError?.('Graphics context was lost.')
+            } catch {}
+          }
+          el.addEventListener('webglcontextlost', onLost, { once: true })
+        } catch (err) {
+          console.warn('[Office3D] onCreated failed:', err)
+          try {
+            onError?.('Could not initialise 3D.')
+          } catch {}
+        }
+        // Deliberately NOT calling onReady here: a context can exist while
+        // the scene is still black (models loading / failed). ReadyProbe
+        // fires only after real frames render.
       }}
       style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', background: '#c9a66b' }}
     >
@@ -368,10 +494,16 @@ export default function Office3D({
         castShadow
         shadow-mapSize={[1024, 1024]}
       />
-      <Suspense fallback={<FallbackOffice moods={moods} meeting={meeting} />}>
-        <ClawOffice moods={moods} meeting={meeting} />
-      </Suspense>
+      <CanvasErrorBoundary fallback={<FallbackOffice moods={moods} meeting={meeting} />}>
+        <Suspense fallback={<FallbackOffice moods={moods} meeting={meeting} />}>
+          <ClawOffice moods={moods} meeting={meeting} />
+        </Suspense>
+      </CanvasErrorBoundary>
+      <ReadyProbe onReady={handleReady} />
       <OrbitControls enablePan={false} minPolarAngle={0.6} maxPolarAngle={1.2} minDistance={8} maxDistance={22} target={[0, 0.6, 0]} />
     </Canvas>
   )
 }
+
+// Re-export for callers that reference the WebGLRenderer type only.
+export type { WebGLRenderer }

@@ -179,21 +179,21 @@ export default function BuddyOverlay({ embedded = false, startOpen = false, onCl
     const lower = (cmd || '').toLowerCase()
     if (lower === '/open' && arg) {
       setPhase('running')
-      const res = await window.electronAPI.system?.openApp(arg)
-      push(res?.ok ? 'out' : 'err', res?.ok ? `Opened ${arg}` : `Open failed: ${res?.error}`)
+      const res = await window.electronAPI?.system?.openApp(arg)
+      push(res?.ok ? 'out' : 'err', res?.ok ? `Opened ${arg}` : `Open failed: ${res?.error || 'bridge unavailable'}`)
       return true
     }
     if (lower === '/run' && arg) {
       setPhase('running')
-      const res = await window.electronAPI.system?.exec(arg)
-      push(res?.ok ? 'out' : 'err', res?.ok ? (res?.stdout || '(no output)') : `Run failed: ${res?.error}`)
+      const res = await window.electronAPI?.system?.exec(arg)
+      push(res?.ok ? 'out' : 'err', res?.ok ? (res?.stdout || '(no output)') : `Run failed: ${res?.error || 'bridge unavailable'}`)
       return true
     }
     if (lower === '/click') {
       const nums = arg.split(/\s+/).map(Number)
       if (nums.length >= 2 && nums.every(Number.isFinite)) {
         setPhase('clicking')
-        const res = await window.electronAPI.buddy?.click(nums[0], nums[1])
+        const res = await window.electronAPI?.buddy?.click(nums[0], nums[1])
         push(res?.ok ? 'out' : 'err', res?.ok ? `Clicked ${nums[0]}, ${nums[1]}` : `Click failed: ${res?.error}`)
       } else {
         push('err', 'Usage: /click <x> <y>  (app-window pixels)')
@@ -202,7 +202,7 @@ export default function BuddyOverlay({ embedded = false, startOpen = false, onCl
     }
     if (lower === '/type' && arg) {
       setPhase('typing')
-      const res = await window.electronAPI.buddy?.type(arg)
+      const res = await window.electronAPI?.buddy?.type(arg)
       push(res?.ok ? 'out' : 'err', res?.ok ? `Typed ${arg.length} chars` : `Type failed: ${res?.error}`)
       return true
     }
@@ -212,7 +212,13 @@ export default function BuddyOverlay({ embedded = false, startOpen = false, onCl
   const runAi = async (text: string) => {
     setPhase('thinking')
     try {
-      const res = await window.electronAPI.ai.chat(
+      const bridge = window.electronAPI?.ai?.chat
+      if (!bridge) {
+        push('err', 'Buddy failed: AI bridge is not ready.')
+        setPhase('error')
+        return
+      }
+      const res = await bridge(
         [
           { role: 'system', content: BUDDY_PROMPT },
           { role: 'user', content: text },
@@ -233,26 +239,26 @@ export default function BuddyOverlay({ embedded = false, startOpen = false, onCl
       if (execMatch) {
         const cmd = execMatch[1].trim()
         setPhase('running')
-        const out = await window.electronAPI.system?.exec(cmd)
-        push(out?.ok ? 'out' : 'err', out?.ok ? (out?.stdout || `(ran) ${cmd.slice(0, 80)}`) : `Run failed: ${out?.error}`)
+        const out = await window.electronAPI?.system?.exec(cmd)
+        push(out?.ok ? 'out' : 'err', out?.ok ? (out?.stdout || `(ran) ${cmd.slice(0, 80)}`) : `Run failed: ${out?.error || 'bridge unavailable'}`)
       }
       if (clickMatch) {
         const nums = clickMatch[1].trim().split(/\s+/).map(Number)
         if (nums.length >= 2 && nums.every(Number.isFinite)) {
           setPhase('clicking')
-          const out = await window.electronAPI.buddy?.click(nums[0], nums[1])
-          push(out?.ok ? 'out' : 'err', out?.ok ? `Clicked ${nums[0]}, ${nums[1]}` : `Click failed: ${out?.error}`)
+          const out = await window.electronAPI?.buddy?.click(nums[0], nums[1])
+          push(out?.ok ? 'out' : 'err', out?.ok ? `Clicked ${nums[0]}, ${nums[1]}` : `Click failed: ${out?.error || 'bridge unavailable'}`)
         }
       }
       if (typeMatch) {
         setPhase('typing')
-        const out = await window.electronAPI.buddy?.type(typeMatch[1].replace(/^\n+/, '').slice(0, 500))
-        push(out?.ok ? 'out' : 'err', out?.ok ? 'Typed into focused window' : `Type failed: ${out?.error}`)
+        const out = await window.electronAPI?.buddy?.type(typeMatch[1].replace(/^\n+/, '').slice(0, 500))
+        push(out?.ok ? 'out' : 'err', out?.ok ? 'Typed into focused window' : `Type failed: ${out?.error || 'bridge unavailable'}`)
       }
       if (summary) push('out', summary)
       setPhase('done')
       try {
-        await window.electronAPI.tts?.speak(summary || 'Done')
+        await window.electronAPI?.tts?.speak(summary || 'Done')
       } catch {}
       setTimeout(() => setPhase((p) => (p === 'done' ? 'idle' : p)), 3000)
     } catch (e: any) {

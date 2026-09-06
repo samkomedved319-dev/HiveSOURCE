@@ -318,7 +318,7 @@ export default React.memo(function MessageItem({
                     onClick={(e) => {
                       e.preventDefault()
                       if (window.electronAPI?.system?.openApp) {
-                        window.electronAPI.system.openApp(c.url)
+                        void window.electronAPI?.system?.openApp(c.url)
                       } else {
                         window.open(c.url, '_blank', 'noopener,noreferrer')
                       }

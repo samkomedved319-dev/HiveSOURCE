@@ -11,15 +11,16 @@ export default function IsometricFloor({ moods, meeting, onSelectAgent }: Isomet
   return (
     <div
       style={{
-        position: 'relative',
+        position: 'absolute',
+        inset: 0,
         width: '100%',
         height: '100%',
         overflow: 'auto',
         background: '#F2C14E',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'center',
-        padding: 40,
+        padding: 24,
         userSelect: 'none',
       }}
     >
@@ -28,7 +29,9 @@ export default function IsometricFloor({ moods, meeting, onSelectAgent }: Isomet
         style={{
           position: 'relative',
           width: 860,
+          maxWidth: '100%',
           minHeight: 520,
+          margin: 'auto',
           background: 'linear-gradient(135deg, #b8864d 0%, #8c5d2e 50%, #68411a 100%)',
           borderRadius: 24,
           boxShadow: '0 30px 60px rgba(0,0,0,0.6), inset 0 2px 6px rgba(255,255,255,0.2)',

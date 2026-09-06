@@ -1,0 +1,34 @@
+{
+  "probe": {
+    "webgl": true,
+    "webgl2": true,
+    "canvas": {
+      "width": 1020,
+      "height": 900,
+      "client": [
+        1020,
+        900
+      ],
+      "style": [
+        "1020px",
+        "900px"
+      ]
+    },
+    "root": {
+      "w": 1020,
+      "h": 900,
+      "display": "block"
+    },
+    "errors": [],
+    "badge": "src/scene — Office3D isometric"
+  },
+  "after": {
+    "width": 1020,
+    "height": 900,
+    "client": [
+      1020,
+      900
+    ]
+  },
+  "bytes": 550136
+}

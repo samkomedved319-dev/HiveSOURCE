@@ -9,6 +9,12 @@ export default function OfficeFloor2D({
   meeting: boolean
 }) {
   const ref = useRef<HTMLCanvasElement>(null)
+  // Keep the RAF loop mounted once; read latest moods/meeting via refs so
+  // every swarm event doesn't tear down and restart the canvas (flicker).
+  const moodsRef = useRef(moods)
+  const meetingRef = useRef(meeting)
+  moodsRef.current = moods
+  meetingRef.current = meeting
 
   useEffect(() => {
     const canvas = ref.current
@@ -16,7 +22,7 @@ export default function OfficeFloor2D({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     let raf = 0
-    let t0 = performance.now()
+    const t0 = performance.now()
 
     const desks = FLOOR_CREW.map((a, i) => ({
       a,
@@ -63,18 +69,20 @@ export default function OfficeFloor2D({
       ctx.stroke()
 
       const meet = iso(4, 0.4)
-      ctx.fillStyle = meeting ? '#111' : '#3d3428'
+      const isMeeting = meetingRef.current
+      const liveMoods = moodsRef.current
+      ctx.fillStyle = isMeeting ? '#111' : '#3d3428'
       ctx.fillRect(meet.x - 70, meet.y - 22, 140, 44)
       ctx.fillStyle = '#F2C14E'
       ctx.font = 'bold 13px system-ui'
       ctx.textAlign = 'center'
-      ctx.fillText(meeting ? 'MEETING' : 'GLASS ROOM', meet.x, meet.y + 5)
+      ctx.fillText(isMeeting ? 'MEETING' : 'GLASS ROOM', meet.x, meet.y + 5)
 
       desks.forEach(({ a: agent, col, row }) => {
-        const mood = moods[agent.id] || moods[agent.name.toLowerCase()] || 'idle'
-        const live = meeting || mood !== 'idle'
-        const gx = live && meeting ? 3 + col * 0.7 : 0.6 + col * 2.6
-        const gy = live && meeting ? 0.8 + row * 0.6 : 2.2 + row * 2.2
+        const mood = liveMoods[agent.id] || liveMoods[agent.name.toLowerCase()] || 'idle'
+        const live = isMeeting || mood !== 'idle'
+        const gx = live && isMeeting ? 3 + col * 0.7 : 0.6 + col * 2.6
+        const gy = live && isMeeting ? 0.8 + row * 0.6 : 2.2 + row * 2.2
         const p = iso(gx, gy)
         const bob = live ? Math.sin(t * 8 + col) * 4 : 0
 
@@ -100,7 +108,7 @@ export default function OfficeFloor2D({
     }
     raf = requestAnimationFrame(draw)
     return () => cancelAnimationFrame(raf)
-  }, [moods, meeting])
+  }, [])
 
   return (
     <canvas

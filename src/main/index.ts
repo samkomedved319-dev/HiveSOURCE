@@ -96,6 +96,7 @@ app.on('open-url', (event, url) => {
   deliverAuthUrl(url)
 })
 
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -154,9 +155,13 @@ function createWindow() {
     }
   })
 
-  mainWindow.on('closed', () => { mainWindow = null })
+  mainWindow.on('closed', () => {
+    mainWindow = null
+  })
   mainWindow.on('show', () => syncBuddyWithMain())
-  mainWindow.on('hide', () => syncBuddyWithMain())
+  mainWindow.on('hide', () => {
+    syncBuddyWithMain()
+  })
   mainWindow.on('minimize', () => syncBuddyWithMain())
   mainWindow.on('restore', () => syncBuddyWithMain())
 
@@ -190,6 +195,10 @@ function createTray() {
   })
 }
 
+
+// Permanent GPU/WebGL for native in-renderer office (R3F); must run before app ready.
+app.commandLine.appendSwitch('ignore-gpu-blocklist')
+app.commandLine.appendSwitch('enable-webgl')
 app.whenReady().then(() => {
   registerKeyHandlers()
   registerMem0Handlers()
@@ -269,3 +278,4 @@ ipcMain.handle('window:isMaximized', () => mainWindow?.isMaximized() ?? false)
 ipcMain.on('auth:openWeb', () => {
   shell.openExternal(HIVE_WEB_LOGIN)
 })
+

@@ -1,0 +1,137 @@
+.agent-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(360px, 100%);
+  height: 100%;
+  background: rgba(12, 14, 20, 0.92);
+  color: #e8eaef;
+  border-left: 1px solid #2a3140;
+  font-family: system-ui, sans-serif;
+}
+
+.agent-panel__header {
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid #2a3140;
+}
+
+.agent-panel__header h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.agent-panel__hint {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #8b93a7;
+}
+
+.agent-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 40%;
+  overflow: auto;
+}
+
+.agent-panel__item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #2a3140;
+  background: #161b26;
+  color: inherit;
+  cursor: pointer;
+}
+
+.agent-panel__item small {
+  display: block;
+  color: #8b93a7;
+  font-size: 11px;
+}
+
+.agent-panel__item--selected {
+  background: #1c2433;
+}
+
+.agent-panel__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.agent-panel__chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid #2a3140;
+  min-height: 0;
+}
+
+.agent-panel__chat-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #2a3140;
+}
+
+.agent-panel__messages {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agent-panel__msg {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.agent-panel__msg--system {
+  color: #8b93a7;
+}
+
+.agent-panel__compose {
+  display: flex;
+  gap: 6px;
+  padding: 10px;
+  border-top: 1px solid #2a3140;
+}
+
+.agent-panel__compose input {
+  flex: 1;
+  border-radius: 6px;
+  border: 1px solid #2a3140;
+  background: #0c0e14;
+  color: #e8eaef;
+  padding: 8px 10px;
+}
+
+.agent-panel__compose button,
+.agent-panel__chat-bar button {
+  border-radius: 6px;
+  border: 1px solid #2a3140;
+  background: #222938;
+  color: #e8eaef;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.agent-panel__empty {
+  margin: auto;
+  padding: 16px;
+  color: #8b93a7;
+  font-size: 13px;
+  text-align: center;
+}

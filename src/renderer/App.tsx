@@ -126,7 +126,7 @@ export default function App() {
   ])
   const [canvasData, setCanvasData] = useState({
     name: 'theme.css',
-    meta: 'Generated file · 42 lines',
+    meta: 'Generated file Â· 42 lines',
     content: `:root{
   --bg: #0D0E11;
   --panel: #17181C;
@@ -466,7 +466,7 @@ export default function App() {
             pointerEvents: 'none',
           }}
         >
-          On the Hive waitlist — same account as the website
+          On the Hive waitlist â€” same account as the website
         </div>
       )}
       {/* 1. Icon rail */}
@@ -549,12 +549,7 @@ export default function App() {
         }}
       />
       ) : mainView === 'office' ? (
-        <OfficeOverlay
-          onClose={() => {
-            setMainView('chat')
-            setActiveTab('chat')
-          }}
-        />
+        <div className="office-native-root" style={{ width: '100%', height: '100%', minHeight: 0 }}><OfficeOverlay /></div>
       ) : (
       <ChatView
         isCanvasOpen={isCanvasOpen}
@@ -588,7 +583,7 @@ export default function App() {
             { id: 'hivebox', label: 'Toggle HiveBox', hint: 'Ctrl+Shift+H', run: () => { setShowPalette(false); setIsCanvasOpen((v) => !v) } },
             { id: 'sidebar', label: 'Toggle sidebar', hint: 'Ctrl+B', run: () => { setShowPalette(false); setIsConvListOpen((v) => !v) } },
             { id: 'projects', label: 'Projects', run: () => { setShowPalette(false); setMainView('projects'); setActiveTab('projects') } },
-            { id: 'office', label: 'Hive Office', run: () => { setShowPalette(false); setMainView('office'); setActiveTab('office') } },
+            { id: 'office', label: '3D Office / HiveOffice', run: () => { setShowPalette(false); setMainView('office'); setActiveTab('office') } },
             { id: 'settings', label: 'Settings', hint: 'Ctrl+,', run: () => { setShowPalette(false); setShowSettings(true) } },
           ]}
         />
@@ -643,3 +638,5 @@ export default function App() {
     </>
   )
 }
+
+

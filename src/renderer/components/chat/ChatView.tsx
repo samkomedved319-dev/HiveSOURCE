@@ -102,9 +102,13 @@ export default function ChatView({
   }, [])
 
   const [currentMode, setCurrentMode] = useState<ThinkingMode>(() => {
-    const saved = localStorage.getItem('hive_mode') as ThinkingMode
+    const saved = localStorage.getItem('hive_mode') || ''
+    // Migrate legacy mode ids from older builds to the current 4-mode set.
     if (saved === 'reasoning' || saved === 'computer_control') return 'auto'
-    return saved || 'auto'
+    if (saved === 'fast' || saved === 'auto' || saved === 'heavy' || saved === 'max') {
+      return saved as ThinkingMode
+    }
+    return 'auto'
   })
   const currentModelId = MODE_MODELS[currentMode] || MODE_MODELS.auto
 
@@ -136,7 +140,7 @@ export default function ChatView({
         setTyping(false)
       }
       if (ev.type === 'hive.speak' && ev.text && window.electronAPI?.tts?.speak) {
-        void window.electronAPI.tts.speak(ev.text)
+        void window.electronAPI?.tts?.speak(ev.text)
       }
       if (ev.type === 'inference.stream' && ev.text && name === 'Hive') {
         if (directModeRef.current) return
@@ -171,17 +175,8 @@ export default function ChatView({
           via: 'local',
           botName: name,
           botAvatar: useAgentStore.getState().activeAgent?.avatar,
-          botRole:
-            name === 'Scout'
-              ? 'Researcher'
-              : name === 'Critic'
-                ? 'Critic'
-                : name === 'Pulse'
-                  ? 'Skeptic'
-                  : name === 'Operator'
-                    ? 'Operator'
-                    : 'Companion',
-          citations: name === 'Scout' || name === 'Hive' ? latestCitations.current : undefined,
+          botRole: 'Companion',
+          citations: latestCitations.current,
         })
         if (name === 'Hive') setTyping(false)
       }
@@ -228,9 +223,7 @@ export default function ChatView({
         return 'Heavy Thinking · Analyzing multi-step reasoning…'
       case 'max':
         return 'Max Thinking · Performing exhaustive reflection…'
-      case 'computer_control':
-        return 'PC Control · Interfacing with local system & browser…'
-      case 'reasoning':
+      case 'auto':
       default:
         return 'Thinking…'
     }
@@ -422,19 +415,11 @@ export default function ChatView({
       modeInstruction = '\n[Instruction: Maximum depth reasoning mode engaged. Think step-by-step with exhaustive detail, verify corner cases, and provide an authoritative solution.]'
     } else if (currentMode === 'fast') {
       modeInstruction = '\n[Instruction: Be extremely concise, direct, and fast.]'
-    } else if (currentMode === 'computer_control') {
-      modeInstruction = `\n[Mode: PC Control / Manus AI Workspace Automation]
-You have access to the user's computer and browser.
-If the user asks to execute a PowerShell command, launch an application, or navigate to a web page, output an executable command block formatted strictly like:
-\`\`\`system_exec
-<command or URL>
-\`\`\`
-Followed by a brief explanation of what was run.`
     }
 
     try {
       if (window.electronAPI?.hive?.send) {
-        void window.electronAPI.hive.send(content, activeAgent.id).catch(() => {})
+        void window.electronAPI?.hive?.send(content, activeAgent.id).catch(() => {})
       }
       const history = getMessages(activeAgent.id)
         .filter((m) => m.role === 'user' || m.role === 'assistant')
@@ -607,7 +592,7 @@ Followed by a brief explanation of what was run.`
           <button
             type="button"
             onClick={() => {
-              void window.electronAPI.hive?.decide?.(approval.id, false)
+              void window.electronAPI?.hive?.decide?.(approval.id, false)
               setApproval(null)
             }}
             style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-dim)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer' }}
@@ -617,7 +602,7 @@ Followed by a brief explanation of what was run.`
           <button
             type="button"
             onClick={() => {
-              void window.electronAPI.hive?.decide?.(approval.id, true)
+              void window.electronAPI?.hive?.decide?.(approval.id, true)
               setApproval(null)
             }}
             style={{ background: '#F97316', border: 'none', color: '#111', fontWeight: 650, borderRadius: 8, padding: '4px 10px', cursor: 'pointer' }}
