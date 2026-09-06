@@ -9,6 +9,10 @@ export interface Agent {
   roleTitle?: string
   isCeo?: boolean
   createdAt?: number
+  kind?: 'chat' | 'loop'
+  looping?: boolean
+  loopEveryMs?: number
+  loopGoal?: string
 }
 
 export interface SearchCitation {

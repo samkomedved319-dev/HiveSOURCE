@@ -10,6 +10,7 @@ import { stashRoom } from './persist'
 import { setBuddyMood } from '../buddy-service'
 import { recallForPrompt, rememberTurn } from '../mem0-service'
 import { CitationGuard, CommandGuard } from './interception'
+import { isTrivialChat } from '../chat-intent'
 
 function startAgent(participant: Agent, prompt: string, guard?: 'hive' | 'operator') {
   const input = inferenceInputFor(participant)
@@ -125,6 +126,7 @@ export const scoutOnMessage: SituationHandler = {
     apply({ event, participant }) {
       if (!(participant instanceof Agent)) return
       const { message } = event.payload as { message: string }
+      if (isTrivialChat(message)) return
       if (!/\b(search|find|who is|what is|latest|news|lookup|browse|https?:)\b/i.test(message)) return
       const runtime = resolveRuntime()
       runtime.state.mood = 'searching'
@@ -143,6 +145,7 @@ export const hiveOnMessage: SituationHandler = {
     apply({ event, participant }) {
       if (!(participant instanceof Agent)) return
       const { message } = event.payload as { message: string }
+      if (isTrivialChat(message)) return
       const runtime = resolveRuntime()
       runtime.state.mood = 'thinking'
       emitHiveState(runtime.state.snapshot())
@@ -227,6 +230,7 @@ export const operatorOnMessage: SituationHandler = {
     apply({ event, participant }) {
       if (!(participant instanceof Agent)) return
       const { message } = event.payload as { message: string }
+      if (isTrivialChat(message)) return
       startAgent(
         participant,
         `User asked for a machine action:\n${message}\nUse tools only if the request is explicit. Otherwise reply SKIP.`,
@@ -242,6 +246,7 @@ export const pulseOnMessage: SituationHandler = {
     apply({ event, participant }) {
       if (!(participant instanceof Agent)) return
       const { message } = event.payload as { message: string }
+      if (isTrivialChat(message)) return
       startAgent(
         participant,
         `User:\n${message}\n\nYou are Pulse. In parallel with Scout and Hive, list assumptions, risks, and what would falsify a glib answer. 5–8 sharp bullets. Do not search. Do not write the final essay.`

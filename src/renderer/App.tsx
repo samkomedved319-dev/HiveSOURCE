@@ -7,6 +7,7 @@ import CanvasPanel, { BrowserStep } from './components/canvas/CanvasPanel'
 import SettingsModal from './components/layout/SettingsModal'
 import ProjectsModal from './components/layout/ProjectsModal'
 import BotsPanel from './components/bots/BotsPanel'
+import LoopAgentsRunner from './components/bots/LoopAgentsRunner'
 import ProfileModal from './components/layout/ProfileModal'
 import VoiceCall from './components/chat/VoiceCall'
 import CursorBuddy from './components/mascot/CursorBuddy'
@@ -502,6 +503,7 @@ export default function App() {
 
   return (
     <>
+      <LoopAgentsRunner />
       {/* 0. Cyber-bee Animated Launch Screen */}
       <AnimatePresence mode="wait">
         {isLaunching && (

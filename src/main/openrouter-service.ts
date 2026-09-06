@@ -11,6 +11,7 @@ import {
   consumeFreeQuota,
   estimateTokens,
 } from './hive-free'
+import { isTrivialChat } from './chat-intent'
 
 export const FREE_MODELS = HIVE_FREE_MODELS
 export const DEFAULT_FREE_MODEL = FREE_GLM
@@ -161,14 +162,14 @@ export async function queryAIModel(
   }
 
   let activeMessages = [...messages]
-  const recalled = await recallForPrompt(
-    [...messages].reverse().find((m) => m.role === 'user')?.content || 'preferences'
-  )
+  const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content || ''
+  const trivial = isTrivialChat(lastUser)
+  const recalled = trivial ? '' : await recallForPrompt(lastUser || 'preferences')
   if (recalled) {
     activeMessages = [
       {
         role: 'system',
-        content: `Memories about this user (Mem0):\n${recalled}\nUse them when relevant. Do not invent extra personal facts.`,
+        content: `Memories about this user (Mem0):\n${recalled}\nUse them when relevant. Do not invent extra personal facts. Do not dump the whole list unless asked.`,
       },
       ...activeMessages,
     ]
@@ -190,8 +191,12 @@ export async function queryAIModel(
 
   const requestBody: any = {
     messages: activeMessages,
-    max_tokens: 1400,
-    temperature: 0.65,
+    max_tokens: trivial ? 80 : 900,
+    temperature: trivial ? 0.4 : 0.65,
+  }
+  if (trivial) {
+    requestBody.thinking = { type: 'disabled' }
+    requestBody.enable_thinking = false
   }
 
   if (tryWebPlugin) {

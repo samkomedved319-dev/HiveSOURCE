@@ -51,11 +51,19 @@ async function mem0Add(messages: { role: string; content: string }[], userId: st
 
 async function mem0Search(query: string, userId: string) {
   const key = mem0Key()
+  const q = String(query || '').trim()
+  if (q.length < 12) return { ok: true, memories: [] as string[] }
   if (!key) {
-    const q = query.toLowerCase()
+    const tokens = q.toLowerCase().split(/\s+/).filter((w) => w.length >= 4)
+    if (tokens.length < 2) return { ok: true, memories: [] as string[], local: true }
     const hits = loadLocal()
-      .filter((m) => m.userId === userId && m.memory.toLowerCase().split(/\s+/).some((w) => q.includes(w) || m.memory.toLowerCase().includes(q.slice(0, 24))))
-      .slice(-8)
+      .filter((m) => {
+        if (m.userId !== userId) return false
+        const mem = m.memory.toLowerCase()
+        const hitsN = tokens.filter((w) => mem.includes(w)).length
+        return hitsN >= 2
+      })
+      .slice(-3)
       .map((m) => m.memory)
     return { ok: true, memories: hits, local: true }
   }
@@ -88,12 +96,14 @@ async function mem0Search(query: string, userId: string) {
 }
 
 export async function recallForPrompt(query: string, userId = 'hive-user') {
+  if (String(query || '').trim().length < 12) return ''
   const found = await mem0Search(query, userId)
   if (!found.ok || !found.memories.length) return ''
-  return found.memories.slice(0, 6).map((m, i) => `${i + 1}. ${m}`).join('\n')
+  return found.memories.slice(0, 2).map((m, i) => `${i + 1}. ${m}`).join('\n')
 }
 
 export async function rememberTurn(userText: string, assistantText: string, userId = 'hive-user') {
+  if (String(userText || '').trim().length < 12) return { ok: true }
   return mem0Add(
     [
       { role: 'user', content: userText.slice(0, 2000) },

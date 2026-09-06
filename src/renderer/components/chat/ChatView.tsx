@@ -14,6 +14,7 @@ import type { HiveSwarmEvent, HiveSwarmState, Message, Agent } from '../../types
 import { mentionHandle } from '../bots/botLibrary'
 import type { Conversation } from '../layout/ConversationList'
 import { emitTitleChat } from '../../chatTitle'
+import { isTrivialChat, wantsSwarm } from '../../lib/chatIntent'
 
 function parseMentionedAgents(content: string, list: Agent[]): Agent[] {
   const tags = [...content.matchAll(/@([A-Za-z0-9_-]+)/g)].map((m) => m[1].toLowerCase())
@@ -376,8 +377,15 @@ export default function ChatView({
       return
     }
 
+    const trivial = isTrivialChat(content)
+    const swarmOn = !trivial && wantsSwarm(content)
+
     setOps([])
-    setSwarm({ Scout: 'thinking', Hive: 'thinking', Pulse: 'thinking', Critic: 'idle' })
+    setSwarm(
+      swarmOn
+        ? { Scout: 'thinking', Hive: 'thinking', Pulse: 'thinking', Critic: 'idle' }
+        : { Scout: 'idle', Hive: 'idle', Pulse: 'idle', Critic: 'idle' }
+    )
     directModeRef.current = false
     stickyAgentsRef.current = []
 
@@ -402,12 +410,12 @@ export default function ChatView({
       lowerContent.includes('function') ||
       lowerContent.includes('script')
 
-    if (isSearch) {
+    if (isSearch && !trivial) {
       const com = grokPersonality.onSearchStart(content)
       setMascotState(com.state)
       setMascotFace(com.face || 'cool')
       setMascotSpeech(com.speech)
-    } else if (isCode) {
+    } else if (isCode && !trivial) {
       const com = grokPersonality.onCodeGeneration()
       setMascotState(com.state)
       setMascotFace(com.face || 'wink')
@@ -416,17 +424,18 @@ export default function ChatView({
       const com = grokPersonality.onQuery(content)
       setMascotState('working')
       setMascotFace('think')
-      setMascotSpeech(com.speech)
+      setMascotSpeech(trivial ? '' : com.speech)
     } else {
-      const com = grokPersonality.onQuery(content)
-      setMascotState(com.state)
-      setMascotFace(com.face || 'think')
-      setMascotSpeech(com.speech)
+      setMascotState('thinking')
+      setMascotFace('think')
+      setMascotSpeech(trivial ? null : grokPersonality.onQuery(content).speech)
     }
 
     // Mode specific instruction tuning
     let modeInstruction = ''
-    if (currentMode === 'heavy') {
+    if (trivial) {
+      modeInstruction = '\n[Instruction: 1–2 short sentences. No memories, no tools, no essays.]'
+    } else if (currentMode === 'heavy') {
       modeInstruction = '\n[Instruction: Perform deep analysis and reasoning. Present clear, structured arguments and thorough deductions.]'
     } else if (currentMode === 'max') {
       modeInstruction = '\n[Instruction: Maximum depth reasoning mode engaged. Think step-by-step with exhaustive detail, verify corner cases, and provide an authoritative solution.]'
@@ -435,25 +444,32 @@ export default function ChatView({
     }
 
     try {
-      if (window.electronAPI?.hive?.send) {
+      if (swarmOn && window.electronAPI?.hive?.send) {
         void window.electronAPI?.hive?.send(content, activeAgent.id).catch(() => {})
       }
-      const history = getMessages(activeAgent.id)
-        .filter((m) => m.role === 'user' || m.role === 'assistant')
-        .slice(-16)
-        .map((m) => ({ role: m.role, content: m.content }))
+      const history = trivial
+        ? []
+        : getMessages(activeAgent.id)
+            .filter((m) => m.role === 'user' || m.role === 'assistant')
+            .slice(-10)
+            .map((m) => ({ role: m.role, content: String(m.content || '').slice(0, 1200) }))
       const timeout = new Promise<{ ok: false; error: string }>((resolve) =>
-        setTimeout(() => resolve({ ok: false, error: 'Timed out waiting for a reply.' }), 45000)
+        setTimeout(() => resolve({ ok: false, error: 'Timed out waiting for a reply.' }), trivial ? 20000 : 45000)
       )
       const call =
         window.electronAPI?.ai?.chat?.(
           [
-            { role: 'system', content: (activeAgent.systemPrompt || 'You are Hive.') + modeInstruction },
+            {
+              role: 'system',
+              content: trivial
+                ? 'You are Hive. Reply in one or two short sentences. Do not recall old chats. Do not use tools.'
+                : (activeAgent.systemPrompt || 'You are Hive.') + modeInstruction,
+            },
             ...history,
             { role: 'user', content },
           ],
           currentModelId,
-          { webSearch: isSearch }
+          { webSearch: isSearch && !trivial }
         ) || Promise.resolve({ ok: false, error: 'AI bridge is not ready.' })
       const res = await Promise.race([call, timeout])
       if (gen !== sendGenRef.current) return
@@ -499,13 +515,17 @@ export default function ChatView({
     } finally {
       if (gen === sendGenRef.current) {
         setTyping(false)
-        setSwarm((prev) => ({
-          ...prev,
-          Scout: 'done',
-          Hive: 'done',
-          Pulse: 'done',
-          Critic: prev.Critic === 'idle' ? 'idle' : 'done',
-        }))
+        if (!swarmOn) {
+          setSwarm({ Scout: 'idle', Hive: 'idle', Pulse: 'idle', Critic: 'idle' })
+        } else {
+          setSwarm((prev) => ({
+            ...prev,
+            Scout: 'done',
+            Hive: 'done',
+            Pulse: 'done',
+            Critic: prev.Critic === 'idle' ? 'idle' : 'done',
+          }))
+        }
       }
     }
     return
@@ -590,7 +610,7 @@ export default function ChatView({
         onToggleSidebar={onToggleSidebar}
         onFeedback={() => window.dispatchEvent(new CustomEvent('hive:feedback'))}
       />
-      {!isCanvasOpen && <SwarmStrip status={swarm} />}
+      {!isCanvasOpen && Object.values(swarm).some((s) => s !== 'idle') && <SwarmStrip status={swarm} />}
       {approval && (
         <div
           style={{

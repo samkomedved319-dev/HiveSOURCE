@@ -1,6 +1,7 @@
 import { emitHiveEvent, emitHiveState } from './notify'
 import { loadRoom, loadRooms, stashRoom } from './persist'
 import { resolveRuntime, sendMessage } from './runtime'
+import { isTrivialChat } from '../chat-intent'
 
 let loaded = false
 
@@ -48,5 +49,10 @@ export function ingestUserMessage(
     text: message,
     occurredAt: Date.now(),
   })
+  if (isTrivialChat(message)) {
+    runtime.state.mood = 'done'
+    emitHiveState(runtime.state.snapshot())
+    return
+  }
   sendMessage(message, humanId)
 }

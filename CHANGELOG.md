@@ -5,7 +5,10 @@
 - Model menu: GLM 5.3 (Fast) and Nemotron Nano (Reasoning) as first-class Hive Free choices
 - Animated 1,000,000-token Hive Free meter in Settings and the title bar
 - Owner-only Admin panel (hidden for everyone else): reset usage, grant tokens, approve / deny
-- Cloud quota table so a reset applies on the person’s next Hive session
+- “Hey?” / small talk: one short Hive reply. Scout, Pulse, and Critic stay idle
+- Loop agents live in Bots: create with a goal, press Start. They never auto-run on chat
+- Memory is not injected into greetings; chat history is skipped for pings
+
 
 
 ## 0.0.1.4 — 2026-09-06

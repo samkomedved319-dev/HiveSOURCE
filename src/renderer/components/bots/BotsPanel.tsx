@@ -24,22 +24,31 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
   const [systemPrompt, setSystemPrompt] = useState('')
   const [avatar, setAvatar] = useState(DEFAULT_MASCOT_ID)
   const [editMascotFor, setEditMascotFor] = useState<string | null>(null)
+  const [asLoop, setAsLoop] = useState(false)
+  const [loopGoal, setLoopGoal] = useState('')
+  const [loopEveryMs, setLoopEveryMs] = useState(120_000)
 
   const handleCreate = () => {
     if (!name.trim()) return
     const bot: Agent = {
       id: `agent-custom-${Date.now()}`,
       name: name.trim(),
-      description: roleTitle.trim() || 'Specialized worker',
+      description: asLoop ? loopGoal.trim() || 'Loop agent' : roleTitle.trim() || 'Specialized worker',
       systemPrompt:
         systemPrompt.trim() ||
-        'You are a specialized autonomous AI worker reporting to Hive CEO. You provide concise, production-ready output with zero fluff.',
+        (asLoop
+          ? 'You are a Hive loop agent. Each tick: one short status on your goal. No swarm. No fluff.'
+          : 'You are a specialized autonomous AI worker reporting to Hive CEO. You provide concise, production-ready output with zero fluff.'),
       avatar,
-      roleTitle: roleTitle.trim() || 'Specialized Worker',
+      roleTitle: asLoop ? 'Loop agent' : roleTitle.trim() || 'Specialized Worker',
       isCeo: false,
-      model: 'minimax/minimax-m3:free',
-      mode: 'auto',
+      model: 'z-ai/glm-5.3-free',
+      mode: 'fast',
       createdAt: Date.now(),
+      kind: asLoop ? 'loop' : 'chat',
+      looping: false,
+      loopEveryMs: asLoop ? loopEveryMs : undefined,
+      loopGoal: asLoop ? loopGoal.trim() : undefined,
     }
     addAgent(bot)
     setIsCreating(false)
@@ -47,6 +56,9 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
     setRoleTitle('')
     setSystemPrompt('')
     setAvatar(DEFAULT_MASCOT_ID)
+    setAsLoop(false)
+    setLoopGoal('')
+    setLoopEveryMs(120_000)
   }
 
   const handleChat = (agent: Agent) => {
@@ -93,7 +105,7 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
           </h1>
         </div>
         <p style={{ fontSize: 13, color: 'var(--text-dim)', margin: '0 0 20px 0' }}>
-          {agents.length} bot{agents.length === 1 ? '' : 's'} on the roster. Pick one to chat live.
+          {agents.length} bot{agents.length === 1 ? '' : 's'} on the roster. Chat is one mind. Loop agents you create here — they only run when you press Start.
         </p>
 
         <div style={{ marginBottom: 18 }}>
@@ -197,11 +209,48 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
                         Live
                       </span>
                     )}
+                    {agent.kind === 'loop' && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: agent.looping ? '#0D0E11' : 'var(--text-dim)',
+                          background: agent.looping ? 'var(--accent)' : 'var(--panel-2)',
+                          padding: '1px 6px',
+                          borderRadius: 4,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
+                        }}
+                      >
+                        {agent.looping ? 'Looping' : 'Loop'}
+                      </span>
+                    )}
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {agent.roleTitle || agent.description || 'Specialized worker'}
+                    {agent.kind === 'loop' ? ` · every ${Math.round((agent.loopEveryMs || 120000) / 60000)}m` : ''}
                   </div>
                 </div>
+                {agent.kind === 'loop' && (
+                  <button
+                    type="button"
+                    onClick={() => updateAgent(agent.id, { looping: !agent.looping })}
+                    style={{
+                      background: agent.looping ? 'transparent' : 'var(--accent)',
+                      border: agent.looping ? '1px solid var(--border)' : 'none',
+                      borderRadius: 8,
+                      padding: '7px 12px',
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      color: agent.looping ? 'var(--text-dim)' : '#0D0E11',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {agent.looping ? 'Pause' : 'Start'}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => handleChat(agent)}
@@ -259,12 +308,15 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
 
         {/* Create */}
         {!isCreating ? (
+          <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
           <button
             type="button"
-            onClick={() => setIsCreating(true)}
+            onClick={() => {
+              setAsLoop(false)
+              setIsCreating(true)
+            }}
             style={{
-              marginTop: 14,
-              width: '100%',
+              flex: 1,
               background: 'transparent',
               border: '1px dashed var(--border)',
               borderRadius: 12,
@@ -279,6 +331,29 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
           >
             + New worker bot
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              setAsLoop(true)
+              setIsCreating(true)
+            }}
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: '1px dashed var(--border)',
+              borderRadius: 12,
+              padding: '12px',
+              fontSize: 13,
+              color: 'var(--text-dim)',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-dim)')}
+          >
+            + New loop agent
+          </button>
+          </div>
         ) : (
           <div
             style={{
@@ -292,7 +367,7 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
               gap: 10,
             }}
           >
-            <div style={{ fontSize: 13.5, fontWeight: 600 }}>New worker bot</div>
+            <div style={{ fontSize: 13.5, fontWeight: 600 }}>{asLoop ? 'New loop agent' : 'New worker bot'}</div>
             <MascotPicker value={avatar} onChange={setAvatar} />
             <input
               value={name}
@@ -342,6 +417,48 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
                 lineHeight: 1.5,
               }}
             />
+            {asLoop && (
+              <>
+                <textarea
+                  value={loopGoal}
+                  onChange={(e) => setLoopGoal(e.target.value)}
+                  placeholder="Loop goal — e.g. Watch this repo for bugs and report one line"
+                  rows={2}
+                  style={{
+                    background: 'var(--panel-2)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 8,
+                    padding: '8px 12px',
+                    color: 'var(--text)',
+                    fontSize: 13,
+                    outline: 'none',
+                    fontFamily: 'inherit',
+                    resize: 'none',
+                    lineHeight: 1.5,
+                  }}
+                />
+                <select
+                  value={loopEveryMs}
+                  onChange={(e) => setLoopEveryMs(Number(e.target.value))}
+                  style={{
+                    background: 'var(--panel-2)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 8,
+                    padding: '8px 12px',
+                    color: 'var(--text)',
+                    fontSize: 13,
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  <option value={120000}>Every 2 minutes</option>
+                  <option value={300000}>Every 5 minutes</option>
+                  <option value={900000}>Every 15 minutes</option>
+                </select>
+                <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+                  Loop agents stay off until you press Start. They never run on “hey?”.
+                </div>
+              </>
+            )}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button
                 type="button"
@@ -376,7 +493,7 @@ export default function BotsPanel({ onBack, onSelectAgent }: BotsPanelProps) {
                   fontFamily: 'inherit',
                 }}
               >
-                Create bot
+                Create {asLoop ? 'loop agent' : 'bot'}
               </button>
             </div>
           </div>
