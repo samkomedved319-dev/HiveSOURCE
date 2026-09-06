@@ -1,6 +1,12 @@
 import { ipcMain } from 'electron'
 import { performWebSearch } from './search-service'
-import { openRouterKey, nvidiaNimKey, isHiveFreeKey, openRouterBase, userLlmKey } from './keys'
+import {
+  nvidiaNimKey,
+  userLlmKey,
+  detectProvider,
+  anthropicKey,
+  type LlmProvider,
+} from './keys'
 import { recallForPrompt, rememberTurn } from './mem0-service'
 import {
   HIVE_FREE_KEY,
@@ -16,26 +22,12 @@ import { isTrivialChat } from './chat-intent'
 export const FREE_MODELS = HIVE_FREE_MODELS
 export const DEFAULT_FREE_MODEL = FREE_GLM
 
-export const NIM_MODELS = [
-  'nvidia/nemotron-3.5-lightning-30b-a3b',
-  'nvidia/llama-3.1-nemotron-nano-8b-v1',
-  'meta/llama-3.1-8b-instruct',
-  'google/gemma-2-9b-it',
-]
-
-function isExhausted(status: number, body: string) {
-  if ([401, 402, 403, 429, 503].includes(status)) return true
-  const t = body.toLowerCase()
-  return (
-    t.includes('rate') ||
-    t.includes('quota') ||
-    t.includes('credit') ||
-    t.includes('insufficient') ||
-    t.includes('used up') ||
-    t.includes('limit') ||
-    t.includes('user not found') ||
-    t.includes('missing authentication')
-  )
+function stripThink(text: string) {
+  let t = String(text || '')
+  const end = t.lastIndexOf('</think>')
+  if (end >= 0) t = t.slice(end + 8)
+  t = t.replace(/<think>[\s\S]*?<\/think>/gi, '')
+  return t.trim()
 }
 
 function extractAssistantText(rawMsg: any): string {
@@ -52,41 +44,11 @@ function extractAssistantText(rawMsg: any): string {
       else if (p && typeof p === 'object') push((p as any).text || (p as any).content)
     }
   }
-  if (parts.length) return parts.join('\n').trim()
-  push(rawMsg.reasoning_content)
-  push(rawMsg.reasoning)
-  return parts.join('\n').trim()
-}
-
-async function queryNim(
-  messages: ChatMessage[]
-): Promise<{ ok: boolean; content?: string; error?: string; model?: string }> {
-  const key = nvidiaNimKey()
-  if (!key) return { ok: false, error: 'NVIDIA NIM key missing' }
-  let last = ''
-  for (const model of NIM_MODELS) {
-    try {
-      const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${key}`,
-        },
-        body: JSON.stringify({ model, messages, max_tokens: 1200, temperature: 0.6 }),
-      })
-      if (res.ok) {
-        const data = (await res.json()) as { choices?: { message?: { content?: string } }[] }
-        const content = data?.choices?.[0]?.message?.content
-        if (content?.trim()) return { ok: true, content: content.trim(), model: `nim:${model}` }
-      } else {
-        last = `[nim ${model}] ${res.status}: ${(await res.text()).slice(0, 200)}`
-        if (!isExhausted(res.status, last)) continue
-      }
-    } catch (e: any) {
-      last = e.message
-    }
+  if (!parts.length) {
+    push(rawMsg.reasoning_content)
+    push(rawMsg.reasoning)
   }
-  return { ok: false, error: last || 'NVIDIA NIM exhausted' }
+  return stripThink(parts.join('\n'))
 }
 
 export interface ChatMessage {
@@ -103,6 +65,54 @@ export interface SearchCitation {
 
 export interface ChatOptions {
   webSearch?: boolean
+  thinking?: boolean
+}
+
+async function queryAnthropic(messages: ChatMessage[], key: string) {
+  const system = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n')
+  const rest = messages.filter((m) => m.role !== 'system')
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 900,
+      system: system || undefined,
+      messages: rest.map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content })),
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    return { ok: false as const, error: `[anthropic] ${res.status}: ${err.slice(0, 280)}` }
+  }
+  const data = (await res.json()) as { content?: { type: string; text?: string }[] }
+  const text = (data.content || []).map((p) => p.text || '').join('\n').trim()
+  if (!text) return { ok: false as const, error: '[anthropic] empty reply' }
+  return { ok: true as const, content: text, model: 'claude-sonnet-4' }
+}
+
+async function queryOpenAICompat(
+  url: string,
+  key: string,
+  model: string,
+  body: Record<string, unknown>
+) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${key}`,
+      'HTTP-Referer': 'https://hivetools.pro/hive/',
+      'X-Title': 'Hive Desktop',
+    },
+    body: JSON.stringify({ ...body, model }),
+  })
+  const errText = res.ok ? '' : await res.text()
+  return { res, errText }
 }
 
 export async function queryAIModel(
@@ -110,21 +120,10 @@ export async function queryAIModel(
   modelChoice?: string,
   options?: ChatOptions
 ): Promise<{ ok: boolean; content?: string; error?: string; model?: string; citations?: SearchCitation[] }> {
+  const provider: LlmProvider = detectProvider()
   const userKey = userLlmKey()
-  const nimKey = nvidiaNimKey()
-  const requestedModel =
-    modelChoice && FREE_MODELS.includes(modelChoice) ? modelChoice : DEFAULT_FREE_MODEL
-  // Hive Free models always use the hosted TokenRouter key. A leftover sk-or- key
-  // in Settings hits OpenRouter and returns 401 User not found.
-  const hiveFree = !userKey || isHiveFreeKey() || FREE_MODELS.includes(requestedModel)
-  const API_KEY = hiveFree ? HIVE_FREE_KEY : openRouterKey()
-
-  if (!API_KEY && !nimKey) {
-    return {
-      ok: false,
-      error: 'Hive Free is not ready. Restart the app, or paste your own key in Settings → Models.',
-    }
-  }
+  const requestedModel = FREE_MODELS.includes(modelChoice || '') ? FREE_GLM : FREE_GLM
+  const hiveFree = provider === 'hive-free'
 
   if (hiveFree) {
     const est = estimateTokens(JSON.stringify(messages)) + 400
@@ -132,39 +131,10 @@ export async function queryAIModel(
     if (!gate.ok) return { ok: false, error: gate.error }
   }
 
-  if (!API_KEY && nimKey) {
-    const nim = await queryNim(messages)
-    if (nim.ok && nim.content) {
-      const userQ = [...messages].reverse().find((m) => m.role === 'user')?.content || ''
-      void rememberTurn(userQ, nim.content)
-    }
-    return nim
-  }
-
-  const modelsToTry = [requestedModel, ...FREE_MODELS.filter((m) => m !== requestedModel)]
-
-  const chatUrls: string[] = []
-  const seen = new Set<string>()
-  const pushUrl = (u: string) => {
-    if (!seen.has(u)) {
-      seen.add(u)
-      chatUrls.push(u)
-    }
-  }
-  if (hiveFree) {
-    for (const b of TOKENROUTER_BASES) pushUrl(`${b}/chat/completions`)
-  } else {
-    pushUrl(`${openRouterBase()}/chat/completions`)
-    if ((API_KEY || '').startsWith('sk-or-') || openRouterBase().includes('openrouter.ai')) {
-      pushUrl('https://openrouter.ai/api/v1/chat/completions')
-    }
-    for (const b of TOKENROUTER_BASES) pushUrl(`${b}/chat/completions`)
-  }
-
-  let activeMessages = [...messages]
   const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content || ''
   const trivial = isTrivialChat(lastUser)
   const recalled = trivial ? '' : await recallForPrompt(lastUser || 'preferences')
+  let activeMessages = [...messages]
   if (recalled) {
     activeMessages = [
       {
@@ -174,165 +144,171 @@ export async function queryAIModel(
       ...activeMessages,
     ]
   }
-  let fallbackCitations: SearchCitation[] | undefined = undefined
 
-  let tryWebPlugin = !!options?.webSearch
+  let fallbackCitations: SearchCitation[] | undefined
   if (options?.webSearch) {
-    const userQuery = [...messages].reverse().find((m) => m.role === 'user')?.content || ''
-    if (userQuery) {
-      try {
-        const fallbackRes = await performWebSearch(userQuery)
-        if (fallbackRes.ok && fallbackRes.citations.length > 0) {
-          fallbackCitations = fallbackRes.citations
-        }
-      } catch {}
-    }
+    try {
+      const fallbackRes = await performWebSearch(lastUser)
+      if (fallbackRes.ok && fallbackRes.citations.length > 0) {
+        fallbackCitations = fallbackRes.citations
+        activeMessages = [
+          {
+            role: 'system',
+            content: `[Verified Live Web Search Context]:\n${fallbackRes.citations
+              .map((c, i) => `[Source ${i + 1}]: ${c.title} (${c.url})\n${c.content}`)
+              .join('\n\n')}\n\nAnswer from these facts. Cite sources.`,
+          },
+          ...activeMessages,
+        ]
+      }
+    } catch {}
   }
 
+  const thinkOn = Boolean(options?.thinking) && !trivial
   const requestBody: any = {
     messages: activeMessages,
-    max_tokens: trivial ? 80 : 900,
+    max_tokens: trivial ? 120 : thinkOn ? 1600 : 900,
     temperature: trivial ? 0.4 : 0.65,
   }
-  if (trivial) {
+  if (!thinkOn) {
     requestBody.thinking = { type: 'disabled' }
     requestBody.enable_thinking = false
   }
 
-  if (tryWebPlugin) {
-    requestBody.plugins = [{ id: 'web', max_results: 5 }]
+  if (provider === 'anthropic') {
+    const key = anthropicKey() || userKey
+    if (!key) return { ok: false, error: 'Anthropic key missing. Paste sk-ant-… in Settings → Models.' }
+    const out = await queryAnthropic(activeMessages, key)
+    if (out.ok) {
+      void rememberTurn(lastUser, out.content)
+      return { ...out, citations: fallbackCitations }
+    }
+    return out
+  }
+
+  if (provider === 'openai') {
+    const key = userKey
+    const { res, errText } = await queryOpenAICompat(
+      'https://api.openai.com/v1/chat/completions',
+      key,
+      'gpt-4o-mini',
+      { messages: activeMessages, max_tokens: requestBody.max_tokens, temperature: requestBody.temperature }
+    )
+    if (!res.ok) return { ok: false, error: `[openai] ${res.status}: ${errText.slice(0, 280)}` }
+    const data = (await res.json()) as any
+    const content = extractAssistantText(data.choices?.[0]?.message)
+    if (!content) return { ok: false, error: '[openai] empty reply' }
+    void rememberTurn(lastUser, content)
+    return { ok: true, content, model: 'gpt-4o-mini', citations: fallbackCitations }
+  }
+
+  if (provider === 'openrouter') {
+    const key = userKey
+    const models = ['z-ai/glm-5.3', 'z-ai/glm-5.3-free', 'openai/gpt-4o-mini']
+    let lastError = ''
+    for (const m of models) {
+      const { res, errText } = await queryOpenAICompat(
+        'https://openrouter.ai/api/v1/chat/completions',
+        key,
+        m,
+        requestBody
+      )
+      if (res.ok) {
+        const data = (await res.json()) as any
+        const content = extractAssistantText(data.choices?.[0]?.message)
+        if (content) {
+          void rememberTurn(lastUser, content)
+          return { ok: true, content, model: m, citations: fallbackCitations }
+        }
+        lastError = `[${m}] empty reply`
+      } else {
+        lastError = `[${m}] ${res.status}: ${errText.slice(0, 220)}`
+        if (/credit|quota|402|403/.test(errText.toLowerCase() + String(res.status))) continue
+      }
+    }
+    return {
+      ok: false,
+      error: lastError || 'OpenRouter key was rejected. Check credits or paste another key.',
+    }
+  }
+
+  // Hive Free — GLM 5.3 only. Never Nemotron (zero credits).
+  const API_KEY = HIVE_FREE_KEY
+  if (!API_KEY) {
+    return {
+      ok: false,
+      error: 'Hive Free is not ready. Paste your own OpenRouter, OpenAI, or Anthropic key in Settings → Models.',
+    }
   }
 
   let lastError = ''
-  const tryOnce = async (url: string, key: string, model: string) => {
-    let res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${key}`,
-        'HTTP-Referer': 'https://hive.app',
-        'X-Title': 'Hive Desktop',
-      },
-      body: JSON.stringify(requestBody),
-    })
-
-    if (!res.ok && res.status === 402 && tryWebPlugin && fallbackCitations && fallbackCitations.length > 0) {
-      tryWebPlugin = false
-      delete requestBody.plugins
-      const contextSnippet = fallbackCitations
-        .map((c, i) => `[Source ${i + 1}]: ${c.title} (${c.url})\n${c.content}`)
-        .join('\n\n')
-      requestBody.messages = [
-        ...activeMessages.slice(0, -1),
-        {
-          role: 'system' as const,
-          content: `[Verified Live Web Search Context]:\n${contextSnippet}\n\nSynthesize an informative, razor-sharp Grok-style answer answering the user's inquiry based on these verified facts.`,
-        },
-        activeMessages[activeMessages.length - 1],
-      ]
-      res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${key}`,
-          'HTTP-Referer': 'https://hive.app',
-          'X-Title': 'Hive Desktop',
-        },
-        body: JSON.stringify(requestBody),
-      })
-    }
-    return res
-  }
-
-  for (const m of modelsToTry) {
-    requestBody.model = m
-    const keysToTry = hiveFree ? [HIVE_FREE_KEY] : [API_KEY, HIVE_FREE_KEY].filter(Boolean)
-    for (const key of keysToTry) {
-      const urls =
-        key === HIVE_FREE_KEY
-          ? TOKENROUTER_BASES.map((b) => `${b}/chat/completions`)
-          : chatUrls
-      for (const url of urls) {
-        try {
-          const res = await tryOnce(url, key, m)
-          if (res.ok) {
-            const data = (await res.json()) as any
-            const rawMsg = data.choices?.[0]?.message
-            const content = extractAssistantText(rawMsg)
-            if (content && content.trim().length > 0) {
-              const userQ = [...messages].reverse().find((mm) => mm.role === 'user')?.content || ''
-              void rememberTurn(userQ, String(content))
-              if (key === HIVE_FREE_KEY) {
-                const used =
-                  Number(data.usage?.total_tokens) ||
-                  estimateTokens(JSON.stringify(messages)) + estimateTokens(String(content))
-                consumeFreeQuota(used)
-              }
-              const rawAnns = rawMsg?.annotations || []
-              const citations: SearchCitation[] = []
-              for (const ann of rawAnns) {
-                if (ann.type === 'url_citation' && ann.url_citation) {
-                  const u = ann.url_citation.url || ''
-                  let domain = ''
-                  try {
-                    domain = new URL(u).hostname.replace(/^www\./, '')
-                  } catch {
-                    domain = 'web'
-                  }
-                  citations.push({
-                    url: u,
-                    title: ann.url_citation.title || domain || 'Source',
-                    content: ann.url_citation.content || '',
-                    domain,
-                  })
-                }
-              }
-              const finalCitations =
-                citations.length > 0
-                  ? citations
-                  : fallbackCitations && fallbackCitations.length > 0
-                    ? fallbackCitations
-                    : undefined
-              return {
-                ok: true,
-                content: content.trim(),
-                citations: finalCitations,
-                model: m,
-              }
-            }
-            lastError = `[${m}] empty reply`
-          } else {
-            const errText = await res.text()
-            lastError = `[${m}] ${res.status}: ${errText}`
-            if (isExhausted(res.status, errText)) break
+  for (const base of TOKENROUTER_BASES) {
+    const url = `${base}/chat/completions`
+    try {
+      requestBody.model = requestedModel || DEFAULT_FREE_MODEL
+      const { res, errText } = await queryOpenAICompat(url, API_KEY, requestBody.model, requestBody)
+      if (res.ok) {
+        const data = (await res.json()) as any
+        const content = extractAssistantText(data.choices?.[0]?.message)
+        if (content) {
+          void rememberTurn(lastUser, content)
+          const used =
+            Number(data.usage?.total_tokens) ||
+            estimateTokens(JSON.stringify(messages)) + estimateTokens(content)
+          consumeFreeQuota(used)
+          return { ok: true, content, model: requestBody.model, citations: fallbackCitations }
+        }
+        lastError = `[${requestBody.model}] empty reply`
+      } else {
+        lastError = `[${requestBody.model}] ${res.status}: ${errText}`
+        const low = errText.toLowerCase()
+        if (low.includes('credit') || low.includes('quota') || res.status === 402 || res.status === 403) {
+          return {
+            ok: false,
+            error:
+              'Hive Free ran out of provider credits for this model. Add your own OpenRouter, OpenAI, or Anthropic key in Settings → Models — you can, and you should if you want unlimited use.',
           }
-        } catch (err: any) {
-          lastError = err.message
         }
       }
+    } catch (e: any) {
+      lastError = e.message
     }
   }
 
-  const nim = await queryNim(activeMessages)
-  if (nim.ok && nim.content) {
-    const userQ = [...messages].reverse().find((m) => m.role === 'user')?.content || ''
-    void rememberTurn(userQ, nim.content)
-    return { ...nim, citations: fallbackCitations }
+  const nimKey = nvidiaNimKey()
+  if (nimKey) {
+    try {
+      const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${nimKey}` },
+        body: JSON.stringify({
+          model: 'meta/llama-3.1-8b-instruct',
+          messages: activeMessages,
+          max_tokens: 800,
+          temperature: 0.6,
+        }),
+      })
+      if (res.ok) {
+        const data = (await res.json()) as any
+        const content = extractAssistantText(data.choices?.[0]?.message)
+        if (content) {
+          void rememberTurn(lastUser, content)
+          return { ok: true, content, model: 'nim:llama', citations: fallbackCitations }
+        }
+      }
+    } catch {}
   }
 
-  if (fallbackCitations && fallbackCitations.length > 0) {
+  if (fallbackCitations?.length) {
     const summary = fallbackCitations.map((c) => `• **${c.title}**: ${c.content}`).join('\n\n')
-    return {
-      ok: true,
-      content: `Here is what I found from live web retrieval:\n\n${summary}`,
-      citations: fallbackCitations,
-      model: 'web-search-fallback',
-    }
+    return { ok: true, content: `Here is what I found:\n\n${summary}`, citations: fallbackCitations, model: 'web' }
   }
 
   return {
     ok: false,
-    error: lastError || 'Free AI models are momentarily busy. Please retry in a few seconds.',
+    error:
+      lastError ||
+      'Hive Free is busy. Retry, or paste your own OpenRouter / OpenAI / Anthropic key in Settings → Models.',
   }
 }
 
@@ -349,7 +325,7 @@ export function registerOpenRouterHandlers() {
       ok: true,
       models: FREE_MODELS.map((id) => ({
         id,
-        name: id.replace(':free', '').split('/')[1]?.toUpperCase() || id,
+        name: 'GLM 5.3',
       })),
     }
   })

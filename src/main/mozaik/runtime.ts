@@ -6,7 +6,7 @@ import {
 } from '@mozaik-ai/core'
 import type { SearchCitation } from '../search-service'
 import { openRouterKey, mozaikCloudBase, mozaikCloudKey, openRouterBase } from '../keys'
-import { FREE_GLM, FREE_NEMOTRON } from '../hive-free'
+import { FREE_GLM } from '../hive-free'
 
 export type HiveMood = 'idle' | 'searching' | 'thinking' | 'arguing' | 'done' | 'error'
 
@@ -125,7 +125,6 @@ export function startMozaikRuntime() {
 
   const models: NonNullable<InferenceRunnerConfig['supportedModels']> = [
     HIVE_MODEL,
-    FREE_NEMOTRON,
     FREE_GLM,
   ].map((name) => ({ endpoint, specification: openRouterSpec(name) }))
 

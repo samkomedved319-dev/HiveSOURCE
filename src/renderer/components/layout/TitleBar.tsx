@@ -14,8 +14,8 @@ export interface ModelOption {
 export const MODE_MODELS: Record<ThinkingMode, string> = {
   fast: 'z-ai/glm-5.3-free',
   auto: 'z-ai/glm-5.3-free',
-  heavy: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
-  max: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+  heavy: 'z-ai/glm-5.3-free',
+  max: 'z-ai/glm-5.3-free',
 }
 
 export const THINKING_MODES: { id: ThinkingMode; label: string; badge: string; desc: string }[] = [
@@ -202,7 +202,7 @@ export default function TitleBar({
               >
                 Hive Free model
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6 }}>
                 {FREE_MODEL_CARDS.map((m) => {
                   const on = freeModel === m.id
                   return (

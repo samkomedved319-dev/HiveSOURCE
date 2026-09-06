@@ -97,6 +97,8 @@ export default function App() {
     }
     const openai = localStorage.getItem('hive_openai_key') || ''
     if (openai.trim()) payload.OPENAI_API_KEY = openai.trim()
+    const anthropic = localStorage.getItem('hive_anthropic_key') || ''
+    if (anthropic.trim()) payload.ANTHROPIC_API_KEY = anthropic.trim()
     const staff = localStorage.getItem('hive_staff') === '1'
     if (staff) {
       const mem = localStorage.getItem('hive_mem0_key') || ''
@@ -123,7 +125,7 @@ export default function App() {
   useEffect(() => {
     const seen = localStorage.getItem('hive_last_seen_version')
     if (seen !== HIVE_VERSION) setShowWhatsNew(true)
-    if (localStorage.getItem('hive_tutorial_done') !== '1') setShowTour(true)
+    if (localStorage.getItem('hive_tutorial_done_016') !== '1') setShowTour(true)
   }, [])
 
   useEffect(() => {
@@ -744,6 +746,7 @@ export default function App() {
       {showTour && (
         <FirstRunTour
           onDone={() => {
+            localStorage.setItem('hive_tutorial_done_016', '1')
             localStorage.setItem('hive_tutorial_done', '1')
             setShowTour(false)
           }}

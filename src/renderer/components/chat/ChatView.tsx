@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react'
 import TitleBar, { ThinkingMode, MODE_MODELS } from '../layout/TitleBar'
-import { FREE_GLM, FREE_NEMOTRON } from '../../lib/freeModels'
+import { FREE_GLM } from '../../lib/freeModels'
 import MessageList from './MessageList'
 import ChatInput from './ChatInput'
 import VoiceCall from './VoiceCall'
 import ToolsModal from './ToolsModal'
 import SwarmStrip, { type SwarmStatus } from './SwarmStrip'
+import LoopAgentsBar from '../bots/LoopAgentsBar'
 import CrewPanel from '../layout/CrewPanel'
 import { grokPersonality } from '../../companion/grokPersonality'
 import { useAgentStore } from '../../stores/agentStore'
@@ -112,11 +113,7 @@ export default function ChatView({
     }
     return 'auto'
   })
-  const [currentModelId, setCurrentModelId] = useState(() => {
-    const saved = localStorage.getItem('hive_model') || ''
-    if (saved === FREE_GLM || saved === FREE_NEMOTRON) return saved
-    return MODE_MODELS.auto
-  })
+  const [currentModelId, setCurrentModelId] = useState(() => FREE_GLM)
 
   useEffect(() => {
     localStorage.setItem('hive_mode', currentMode)
@@ -125,7 +122,8 @@ export default function ChatView({
   useEffect(() => {
     const syncModel = () => {
       const saved = localStorage.getItem('hive_model') || ''
-      if (saved === FREE_GLM || saved === FREE_NEMOTRON) setCurrentModelId(saved)
+      if (saved === FREE_GLM) setCurrentModelId(saved)
+      else setCurrentModelId(FREE_GLM)
     }
     window.addEventListener('hive:model-changed', syncModel)
     window.addEventListener('storage', syncModel)
@@ -469,7 +467,7 @@ export default function ChatView({
             { role: 'user', content },
           ],
           currentModelId,
-          { webSearch: isSearch && !trivial }
+          { webSearch: isSearch && !trivial, thinking: currentMode === 'heavy' || currentMode === 'max' }
         ) || Promise.resolve({ ok: false, error: 'AI bridge is not ready.' })
       const res = await Promise.race([call, timeout])
       if (gen !== sendGenRef.current) return
@@ -610,7 +608,8 @@ export default function ChatView({
         onToggleSidebar={onToggleSidebar}
         onFeedback={() => window.dispatchEvent(new CustomEvent('hive:feedback'))}
       />
-      {!isCanvasOpen && Object.values(swarm).some((s) => s !== 'idle') && <SwarmStrip status={swarm} />}
+      <LoopAgentsBar />
+      {!isCanvasOpen && <SwarmStrip status={swarm} />}
       {approval && (
         <div
           style={{

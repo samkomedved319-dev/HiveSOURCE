@@ -53,6 +53,7 @@ const overlay: Record<string, string> = {}
 export function setOverlayKeys(next: Record<string, string | undefined>) {
   for (const [k, v] of Object.entries(next)) {
     if (typeof v === 'string' && !isPlaceholder(v)) overlay[k] = v.trim()
+    else if (v === '') delete overlay[k]
   }
 }
 
@@ -67,7 +68,25 @@ export function getKey(...names: string[]): string {
 }
 
 export function userLlmKey() {
-  return getKey('OPENROUTER_API_KEY', 'TOKENROUTER_API_KEY', 'OPENAI_API_KEY', 'hive_custom_api_key')
+  return getKey(
+    'OPENROUTER_API_KEY',
+    'hive_custom_api_key',
+    'OPENAI_API_KEY',
+    'ANTHROPIC_API_KEY',
+    'TOKENROUTER_API_KEY'
+  )
+}
+
+export type LlmProvider = 'hive-free' | 'openrouter' | 'openai' | 'anthropic'
+
+export function detectProvider(key = userLlmKey()): LlmProvider {
+  const k = (key || '').trim()
+  if (!k) return 'hive-free'
+  if (k.startsWith('sk-or-') || k.startsWith('sk-orv')) return 'openrouter'
+  if (k.startsWith('sk-ant-')) return 'anthropic'
+  if (k.startsWith('sk-')) return 'openai'
+  if (k.startsWith('tr_')) return 'hive-free'
+  return 'openrouter'
 }
 
 export function openRouterKey() {
@@ -75,16 +94,23 @@ export function openRouterKey() {
 }
 
 export function isHiveFreeKey() {
-  const k = openRouterKey()
-  return !userLlmKey() || k === HIVE_FREE_KEY
+  return detectProvider() === 'hive-free'
 }
 
 export function openRouterBase() {
   const custom = getKey('OPENAI_BASE_URL')
   if (custom) return custom.replace(/\/$/, '')
-  if (isHiveFreeKey()) return TOKENROUTER_BASES[0]
-  if (userLlmKey().startsWith('sk-or-')) return 'https://openrouter.ai/api/v1'
+  const p = detectProvider()
+  if (p === 'openai') return 'https://api.openai.com/v1'
+  if (p === 'openrouter') return 'https://openrouter.ai/api/v1'
   return TOKENROUTER_BASES[0]
+}
+
+export function anthropicKey() {
+  const k = getKey('ANTHROPIC_API_KEY')
+  if (k) return k
+  const u = userLlmKey()
+  return detectProvider(u) === 'anthropic' ? u : ''
 }
 
 export function mozaikCloudKey() {
@@ -112,8 +138,11 @@ export function registerKeyHandlers() {
     const or = openRouterKey()
     if (or) {
       process.env.OPENROUTER_API_KEY = or
-      if (isPlaceholder(process.env.OPENAI_API_KEY || '')) process.env.OPENAI_API_KEY = or
     }
+    const openai = getKey('OPENAI_API_KEY')
+    if (openai) process.env.OPENAI_API_KEY = openai
+    const ant = anthropicKey()
+    if (ant) process.env.ANTHROPIC_API_KEY = ant
     const cloud = mozaikCloudKey()
     if (cloud) process.env.MOZAIK_CLOUD_API_KEY = cloud
     const cloudBase = mozaikCloudBase()
@@ -125,6 +154,7 @@ export function registerKeyHandlers() {
     return {
       ok: true,
       openrouter: Boolean(openRouterKey()),
+      provider: detectProvider(),
       nim: Boolean(nvidiaNimKey()),
       mozaikCloud: Boolean(mozaikCloudKey() && mozaikCloudBase()),
       mem0: Boolean(mem0Key()),
@@ -133,6 +163,7 @@ export function registerKeyHandlers() {
   ipcMain.handle('keys:status', () => ({
     ok: true,
     openrouter: Boolean(openRouterKey()),
+    provider: detectProvider(),
     nim: Boolean(nvidiaNimKey()),
     mem0: Boolean(mem0Key()),
     cloudBase: mozaikCloudBase() || '',

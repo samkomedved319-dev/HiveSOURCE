@@ -3,7 +3,15 @@ import React, { useState } from 'react'
 const STEPS = [
   {
     title: 'Chat',
-    body: 'This is home. New chat is on the left. Pick Fast / Auto / Heavy / Max in the top bar.',
+    body: 'This is home. New chat is on the left. Hive Free always uses GLM 5.3 — the only free model that actually has credits.',
+  },
+  {
+    title: 'Bring your own key',
+    body: 'You can (and for unlimited use, you should) paste your own API key in Settings → Models. OpenRouter (sk-or-…), OpenAI (sk-…), or Anthropic (sk-ant-…) all work. Hive Free GLM 5.3 is the default if you skip this.',
+  },
+  {
+    title: 'Loop agents',
+    body: 'The Loop agents strip sits in main chat. Create a loop, give it a goal, hit Start. It ticks on its own. Pause anytime. You can also manage them in Workers.',
   },
   {
     title: 'Workers',
@@ -55,7 +63,7 @@ export default function FirstRunTour({ onDone }: { onDone: () => void }) {
         <div style={{ padding: '22px 24px 8px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <img src="./icon.png" alt="" style={{ width: 36, height: 36, borderRadius: 10 }} />
           <div>
-            <div style={{ fontSize: 17, fontWeight: 650 }}>Welcome to Hive</div>
+            <div style={{ fontSize: 17, fontWeight: 650 }}>Welcome to Hive 0.0.1.6</div>
             <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>
               {i + 1} / {STEPS.length}
             </div>

@@ -1,20 +1,13 @@
 import React from 'react'
-import { FREE_GLM, FREE_NEMOTRON } from '../../lib/freeModels'
+import { FREE_GLM } from '../../lib/freeModels'
 
 export const FREE_MODEL_CARDS = [
   {
     id: FREE_GLM,
     name: 'GLM 5.3',
-    tag: 'Fast',
-    desc: 'Snappy answers. Best for chat, code, and everyday work.',
+    tag: 'Hive Free',
+    desc: 'The only Hive Free model. Fast chat, code, and everyday work. Nemotron is off — it had zero credits.',
     mode: 'fast' as const,
-  },
-  {
-    id: FREE_NEMOTRON,
-    name: 'Nemotron Nano',
-    tag: 'Reasoning',
-    desc: 'Deeper thinking. Best for Hard / Max mode and long jobs.',
-    mode: 'heavy' as const,
   },
 ]
 
@@ -26,9 +19,9 @@ export default function FreeModelCards({
   onChange: (id: string, mode: 'fast' | 'heavy') => void
 }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
       {FREE_MODEL_CARDS.map((m) => {
-        const on = value === m.id
+        const on = value === m.id || !value
         return (
           <button
             key={m.id}
@@ -62,7 +55,7 @@ export default function FreeModelCards({
               >
                 {m.tag}
               </span>
-              {on && <span style={{ fontSize: 13, color: 'var(--accent)' }}>✓</span>}
+              {on && <span style={{ fontSize: 13, color: 'var(--accent)' }}>on</span>}
             </div>
             <div style={{ fontSize: 14.5, fontWeight: 700 }}>{m.name}</div>
             <div style={{ fontSize: 11.5, color: 'var(--text-dim)', lineHeight: 1.45, marginTop: 4 }}>{m.desc}</div>

@@ -54,7 +54,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   // Model & Reasoning Settings
   const [defaultModel, setDefaultModel] = useState(localStorage.getItem('hive_model') || 'z-ai/glm-5.3-free')
-  const [quotaNote, setQuotaNote] = useState('Hive Free: 1,000,000 tokens per day. GLM 5.3 + Nemotron Nano.')
+  const [quotaNote, setQuotaNote] = useState('Hive Free: 1,000,000 tokens per day. GLM 5.3 only.')
   const [customKey, setCustomKey] = useState(localStorage.getItem('hive_custom_api_key') || '')
   const [openaiKey, setOpenaiKey] = useState(localStorage.getItem('hive_openai_key') || '')
   const [anthropicKey, setAnthropicKey] = useState(localStorage.getItem('hive_anthropic_key') || '')
@@ -107,7 +107,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       const limit = q.limit ?? 1_000_000
       const left = q.remaining ?? Math.max(0, limit - used)
       const reset = q.resetsAt ? new Date(q.resetsAt).toLocaleString() : 'after your first AI message'
-      setQuotaNote(`Hive Free: ${left.toLocaleString()} / ${limit.toLocaleString()} tokens left today. Window resets ${reset}. Models: GLM 5.3 and Nemotron Nano.`)
+      setQuotaNote(`Hive Free: ${left.toLocaleString()} / ${limit.toLocaleString()} tokens left today. Window resets ${reset}. Model: GLM 5.3.`)
     })
   }, [])
 
@@ -135,6 +135,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     void window.electronAPI?.keys?.set?.({
       ...(customKey.trim() ? { OPENROUTER_API_KEY: customKey.trim(), hive_custom_api_key: customKey.trim() } : {}),
       ...(openaiKey.trim() ? { OPENAI_API_KEY: openaiKey.trim() } : {}),
+      ...(anthropicKey.trim() ? { ANTHROPIC_API_KEY: anthropicKey.trim() } : {}),
     })
     localStorage.setItem('hive_system_prompt', systemPrompt)
     localStorage.setItem('hive_theme_mode', themeMode)
@@ -575,7 +576,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               <>
                 <QuotaMeter />
                 <div style={{ fontSize: 12.5, color: 'var(--text-dim)', lineHeight: 1.5, margin: '4px 0 4px' }}>
-                  Two Hive Free models share one 1,000,000-token pool. No key needed.
+                  Hive Free is GLM 5.3 only — 1,000,000 tokens per day. Nemotron is off (zero credits). Bring your own OpenRouter, OpenAI, or Anthropic key below if you want.
                 </div>
                 <FreeModelCards
                   value={defaultModel}
@@ -644,7 +645,49 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     type="password"
                     value={customKey}
                     onChange={(e) => setCustomKey(e.target.value)}
-                    placeholder="sk-or-v1-...  leave blank to use .env"
+                    placeholder="sk-or-v1-...  leave blank to use Hive Free GLM"
+                    style={{
+                      background: 'var(--panel-2)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 6,
+                      padding: '7px 10px',
+                      color: 'var(--text)',
+                      fontSize: 12,
+                      outline: 'none',
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text)' }}>
+                    OpenAI API key
+                  </label>
+                  <input
+                    type="password"
+                    value={openaiKey}
+                    onChange={(e) => setOpenaiKey(e.target.value)}
+                    placeholder="sk-...  optional"
+                    style={{
+                      background: 'var(--panel-2)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 6,
+                      padding: '7px 10px',
+                      color: 'var(--text)',
+                      fontSize: 12,
+                      outline: 'none',
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text)' }}>
+                    Anthropic API key
+                  </label>
+                  <input
+                    type="password"
+                    value={anthropicKey}
+                    onChange={(e) => setAnthropicKey(e.target.value)}
+                    placeholder="sk-ant-...  optional"
                     style={{
                       background: 'var(--panel-2)',
                       border: '1px solid var(--border)',
@@ -660,8 +703,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 {/* Coming later: extra providers + Mem0 + Mozaik Cloud. Kept in source, hidden from users. */}
                 <div style={{ display: 'none' }}>
                 {[
-                  ['OpenAI key', openaiKey, setOpenaiKey, 'sk-...'],
-                  ['Anthropic key', anthropicKey, setAnthropicKey, 'sk-ant-...'],
                   ['Gemini key', geminiKey, setGeminiKey, 'AIza...'],
                   ['Mem0 key', mem0Key, setMem0Key, 'from app.mem0.ai'],
                   ['Mozaik Cloud key', mozaikCloudKey, setMozaikCloudKey, 'from app.jigjoy.ai'],
