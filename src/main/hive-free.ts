@@ -13,8 +13,6 @@ export const FREE_GLM = 'z-ai/glm-5.3-free'
 export const FREE_NEMOTRON = 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'
 
 export const HIVE_FREE_MODELS = [FREE_GLM]
-<<<<<<< Updated upstream
-=======
 
 export const DAILY_TOKEN_LIMIT = 1_000_000
 const WINDOW_MS = 24 * 60 * 60 * 1000
@@ -233,4 +231,3 @@ export function registerQuotaHandlers() {
   )
   ipcMain.handle('quota:bindUser', (_e, userId?: string) => bindQuotaUser(String(userId || '')))
 }
->>>>>>> Stashed changes
