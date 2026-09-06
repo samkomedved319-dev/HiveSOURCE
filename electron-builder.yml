@@ -14,7 +14,7 @@ win:
   target: nsis
   icon: resources/icon.ico
   signAndEditExecutable: true
-  signDlls: false
+  signExecutable: false
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
