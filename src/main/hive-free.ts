@@ -5,7 +5,8 @@ import { app, ipcMain } from 'electron'
 /** Hive-hosted TokenRouter key — Fast/Auto free models. */
 export const HIVE_FREE_KEY = 'sk-NwtPUPnpuq8v7VW1PgPejUV6R7ykLl3netGXIANWhKQdHS0R'
 
-export const TOKENROUTER_BASES = ['https://tokenrouter.me/v1', 'https://api.tokenrouter.io/v1']
+/** Live TokenRouter host. tokenrouter.me has no DNS; api.tokenrouter.io wants tr_ keys. */
+export const TOKENROUTER_BASES = ['https://api.tokenrouter.com/v1']
 
 export const FREE_GLM = 'z-ai/glm-5.3-free'
 export const FREE_NEMOTRON = 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'
