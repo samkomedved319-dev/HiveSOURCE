@@ -1,9 +1,9 @@
 {
-  "version": "0.0.1.4",
-  "downloadUrl": "https://github.com/samkomedved319-dev/hive-releases/releases/download/v0.0.1.4/Hive-Setup-0.0.1.4.exe",
+  "version": "0.0.1.5",
+  "downloadUrl": "https://github.com/samkomedved319-dev/hive-releases/releases/download/v0.0.1.5/Hive-Setup-0.0.1.5.exe",
   "notes": [
-    { "type": "new", "text": "Hive Free: GLM 5.3 and Nemotron Nano via TokenRouter. No key needed." },
-    { "type": "new", "text": "1,000,000 tokens per day. Window starts at your first AI message and resets 24 hours later." },
-    { "type": "improve", "text": "Installer download page — no GitHub account required if you have the link." }
+    { "type": "new", "text": "Pick GLM 5.3 or Nemotron Nano from the model menu." },
+    { "type": "new", "text": "Animated 1,000,000-token Hive Free meter." },
+    { "type": "new", "text": "Owner-only Admin panel: reset usage, grant tokens, approve people." }
   ]
 }
