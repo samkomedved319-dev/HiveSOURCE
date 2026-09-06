@@ -15,6 +15,7 @@ export async function syncQuotaWithCloud(userId: string, email: string): Promise
   const api = window.electronAPI?.app
   if (!api?.quota) return null
   try {
+    await api.quotaBindUser?.(userId)
     const local = (await api.quota()) as QuotaView
     const { data } = await supabase.from('usage_quotas').select('*').eq('user_id', userId).maybeSingle()
     const row = data as {
@@ -25,25 +26,33 @@ export async function syncQuotaWithCloud(userId: string, email: string): Promise
       reset_at?: string | null
     } | null
 
-    if (row?.reset_at && api.quotaApply) {
-      const resetMs = new Date(row.reset_at).getTime()
-      if (resetMs > (local.remoteResetAt || local.startedAt || 0)) {
-        await api.quotaApply({
-          reset: true,
-          bonus: row.bonus || 0,
-          limit: row.token_limit || 1_000_000,
-          remoteResetAt: resetMs,
-        })
-      } else if (typeof row.bonus === 'number' || typeof row.token_limit === 'number') {
-        await api.quotaApply({
-          bonus: row.bonus || 0,
-          limit: row.token_limit || 1_000_000,
-        })
-      }
+    const cloudUsed = Number(row?.used || 0)
+    const cloudLimit = Number(row?.token_limit || 0)
+    const cloudBonus = Number(row?.bonus || 0)
+    const cloudStarted = row?.started_at ? new Date(row.started_at).getTime() : 0
+    const adminResetMs = row?.reset_at ? new Date(row.reset_at).getTime() : 0
+    const already = local.remoteResetAt || 0
+
+    if (adminResetMs > 0 && adminResetMs > already && api.quotaApply) {
+      await api.quotaApply({
+        reset: true,
+        bonus: cloudBonus,
+        limit: cloudLimit || 1_000_000,
+        remoteResetAt: adminResetMs,
+      })
+    } else if (api.quotaApply) {
+      await api.quotaApply({
+        reset: false,
+        used: Math.max(local.used || 0, cloudUsed),
+        bonus: Math.max(local.bonus || 0, cloudBonus),
+        limit: cloudLimit || local.limit || 1_000_000,
+        startedAt: local.startedAt || cloudStarted || 0,
+        remoteResetAt: Math.max(already, adminResetMs),
+      })
     }
 
     const next = (await api.quota()) as QuotaView
-    await supabase.from('usage_quotas').upsert({
+    const payload = {
       user_id: userId,
       email,
       used: next.used,
@@ -51,7 +60,11 @@ export async function syncQuotaWithCloud(userId: string, email: string): Promise
       bonus: next.bonus || 0,
       started_at: next.startedAt ? new Date(next.startedAt).toISOString() : null,
       updated_at: new Date().toISOString(),
-    })
+    }
+    if (cloudUsed > 0 && next.used < cloudUsed && !(adminResetMs > already)) {
+      payload.used = cloudUsed
+    }
+    await supabase.from('usage_quotas').upsert(payload)
     return next
   } catch {
     try {
