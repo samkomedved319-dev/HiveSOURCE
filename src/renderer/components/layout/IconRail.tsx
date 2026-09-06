@@ -108,9 +108,9 @@ export default function IconRail({
       }}
     >
       <img
-        src="./logo.png"
+        src="./icon.png"
         alt="Hive"
-        style={{ width: 28, height: 28, marginBottom: 8, cursor: 'pointer', objectFit: 'contain' }}
+        style={{ width: 28, height: 28, marginBottom: 8, cursor: 'pointer', objectFit: 'contain', borderRadius: 8 }}
         onClick={() => onSelectTab('office')}
       />
 

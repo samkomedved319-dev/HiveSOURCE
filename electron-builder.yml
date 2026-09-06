@@ -4,12 +4,26 @@ directories:
   output: release
 files:
   - dist/**/*
+extraResources:
+  - from: resources/icon.ico
+    to: icon.ico
+  - from: resources/icon.png
+    to: icon.png
+forceCodeSigning: false
 win:
   target: nsis
   icon: resources/icon.ico
+  signAndEditExecutable: true
+  signDlls: false
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  installerIcon: resources/icon.ico
+  uninstallerIcon: resources/icon.ico
+  installerHeaderIcon: resources/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Hive
 protocols:
   - name: Hive Auth
     schemes:

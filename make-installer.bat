@@ -16,7 +16,7 @@ if errorlevel 1 (
 echo.
 echo Building the app, then the Setup.exe.
 echo You will see a folder named win-unpacked FIRST. That is NOT the installer.
-echo KEEP THIS WINDOW OPEN. The real file Hive-Setup-0.0.1.exe is created AFTER that.
+echo KEEP THIS WINDOW OPEN. The installer is created AFTER that.
 echo This can take 5 to 15 minutes. Do not close.
 echo.
 call npm run dist:win
@@ -29,7 +29,10 @@ if errorlevel 1 (
 )
 echo.
 echo Looking for the Setup.exe ...
-if exist "release\Hive-Setup-0.0.1.exe" (
+if exist "release\Hive-Setup-0.0.1.1.exe" (
+  echo Found: release\Hive-Setup-0.0.1.1.exe
+  explorer /select,"%~dp0release\Hive-Setup-0.0.1.1.exe"
+) else if exist "release\Hive-Setup-0.0.1.exe" (
   echo Found: release\Hive-Setup-0.0.1.exe
   explorer /select,"%~dp0release\Hive-Setup-0.0.1.exe"
 ) else if exist "release\Hive Desktop-Setup-0.0.1.exe" (

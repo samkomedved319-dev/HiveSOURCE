@@ -3,7 +3,7 @@ import { motion } from 'motion/react'
 import packageJson from '../../../../package.json'
 
 // Standard Vite asset resolution for high-res cyber-bee logo
-const hiveLogo = new URL('../../assets/hive_logo.jpg', import.meta.url).href
+const hiveLogo = './icon.png'
 
 export interface LaunchScreenProps {
   onComplete: () => void

@@ -50,9 +50,9 @@ export default function AuthGate() {
         }}
       >
         <img
-          src="./logo.png"
+          src="./icon.png"
           alt="Hive"
-          style={{ width: 42, height: 42, marginBottom: 12, objectFit: 'contain' }}
+          style={{ width: 48, height: 48, marginBottom: 12, objectFit: 'contain', borderRadius: 12 }}
         />
         <div style={{ fontSize: 18, fontWeight: 650, marginBottom: 8 }}>Sign in to Hive</div>
         <p style={{ color: 'var(--text-dim)', fontSize: 13.5, lineHeight: 1.55, margin: '0 0 22px' }}>

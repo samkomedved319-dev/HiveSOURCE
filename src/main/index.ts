@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, globalShortcut, shell } from 'electron'
 import path from 'path'
+import fs from 'fs'
 import { registerKeyHandlers } from './keys'
 import { registerMem0Handlers } from './mem0-service'
 import { registerTelegramHandlers } from './telegram-service'
@@ -38,6 +39,34 @@ let pendingAuthUrl: string | null = null
 
 const isDev = !app.isPackaged
 const HIVE_WEB_LOGIN = 'https://samkomedved319-dev.github.io/hive/?desktop=1'
+
+app.setName('Hive')
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.projecthive.app')
+}
+
+function resolveAppIcon(): string | undefined {
+  const candidates = [
+    path.join(process.resourcesPath, 'icon.ico'),
+    path.join(process.resourcesPath, 'icon.png'),
+    path.join(__dirname, '../../resources/icon.ico'),
+    path.join(__dirname, '../../resources/icon.png'),
+    path.join(__dirname, '../renderer/icon.png'),
+  ]
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) return p
+    } catch {}
+  }
+  return undefined
+}
+
+function hiveNativeImage() {
+  const p = resolveAppIcon()
+  if (!p) return nativeImage.createEmpty()
+  const img = nativeImage.createFromPath(p)
+  return img.isEmpty() ? nativeImage.createEmpty() : img
+}
 
 const gotLock = app.requestSingleInstanceLock()
 
@@ -110,7 +139,7 @@ function createWindow() {
     maximizable: true,
     closable: true,
     title: 'Hive',
-    icon: path.join(__dirname, '../../resources/icon.ico'),
+    icon: resolveAppIcon(),
     backgroundColor: '#0b0c0e',
     show: false,
     webPreferences: {
@@ -172,16 +201,8 @@ function createWindow() {
 }
 
 function createTray() {
-  let icon: Electron.NativeImage
-  try {
-    const p = path.join(__dirname, '../../resources/icon.ico')
-    icon = nativeImage.createFromPath(p)
-    if (icon.isEmpty()) icon = nativeImage.createEmpty()
-  } catch {
-    icon = nativeImage.createEmpty()
-  }
-
-  tray = new Tray(icon)
+  const icon = hiveNativeImage()
+  tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon)
   tray.setToolTip('Hive')
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Show Hive', click: () => { mainWindow?.show(); mainWindow?.focus() } },
