@@ -123,10 +123,20 @@ export interface ElectronAPI {
       used?: number
       limit?: number
       remaining?: number
+      bonus?: number
       startedAt?: number
       resetsAt?: number
+      remoteResetAt?: number
       models?: string[]
     }>
+    quotaReset?: (keepBonus?: boolean) => Promise<unknown>
+    quotaApply?: (payload?: {
+      used?: number
+      bonus?: number
+      limit?: number
+      remoteResetAt?: number
+      reset?: boolean
+    }) => Promise<unknown>
   }
   tts?: {
     speak: (text: string) => Promise<{ ok: boolean; dataUrl?: string; error?: string }>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import TitleBar, { ThinkingMode, MODE_MODELS } from '../layout/TitleBar'
+import { FREE_GLM, FREE_NEMOTRON } from '../../lib/freeModels'
 import MessageList from './MessageList'
 import ChatInput from './ChatInput'
 import VoiceCall from './VoiceCall'
@@ -110,12 +111,28 @@ export default function ChatView({
     }
     return 'auto'
   })
-  const currentModelId = MODE_MODELS[currentMode] || MODE_MODELS.auto
+  const [currentModelId, setCurrentModelId] = useState(() => {
+    const saved = localStorage.getItem('hive_model') || ''
+    if (saved === FREE_GLM || saved === FREE_NEMOTRON) return saved
+    return MODE_MODELS.auto
+  })
 
   useEffect(() => {
     localStorage.setItem('hive_mode', currentMode)
-    localStorage.setItem('hive_model', MODE_MODELS[currentMode])
   }, [currentMode])
+
+  useEffect(() => {
+    const syncModel = () => {
+      const saved = localStorage.getItem('hive_model') || ''
+      if (saved === FREE_GLM || saved === FREE_NEMOTRON) setCurrentModelId(saved)
+    }
+    window.addEventListener('hive:model-changed', syncModel)
+    window.addEventListener('storage', syncModel)
+    return () => {
+      window.removeEventListener('hive:model-changed', syncModel)
+      window.removeEventListener('storage', syncModel)
+    }
+  }, [])
 
   useEffect(() => {
     activeIdRef.current = activeAgent?.id

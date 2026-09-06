@@ -1,6 +1,6 @@
 import React from 'react'
 
-export type NavTab = 'chat' | 'workers' | 'projects' | 'office' | 'voice' | 'settings'
+export type NavTab = 'chat' | 'workers' | 'projects' | 'office' | 'voice' | 'settings' | 'admin'
 
 interface IconRailProps {
   activeTab: NavTab
@@ -10,6 +10,7 @@ interface IconRailProps {
   buddyOn?: boolean
   onToggleBuddy?: () => void
   chatOpen?: boolean
+  showAdmin?: boolean
 }
 
 function RailBtn({
@@ -90,6 +91,7 @@ export default function IconRail({
   buddyOn = false,
   onToggleBuddy,
   chatOpen = false,
+  showAdmin = false,
 }: IconRailProps) {
   return (
     <div
@@ -167,6 +169,14 @@ export default function IconRail({
       )}
 
       <div style={{ flex: 1 }} />
+
+      {showAdmin && (
+        <RailBtn title="Admin" active={activeTab === 'admin'} onClick={() => onSelectTab('admin')}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+        </RailBtn>
+      )}
 
       <RailBtn title="Settings" active={activeTab === 'settings'} onClick={() => onSelectTab('settings')}>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">

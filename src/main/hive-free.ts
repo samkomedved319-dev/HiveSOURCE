@@ -15,7 +15,13 @@ export const HIVE_FREE_MODELS = [FREE_GLM, FREE_NEMOTRON]
 export const DAILY_TOKEN_LIMIT = 1_000_000
 const WINDOW_MS = 24 * 60 * 60 * 1000
 
-type QuotaFile = { startedAt: number; used: number }
+type QuotaFile = {
+  startedAt: number
+  used: number
+  bonus?: number
+  limit?: number
+  remoteResetAt?: number
+}
 
 function quotaPath() {
   return path.join(app.getPath('userData'), 'hive-free-quota.json')
@@ -36,10 +42,20 @@ function writeQuota(q: QuotaFile) {
   } catch {}
 }
 
+function effectiveLimit(q: QuotaFile) {
+  return Math.max(1, (q.limit || DAILY_TOKEN_LIMIT) + (q.bonus || 0))
+}
+
 function activeQuota(): QuotaFile {
   const q = readQuota()
   if (q.startedAt && Date.now() - q.startedAt >= WINDOW_MS) {
-    const next = { startedAt: 0, used: 0 }
+    const next: QuotaFile = {
+      startedAt: 0,
+      used: 0,
+      bonus: q.bonus || 0,
+      limit: q.limit || DAILY_TOKEN_LIMIT,
+      remoteResetAt: q.remoteResetAt,
+    }
     writeQuota(next)
     return next
   }
@@ -52,15 +68,18 @@ export function estimateTokens(text: string) {
 
 export function quotaStatus() {
   const q = activeQuota()
-  const remaining = Math.max(0, DAILY_TOKEN_LIMIT - q.used)
+  const limit = effectiveLimit(q)
+  const remaining = Math.max(0, limit - q.used)
   const resetsAt = q.startedAt ? q.startedAt + WINDOW_MS : 0
   return {
     ok: true,
     used: q.used,
-    limit: DAILY_TOKEN_LIMIT,
+    limit,
+    bonus: q.bonus || 0,
     remaining,
     startedAt: q.startedAt,
     resetsAt,
+    remoteResetAt: q.remoteResetAt || 0,
     models: HIVE_FREE_MODELS,
   }
 }
@@ -68,14 +87,15 @@ export function quotaStatus() {
 export function assertFreeQuota(est: number): { ok: true } | { ok: false; error: string } {
   let q = activeQuota()
   if (!q.startedAt) {
-    q = { startedAt: Date.now(), used: 0 }
+    q = { ...q, startedAt: Date.now(), used: q.used || 0 }
     writeQuota(q)
   }
-  if (q.used + est > DAILY_TOKEN_LIMIT) {
+  const limit = effectiveLimit(q)
+  if (q.used + est > limit) {
     const when = new Date(q.startedAt + WINDOW_MS).toLocaleString()
     return {
       ok: false,
-      error: `Hive Free daily limit reached (1,000,000 tokens). It resets 24 hours after your first AI message — next window ${when}.`,
+      error: `Hive Free daily limit reached (${limit.toLocaleString()} tokens). It resets 24 hours after your first AI message — next window ${when}.`,
     }
   }
   return { ok: true }
@@ -85,6 +105,7 @@ export function consumeFreeQuota(tokens: number) {
   const q = activeQuota()
   const now = Date.now()
   const next: QuotaFile = {
+    ...q,
     startedAt: q.startedAt || now,
     used: q.used + Math.max(0, Math.floor(tokens)),
   }
@@ -92,6 +113,51 @@ export function consumeFreeQuota(tokens: number) {
   return next
 }
 
+export function resetQuota(keepBonus = false) {
+  const q = readQuota()
+  writeQuota({
+    startedAt: 0,
+    used: 0,
+    bonus: keepBonus ? q.bonus || 0 : 0,
+    limit: q.limit || DAILY_TOKEN_LIMIT,
+    remoteResetAt: Date.now(),
+  })
+  return quotaStatus()
+}
+
+export function applyRemoteQuota(p: {
+  used?: number
+  bonus?: number
+  limit?: number
+  remoteResetAt?: number
+  reset?: boolean
+}) {
+  const q = readQuota()
+  const remoteReset = p.remoteResetAt || 0
+  const shouldReset = p.reset || (remoteReset > 0 && remoteReset > (q.remoteResetAt || 0) && remoteReset >= (q.startedAt || 0))
+  if (shouldReset) {
+    writeQuota({
+      startedAt: 0,
+      used: 0,
+      bonus: p.bonus ?? 0,
+      limit: p.limit || DAILY_TOKEN_LIMIT,
+      remoteResetAt: remoteReset || Date.now(),
+    })
+    return quotaStatus()
+  }
+  writeQuota({
+    ...q,
+    bonus: p.bonus ?? q.bonus ?? 0,
+    limit: p.limit || q.limit || DAILY_TOKEN_LIMIT,
+    remoteResetAt: Math.max(q.remoteResetAt || 0, remoteReset),
+  })
+  return quotaStatus()
+}
+
 export function registerQuotaHandlers() {
   ipcMain.handle('quota:status', () => quotaStatus())
+  ipcMain.handle('quota:reset', (_e, keepBonus?: boolean) => resetQuota(Boolean(keepBonus)))
+  ipcMain.handle('quota:apply', (_e, payload?: Parameters<typeof applyRemoteQuota>[0]) =>
+    applyRemoteQuota(payload || {})
+  )
 }

@@ -75,6 +75,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => ipcRenderer.removeListener('app:update-progress', handler)
     },
     quota: () => ipcRenderer.invoke('quota:status'),
+    quotaReset: (keepBonus?: boolean) => ipcRenderer.invoke('quota:reset', keepBonus),
+    quotaApply: (payload?: { used?: number; bonus?: number; limit?: number; remoteResetAt?: number; reset?: boolean }) =>
+      ipcRenderer.invoke('quota:apply', payload),
   },
   tts: {
     speak: (text: string) => ipcRenderer.invoke('tts:speak', text),

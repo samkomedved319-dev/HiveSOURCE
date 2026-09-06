@@ -1,5 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { HIVE_VERSION } from '../../hiveVersion'
+import QuotaMeter from './QuotaMeter'
+import { FREE_MODEL_CARDS } from './FreeModelCards'
+import { FREE_GLM } from '../../lib/freeModels'
 
 export type ThinkingMode = 'fast' | 'auto' | 'heavy' | 'max'
 
@@ -52,6 +55,13 @@ export default function TitleBar({
 }: TitleBarProps) {
   const [showSelector, setShowSelector] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const [freeModel, setFreeModel] = useState(() => localStorage.getItem('hive_model') || FREE_GLM)
+
+  useEffect(() => {
+    const sync = () => setFreeModel(localStorage.getItem('hive_model') || FREE_GLM)
+    window.addEventListener('hive:model-changed', sync)
+    return () => window.removeEventListener('hive:model-changed', sync)
+  }, [])
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -150,6 +160,8 @@ export default function TitleBar({
             }}
           />
           <span style={{ fontWeight: 600 }}>{activeModeObj.label}</span>
+          <span style={{ color: 'var(--text-faint)' }}>·</span>
+          <span style={{ color: 'var(--text-dim)' }}>{FREE_MODEL_CARDS.find((m) => m.id === freeModel)?.name || 'GLM 5.3'}</span>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 2, color: 'var(--text-faint)' }}>
             <path d="M6 9l6 6 6-6" />
           </svg>
@@ -167,7 +179,7 @@ export default function TitleBar({
               border: '1px solid var(--border)',
               borderRadius: 12,
               padding: '12px 14px',
-              width: 320,
+              width: 360,
               zIndex: 200,
               boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
               WebkitAppRegion: 'no-drag',
@@ -176,6 +188,52 @@ export default function TitleBar({
               gap: 12,
             } as React.CSSProperties}
           >
+            <div>
+              <div
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '.06em',
+                  color: 'var(--text-faint)',
+                  marginBottom: 6,
+                  paddingLeft: 4,
+                }}
+              >
+                Hive Free model
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                {FREE_MODEL_CARDS.map((m) => {
+                  const on = freeModel === m.id
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => {
+                        setFreeModel(m.id)
+                        localStorage.setItem('hive_model', m.id)
+                        window.dispatchEvent(new Event('hive:model-changed'))
+                        onChangeMode(m.mode)
+                      }}
+                      style={{
+                        textAlign: 'left',
+                        background: on ? 'color-mix(in oklab, var(--accent) 14%, var(--panel-2))' : 'var(--panel-2)',
+                        border: on ? '1px solid var(--accent)' : '1px solid var(--border)',
+                        borderRadius: 10,
+                        padding: '8px 9px',
+                        cursor: 'pointer',
+                        color: 'var(--text)',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase' }}>{m.tag}</div>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 2 }}>{m.name}</div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
             {/* Mode selection */}
             <div>
               <div
@@ -284,6 +342,7 @@ export default function TitleBar({
           WebkitAppRegion: 'no-drag',
         } as React.CSSProperties}
       >
+        <QuotaMeter compact />
         <span
           onClick={() => window.dispatchEvent(new Event('hive:whats-new'))}
           title="What’s New"

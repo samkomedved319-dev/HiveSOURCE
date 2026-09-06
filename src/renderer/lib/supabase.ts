@@ -18,6 +18,7 @@ export type HiveProfile = {
   customer_number: number | null
   notify: boolean
   created_at: string
+  is_admin?: boolean
 }
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {

@@ -19,6 +19,9 @@ import CommandPalette from './components/layout/CommandPalette'
 import CloudComputerPanel from './components/layout/CloudComputerPanel'
 import WhatsNewModal from './components/layout/WhatsNewModal'
 import FirstRunTour from './components/layout/FirstRunTour'
+import AdminPanel from './components/layout/AdminPanel'
+import { isHiveOwner } from './lib/admin'
+import { syncQuotaWithCloud } from './lib/quotaSync'
 import { HIVE_VERSION, LOCAL_WHATS_NEW, type ReleaseNote } from './hiveVersion'
 import { AnimatePresence } from 'motion/react'
 import { loadShortcuts, matchesBinding, toAccelerator } from './shortcuts'
@@ -42,11 +45,27 @@ export default function App() {
   const authReady = useAuthStore((s) => s.ready)
   const session = useAuthStore((s) => s.session)
   const profile = useAuthStore((s) => s.profile)
+  const user = useAuthStore((s) => s.user)
+  const isOwner = isHiveOwner(user?.email, profile)
   const hydrate = useAuthStore((s) => s.hydrate)
 
   useEffect(() => {
     void hydrate()
   }, [hydrate])
+
+  useEffect(() => {
+    if (!user?.id) return
+    const run = () => void syncQuotaWithCloud(user.id, user.email || '')
+    run()
+    const t = window.setInterval(run, 8000)
+    return () => window.clearInterval(t)
+  }, [user?.id, user?.email])
+
+  useEffect(() => {
+    if (isOwner) {
+      try { localStorage.setItem('hive_staff', '1') } catch {}
+    }
+  }, [isOwner])
 
   useEffect(() => {
     const applyTheme = () => {
@@ -148,6 +167,7 @@ export default function App() {
   const [isCanvasOpen, setIsCanvasOpen] = useState(false)
   const [isConvListOpen, setIsConvListOpen] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
+  const [showAdmin, setShowAdmin] = useState(false)
   const [showProjects, setShowProjects] = useState(false)
   const [mainView, setMainView] = useState<'chat' | 'office' | 'bots' | 'projects'>('chat')
   const [showProfile, setShowProfile] = useState(false)
@@ -387,6 +407,8 @@ export default function App() {
       setIsCanvasOpen(false)
     } else if (tab === 'voice') {
       setShowVoiceModal(true)
+    } else if (tab === 'admin') {
+      if (isOwner) setShowAdmin(true)
     }
   }
 
@@ -586,6 +608,7 @@ export default function App() {
         userInitial={userInitial}
         buddyOn={buddyOn}
         onToggleBuddy={toggleBuddy}
+        showAdmin={isOwner}
       />
 
       <div
@@ -694,6 +717,7 @@ export default function App() {
             { id: 'projects', label: 'Projects', run: () => { setShowPalette(false); setMainView('projects'); setActiveTab('projects') } },
             { id: 'office', label: '3D Office / HiveOffice', run: () => { setShowPalette(false); setMainView('office'); setActiveTab('office') } },
             { id: 'settings', label: 'Settings', hint: 'Ctrl+,', run: () => { setShowPalette(false); setShowSettings(true) } },
+            ...(isOwner ? [{ id: 'admin', label: 'Admin panel', run: () => { setShowPalette(false); setShowAdmin(true) } }] : []),
           ]}
         />
       )}
@@ -709,6 +733,10 @@ export default function App() {
       {/* Settings Modal */}
       {showSettings && (
         <SettingsModal onClose={() => setShowSettings(false)} />
+      )}
+
+      {showAdmin && isOwner && (
+        <AdminPanel onClose={() => { setShowAdmin(false); setActiveTab('chat') }} />
       )}
 
       {showTour && (

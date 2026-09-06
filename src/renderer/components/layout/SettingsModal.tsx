@@ -14,6 +14,8 @@ import {
   type ShortcutId,
 } from '../../shortcuts'
 import { HIVE_VERSION } from '../../hiveVersion'
+import QuotaMeter from './QuotaMeter'
+import FreeModelCards from './FreeModelCards'
 
 interface SettingsModalProps {
   onClose: () => void
@@ -571,31 +573,20 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             {/* MODELS & REASONING TAB */}
             {activeTab === 'models' && (
               <>
-                <div style={{ fontSize: 12.5, color: 'var(--text-dim)', lineHeight: 1.5, marginBottom: 12 }}>
-                  Hive includes free TokenRouter models. You do not need your own key. {quotaNote}
+                <QuotaMeter />
+                <div style={{ fontSize: 12.5, color: 'var(--text-dim)', lineHeight: 1.5, margin: '4px 0 4px' }}>
+                  Two Hive Free models share one 1,000,000-token pool. No key needed.
                 </div>
-                <SettingRow
-                  label="Default Model"
-                  description="Hive Free models — 1 million tokens per day"
-                >
-                  <select
-                    value={defaultModel}
-                    onChange={(e) => setDefaultModel(e.target.value)}
-                    style={{
-                      background: 'var(--panel-2)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 6,
-                      padding: '5px 8px',
-                      color: 'var(--text)',
-                      fontSize: 12,
-                      outline: 'none',
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    <option value="z-ai/glm-5.3-free">GLM 5.3 (Fast)</option>
-                    <option value="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free">Nemotron Nano (Reasoning)</option>
-                  </select>
-                </SettingRow>
+                <FreeModelCards
+                  value={defaultModel}
+                  onChange={(id, mode) => {
+                    setDefaultModel(id)
+                    setDefaultMode(mode === 'heavy' ? 'heavy' : 'fast')
+                    localStorage.setItem('hive_model', id)
+                    localStorage.setItem('hive_mode', mode === 'heavy' ? 'heavy' : 'fast')
+                    window.dispatchEvent(new Event('hive:model-changed'))
+                  }}
+                />
 
                 <SettingRow
                   label="Default Thinking Mode"

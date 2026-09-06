@@ -59,7 +59,7 @@
   "build": {
     "appId": "com.projecthive.app",
     "productName": "Hive",
-    "artifactName": "${productName}-Setup-0.0.1.4.${ext}",
+    "artifactName": "${productName}-Setup-0.0.1.5.${ext}",
     "directories": {
       "output": "release"
     },

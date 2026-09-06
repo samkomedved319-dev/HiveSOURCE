@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.1.5 — 2026-09-06
+
+- Model menu: GLM 5.3 (Fast) and Nemotron Nano (Reasoning) as first-class Hive Free choices
+- Animated 1,000,000-token Hive Free meter in Settings and the title bar
+- Owner-only Admin panel (hidden for everyone else): reset usage, grant tokens, approve / deny
+- Cloud quota table so a reset applies on the person’s next Hive session
+
+
 ## 0.0.1.4 — 2026-09-06
 
 - Hive Free TokenRouter: `z-ai/glm-5.3-free` and `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`
