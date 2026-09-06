@@ -15,6 +15,7 @@ export const HIVE_FREE_MODELS = [FREE_GLM, FREE_NEMOTRON]
 
 export const DAILY_TOKEN_LIMIT = 1_000_000
 const WINDOW_MS = 24 * 60 * 60 * 1000
+const ANON = '__anon__'
 
 type QuotaFile = {
   startedAt: number
@@ -24,23 +25,86 @@ type QuotaFile = {
   remoteResetAt?: number
 }
 
+type Store = {
+  currentUserId: string
+  byUser: Record<string, QuotaFile>
+}
+
 function quotaPath() {
   return path.join(app.getPath('userData'), 'hive-free-quota.json')
 }
 
-function readQuota(): QuotaFile {
+function emptyQ(): QuotaFile {
+  return { startedAt: 0, used: 0, bonus: 0, limit: DAILY_TOKEN_LIMIT, remoteResetAt: 0 }
+}
+
+function readStore(): Store {
   try {
     const raw = fs.readFileSync(quotaPath(), 'utf8')
-    const j = JSON.parse(raw) as QuotaFile
-    if (typeof j.startedAt === 'number' && typeof j.used === 'number') return j
+    const j = JSON.parse(raw) as Store & QuotaFile
+    if (j && j.byUser && typeof j.byUser === 'object') {
+      return {
+        currentUserId: j.currentUserId || ANON,
+        byUser: j.byUser,
+      }
+    }
+    if (typeof (j as QuotaFile).used === 'number') {
+      const legacy: QuotaFile = {
+        startedAt: Number((j as QuotaFile).startedAt) || 0,
+        used: Number((j as QuotaFile).used) || 0,
+        bonus: Number((j as QuotaFile).bonus) || 0,
+        limit: Number((j as QuotaFile).limit) || DAILY_TOKEN_LIMIT,
+        remoteResetAt: Number((j as QuotaFile).remoteResetAt) || 0,
+      }
+      return { currentUserId: ANON, byUser: { [ANON]: legacy } }
+    }
   } catch {}
-  return { startedAt: 0, used: 0 }
+  return { currentUserId: ANON, byUser: {} }
+}
+
+function writeStore(s: Store) {
+  try {
+    fs.writeFileSync(quotaPath(), JSON.stringify(s), 'utf8')
+  } catch {}
+}
+
+function uid() {
+  return readStore().currentUserId || ANON
+}
+
+function readQuota(): QuotaFile {
+  const s = readStore()
+  const id = s.currentUserId || ANON
+  return s.byUser[id] || emptyQ()
 }
 
 function writeQuota(q: QuotaFile) {
-  try {
-    fs.writeFileSync(quotaPath(), JSON.stringify(q), 'utf8')
-  } catch {}
+  const s = readStore()
+  const id = s.currentUserId || ANON
+  s.byUser[id] = q
+  writeStore(s)
+}
+
+export function bindQuotaUser(userId: string) {
+  const id = (userId || '').trim() || ANON
+  const s = readStore()
+  const prevId = s.currentUserId || ANON
+  if (id !== ANON && prevId === ANON && s.byUser[ANON] && !s.byUser[id]) {
+    s.byUser[id] = { ...s.byUser[ANON] }
+  } else if (id !== ANON && prevId === ANON && s.byUser[ANON] && s.byUser[id]) {
+    const a = s.byUser[ANON]
+    const b = s.byUser[id]
+    s.byUser[id] = {
+      startedAt: b.startedAt || a.startedAt || 0,
+      used: Math.max(a.used || 0, b.used || 0),
+      bonus: Math.max(a.bonus || 0, b.bonus || 0),
+      limit: Math.max(a.limit || 0, b.limit || 0, DAILY_TOKEN_LIMIT),
+      remoteResetAt: Math.max(a.remoteResetAt || 0, b.remoteResetAt || 0),
+    }
+  }
+  s.currentUserId = id
+  writeStore(s)
+  return quotaStatus()
 }
 
 function effectiveLimit(q: QuotaFile) {
@@ -81,6 +145,7 @@ export function quotaStatus() {
     startedAt: q.startedAt,
     resetsAt,
     remoteResetAt: q.remoteResetAt || 0,
+    userId: uid(),
     models: HIVE_FREE_MODELS,
   }
 }
@@ -130,24 +195,26 @@ export function applyRemoteQuota(p: {
   used?: number
   bonus?: number
   limit?: number
+  startedAt?: number
   remoteResetAt?: number
   reset?: boolean
 }) {
   const q = readQuota()
   const remoteReset = p.remoteResetAt || 0
-  const shouldReset = p.reset || (remoteReset > 0 && remoteReset > (q.remoteResetAt || 0) && remoteReset >= (q.startedAt || 0))
+  const shouldReset = Boolean(p.reset) && remoteReset > 0 && remoteReset > (q.remoteResetAt || 0)
   if (shouldReset) {
     writeQuota({
       startedAt: 0,
       used: 0,
-      bonus: p.bonus ?? 0,
-      limit: p.limit || DAILY_TOKEN_LIMIT,
-      remoteResetAt: remoteReset || Date.now(),
+      bonus: p.bonus ?? q.bonus ?? 0,
+      limit: p.limit || q.limit || DAILY_TOKEN_LIMIT,
+      remoteResetAt: remoteReset,
     })
     return quotaStatus()
   }
   writeQuota({
-    ...q,
+    startedAt: q.startedAt || p.startedAt || 0,
+    used: Math.max(q.used || 0, p.used || 0),
     bonus: p.bonus ?? q.bonus ?? 0,
     limit: p.limit || q.limit || DAILY_TOKEN_LIMIT,
     remoteResetAt: Math.max(q.remoteResetAt || 0, remoteReset),
@@ -161,4 +228,5 @@ export function registerQuotaHandlers() {
   ipcMain.handle('quota:apply', (_e, payload?: Parameters<typeof applyRemoteQuota>[0]) =>
     applyRemoteQuota(payload || {})
   )
+  ipcMain.handle('quota:bindUser', (_e, userId?: string) => bindQuotaUser(String(userId || '')))
 }
