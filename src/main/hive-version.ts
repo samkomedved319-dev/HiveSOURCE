@@ -1,4 +1,4 @@
-export const HIVE_VERSION = '0.0.1.5'
+export const HIVE_VERSION = '0.0.1.6'
 
 export const UPDATE_MANIFEST_URL =
   'https://raw.githubusercontent.com/samkomedved319-dev/HiveSOURCE/main/latest.json'
