@@ -66,12 +66,17 @@
     "files": [
       "dist/**/*"
     ],
+    "npmRebuild": false,
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Hive"
     },
     "protocols": [
       {
