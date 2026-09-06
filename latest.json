@@ -1,6 +1,6 @@
 {
   "version": "0.0.1.3",
-  "downloadUrl": "https://github.com/samkomedved319-dev/HiveSOURCE/releases/latest/download/Hive-Setup-0.0.1.3.exe",
+ "downloadUrl": "https://github.com/samkomedved319-dev/Hive-Desktop/releases/latest/download/Hive-Setup-0.0.1.3.exe",
   "notes": [
     { "type": "new", "text": "First-login tutorial walks through chat, workers, office, and Buddy." },
     { "type": "improve", "text": "Buddy Model is Fast, Auto, or No — no more model names." },
