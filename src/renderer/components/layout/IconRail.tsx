@@ -110,8 +110,9 @@ export default function IconRail({
       <img
         src="./icon.png"
         alt="Hive"
-        style={{ width: 28, height: 28, marginBottom: 8, cursor: 'pointer', objectFit: 'contain', borderRadius: 8 }}
-        onClick={() => onSelectTab('office')}
+        title="Hive"
+        style={{ width: 28, height: 28, marginBottom: 8, objectFit: 'contain', borderRadius: 8 }}
+        onClick={() => onSelectTab('chat')}
       />
 
       <RailBtn title="Chat" active={activeTab === 'chat'} onClick={() => onSelectTab('chat')}>
@@ -154,7 +155,7 @@ export default function IconRail({
 
       {onToggleBuddy && (
         <RailBtn
-          title={buddyOn ? 'Buddy on â€” follows your cursor' : 'Enable Buddy'}
+          title={buddyOn ? 'Buddy on — follows your cursor' : 'Enable Buddy'}
           active={buddyOn}
           onClick={onToggleBuddy}
         >

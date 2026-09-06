@@ -69,6 +69,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getVersion: () => ipcRenderer.invoke('app:getVersion'),
     checkUpdate: () => ipcRenderer.invoke('app:checkUpdate'),
     installUpdate: (url?: string) => ipcRenderer.invoke('app:installUpdate', url),
+    onUpdateProgress: (cb: (p: { phase: string; percent?: number; error?: string }) => void) => {
+      const handler = (_e: unknown, p: { phase: string; percent?: number; error?: string }) => cb(p)
+      ipcRenderer.on('app:update-progress', handler)
+      return () => ipcRenderer.removeListener('app:update-progress', handler)
+    },
   },
   tts: {
     speak: (text: string) => ipcRenderer.invoke('tts:speak', text),

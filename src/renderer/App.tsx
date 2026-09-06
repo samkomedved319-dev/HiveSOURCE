@@ -17,6 +17,8 @@ import NewGroupModal from './components/layout/NewGroupModal'
 import FeedbackModal from './components/layout/FeedbackModal'
 import CommandPalette from './components/layout/CommandPalette'
 import CloudComputerPanel from './components/layout/CloudComputerPanel'
+import WhatsNewModal from './components/layout/WhatsNewModal'
+import { HIVE_VERSION, LOCAL_WHATS_NEW, type ReleaseNote } from './hiveVersion'
 import { AnimatePresence } from 'motion/react'
 import { loadShortcuts, matchesBinding, toAccelerator } from './shortcuts'
 import { TITLE_EVENT, isPlaceholderTitle, localTitle, refineTitle } from './chatTitle'
@@ -88,8 +90,39 @@ export default function App() {
 
   useEffect(() => {
     const onFb = () => setShowFeedback(true)
+    const onWn = () => setShowWhatsNew(true)
     window.addEventListener('hive:feedback', onFb as EventListener)
-    return () => window.removeEventListener('hive:feedback', onFb as EventListener)
+    window.addEventListener('hive:whats-new', onWn as EventListener)
+    return () => {
+      window.removeEventListener('hive:feedback', onFb as EventListener)
+      window.removeEventListener('hive:whats-new', onWn as EventListener)
+    }
+  }, [])
+
+  useEffect(() => {
+    const seen = localStorage.getItem('hive_last_seen_version')
+    if (seen !== HIVE_VERSION) setShowWhatsNew(true)
+  }, [])
+
+  useEffect(() => {
+    const off = window.electronAPI?.app?.onUpdateProgress?.((p) => {
+      setUpdatePhase(p.phase === 'downloading' ? `Downloading ${p.percent || 0}%` : p.phase === 'installing' ? 'Installing…' : p.error || p.phase)
+    })
+    const t = window.setTimeout(async () => {
+      try {
+        const res = await window.electronAPI?.app?.checkUpdate?.()
+        if (res?.ok && res.notes?.length) {
+          setWhatsNewNotes(res.notes.map((n) => ({ type: (n.type as ReleaseNote['type']) || 'improve', text: n.text })))
+        }
+        if (res?.ok && res.newer) {
+          setUpdateAvail({ latest: res.latest || HIVE_VERSION, downloadUrl: res.downloadUrl })
+        }
+      } catch {}
+    }, 1600)
+    return () => {
+      window.clearTimeout(t)
+      try { off?.() } catch {}
+    }
   }, [])
 
   // Launch screen animation disabled: boot straight into the workspace.
@@ -120,6 +153,11 @@ export default function App() {
   const [showNewGroup, setShowNewGroup] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
   const [showPalette, setShowPalette] = useState(false)
+  const [showWhatsNew, setShowWhatsNew] = useState(false)
+  const [whatsNewNotes, setWhatsNewNotes] = useState<ReleaseNote[]>(LOCAL_WHATS_NEW)
+  const [updateAvail, setUpdateAvail] = useState<{ latest: string; downloadUrl?: string } | null>(null)
+  const [updating, setUpdating] = useState(false)
+  const [updatePhase, setUpdatePhase] = useState('')
   const [buddyOn, setBuddyOn] = useState(isBuddyEnabled)
   const [canvasMode, setCanvasMode] = useState<'code' | 'browser'>('code')
   const [activeBrowserUrl, setActiveBrowserUrl] = useState('https://google.com')
@@ -464,6 +502,79 @@ export default function App() {
         transition: 'grid-template-columns .45s var(--ease)',
       }}
     >
+      {updateAvail && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 10,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 40,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            background: 'var(--panel)',
+            border: '1px solid var(--accent-dim, #F2C14E55)',
+            borderRadius: 999,
+            padding: '8px 10px 8px 16px',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.35)',
+            maxWidth: 'min(560px, calc(100% - 80px))',
+          }}
+        >
+          <span style={{ fontSize: 13, color: 'var(--text)', whiteSpace: 'nowrap' }}>
+            {updating ? (updatePhase || 'Updating…') : `Hive ${updateAvail.latest} is ready`}
+          </span>
+          <button
+            type="button"
+            disabled={updating}
+            onClick={async () => {
+              setUpdating(true)
+              setUpdatePhase('Starting…')
+              try {
+                const res = await window.electronAPI?.app?.installUpdate?.(updateAvail.downloadUrl)
+                if (!res?.ok) {
+                  setUpdating(false)
+                  setUpdatePhase(res?.error || 'Update failed')
+                }
+              } catch (e) {
+                setUpdating(false)
+                setUpdatePhase(e instanceof Error ? e.message : 'Update failed')
+              }
+            }}
+            style={{
+              background: 'var(--accent)',
+              color: 'var(--accent-fg)',
+              border: 'none',
+              borderRadius: 999,
+              padding: '6px 12px',
+              fontWeight: 650,
+              fontSize: 12.5,
+              cursor: updating ? 'wait' : 'pointer',
+              fontFamily: 'inherit',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {updating ? 'Restarting…' : 'Update and restart'}
+          </button>
+          {!updating && (
+            <button
+              type="button"
+              onClick={() => setUpdateAvail(null)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-faint)',
+                cursor: 'pointer',
+                padding: '0 6px',
+                fontSize: 16,
+              }}
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      )}
       {/* 1. Icon rail */}
       <IconRail
         activeTab={activeTab}
@@ -595,6 +706,17 @@ export default function App() {
       {/* Settings Modal */}
       {showSettings && (
         <SettingsModal onClose={() => setShowSettings(false)} />
+      )}
+
+      {showWhatsNew && (
+        <WhatsNewModal
+          version={HIVE_VERSION}
+          notes={whatsNewNotes}
+          onClose={() => {
+            localStorage.setItem('hive_last_seen_version', HIVE_VERSION)
+            setShowWhatsNew(false)
+          }}
+        />
       )}
 
       {/* User Profile Modal */}

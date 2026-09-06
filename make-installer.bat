@@ -29,7 +29,10 @@ if errorlevel 1 (
 )
 echo.
 echo Looking for the Setup.exe ...
-if exist "release\Hive-Setup-0.0.1.1.exe" (
+if exist "release\Hive-Setup-0.0.1.2.exe" (
+  echo Found: release\Hive-Setup-0.0.1.2.exe
+  explorer /select,"%~dp0release\Hive-Setup-0.0.1.2.exe"
+) else if exist "release\Hive-Setup-0.0.1.1.exe" (
   echo Found: release\Hive-Setup-0.0.1.1.exe
   explorer /select,"%~dp0release\Hive-Setup-0.0.1.1.exe"
 ) else if exist "release\Hive-Setup-0.0.1.exe" (

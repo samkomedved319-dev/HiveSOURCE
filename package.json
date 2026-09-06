@@ -59,7 +59,7 @@
   "build": {
     "appId": "com.projecthive.app",
     "productName": "Hive",
-    "artifactName": "${productName}-Setup-0.0.1.1.${ext}",
+    "artifactName": "${productName}-Setup-0.0.1.2.${ext}",
     "directories": {
       "output": "release"
     },
@@ -90,6 +90,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Hive",
+      "runAfterFinish": true,
       "installerIcon": "resources/icon.ico",
       "uninstallerIcon": "resources/icon.ico",
       "installerHeaderIcon": "resources/icon.ico"

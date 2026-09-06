@@ -113,9 +113,11 @@ export interface ElectronAPI {
       newer?: boolean
       downloadUrl?: string
       url?: string
+      notes?: { type: string; text: string }[]
       error?: string
     }>
     installUpdate?: (url?: string) => Promise<{ ok: boolean; error?: string }>
+    onUpdateProgress?: (cb: (p: { phase: string; percent?: number; error?: string }) => void) => () => void
   }
   tts?: {
     speak: (text: string) => Promise<{ ok: boolean; dataUrl?: string; error?: string }>

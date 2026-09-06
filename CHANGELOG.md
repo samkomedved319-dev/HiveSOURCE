@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.1.2 — 2026-09-06
+
+- Update and restart in one click (downloads the installer, applies it, relaunches Hive)
+- What’s New popup after each update
+- Hive logo in the left rail no longer opens the office — use the Office tab
+- Windows app / taskbar / installer use the Hive bee, not Electron
+- electron-builder 26 installer config fixed (`signExecutable` instead of invalid `signDlls`)
+
 ## 0.0.2 — 2026-09-05
 
 - Command palette (`Ctrl+K`): new chat, group, Buddy, canvas, settings, workers, notch

@@ -1,6 +1,7 @@
-import { app, ipcMain, shell } from 'electron'
-import { exec } from 'child_process'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { exec, spawn } from 'child_process'
 import util from 'util'
+import { HIVE_VERSION, RELEASES_API, RELEASES_PAGE, UPDATE_MANIFEST_URL } from './hive-version'
 
 const execPromise = util.promisify(exec)
 
@@ -32,65 +33,138 @@ export async function openSystemTarget(target: string) {
   }
 }
 
+type ReleaseNote = { type: string; text: string }
+
+function isNewer(latest: string, current: string) {
+  return latest.localeCompare(current, undefined, { numeric: true, sensitivity: 'base' }) > 0
+}
+
+function allowedDownload(url: string) {
+  try {
+    const u = new URL(url)
+    if (u.protocol !== 'https:') return false
+    const host = u.hostname.toLowerCase()
+    const okHost =
+      host === 'github.com' ||
+      host.endsWith('.githubusercontent.com') ||
+      host === 'objects.githubusercontent.com'
+    if (!okHost) return false
+    return /hive-setup/i.test(u.pathname) || /releases/i.test(u.pathname)
+  } catch {
+    return false
+  }
+}
+
+function sendProgress(payload: { phase: string; percent?: number; error?: string }) {
+  for (const w of BrowserWindow.getAllWindows()) {
+    try {
+      w.webContents.send('app:update-progress', payload)
+    } catch {}
+  }
+}
+
+async function readManifest(): Promise<{
+  version: string
+  downloadUrl?: string
+  notes?: ReleaseNote[]
+}> {
+  const res = await fetch(UPDATE_MANIFEST_URL, { cache: 'no-store' })
+  if (res.ok) {
+    const json = (await res.json()) as { version?: string; downloadUrl?: string; notes?: ReleaseNote[] }
+    return {
+      version: String(json.version || HIVE_VERSION),
+      downloadUrl: json.downloadUrl,
+      notes: json.notes,
+    }
+  }
+  const gh = await fetch(RELEASES_API, {
+    cache: 'no-store',
+    headers: { Accept: 'application/vnd.github+json' },
+  })
+  if (!gh.ok) throw new Error('Could not reach GitHub')
+  const release = (await gh.json()) as {
+    tag_name?: string
+    html_url?: string
+    assets?: { name: string; browser_download_url: string }[]
+  }
+  const asset = (release.assets || []).find((a) => /Hive-Setup.*\.exe$/i.test(a.name))
+  return {
+    version: String(release.tag_name || HIVE_VERSION).replace(/^v/i, ''),
+    downloadUrl: asset?.browser_download_url,
+  }
+}
+
 export function registerSystemControlHandlers() {
   ipcMain.handle('system:exec', async (_e, command: string) => runSystemCommand(command))
   ipcMain.handle('system:openApp', async (_e, target: string) => openSystemTarget(target))
-  ipcMain.handle('system:getVersion', async () => '0.0.1.1')
-  ipcMain.handle('app:getVersion', async () => '0.0.1.1')
+  ipcMain.handle('system:getVersion', async () => HIVE_VERSION)
+  ipcMain.handle('app:getVersion', async () => HIVE_VERSION)
 
   ipcMain.handle('app:checkUpdate', async () => {
+    const current = HIVE_VERSION
     try {
-      const current = '0.0.1.1'
-      const res = await fetch('https://raw.githubusercontent.com/samkomedved319-dev/Hive-Desktop/main/latest.json', {
-        cache: 'no-store',
-      })
-      if (!res.ok) {
-        // Fallback to releases page if latest.json is not yet published
-        return { ok: true, current, latest: current, newer: false, url: 'https://github.com/samkomedved319-dev/Hive-Desktop/releases' }
-      }
-      const json = (await res.json()) as { version?: string; downloadUrl?: string }
-      const latest = String(json.version || current)
-      const newer = latest.localeCompare(current, undefined, { numeric: true, sensitivity: 'base' }) > 0
+      const man = await readManifest()
+      const latest = man.version || current
+      const newer = isNewer(latest, current)
       return {
         ok: true,
         current,
         latest,
         newer,
-        downloadUrl: json.downloadUrl || 'https://github.com/samkomedved319-dev/Hive-Desktop/releases',
-        url: 'https://github.com/samkomedved319-dev/Hive-Desktop/releases',
+        notes: man.notes || [],
+        downloadUrl: man.downloadUrl,
+        url: RELEASES_PAGE,
       }
     } catch (e) {
-      return { ok: false, current: '0.0.1.1', error: e instanceof Error ? e.message : 'Update check failed' }
+      return { ok: false, current, error: e instanceof Error ? e.message : 'Update check failed' }
     }
   })
 
   ipcMain.handle('app:installUpdate', async (_e, downloadUrl?: string) => {
     try {
-      if (!downloadUrl) return { ok: false, error: 'No download URL provided' }
+      let url = downloadUrl || ''
+      if (!url) {
+        const man = await readManifest()
+        url = man.downloadUrl || ''
+      }
+      if (!url || !allowedDownload(url)) return { ok: false, error: 'No trusted installer URL' }
+
+      sendProgress({ phase: 'downloading', percent: 0 })
       const path = await import('path')
       const os = await import('os')
       const fs = await import('fs')
       const { pipeline } = await import('stream/promises')
       const { Readable } = await import('stream')
-      const { spawn } = await import('child_process')
 
-      const installerPath = path.join(os.tmpdir(), `Hive-Update-${Date.now()}.exe`)
-      const res = await fetch(downloadUrl)
+      const installerPath = path.join(os.tmpdir(), `Hive-Setup-${Date.now()}.exe`)
+      const res = await fetch(url)
       if (!res.ok || !res.body) throw new Error(`Download failed with status ${res.status}`)
-
-      // Stream installer directly to temp file
+      const total = Number(res.headers.get('content-length') || 0)
+      let received = 0
       const nodeStream = Readable.fromWeb(res.body as any)
-      const fileStream = fs.createWriteStream(installerPath)
-      await pipeline(nodeStream, fileStream)
+      if (total > 0) {
+        nodeStream.on('data', (chunk: Buffer) => {
+          received += chunk.length
+          sendProgress({ phase: 'downloading', percent: Math.min(99, Math.round((received / total) * 100)) })
+        })
+      }
+      await pipeline(nodeStream, fs.createWriteStream(installerPath))
 
-      // Launch installer silently/automatically and quit current app
-      spawn(installerPath, ['/S'], { detached: true, stdio: 'ignore' }).unref()
-      setTimeout(() => {
-        app.quit()
-      }, 1000)
-
+      sendProgress({ phase: 'installing', percent: 100 })
+      const exe = app.getPath('exe')
+      const helper = path.join(os.tmpdir(), 'hive-apply-update.cmd')
+      const cmd = [
+        '@echo off',
+        'ping -n 3 127.0.0.1 >nul',
+        `"${installerPath}" /S`,
+        `start "" "${exe}"`,
+      ].join('\r\n')
+      fs.writeFileSync(helper, cmd, 'utf8')
+      spawn('cmd.exe', ['/c', helper], { detached: true, stdio: 'ignore', windowsHide: true }).unref()
+      setTimeout(() => app.quit(), 400)
       return { ok: true }
     } catch (err: any) {
+      sendProgress({ phase: 'error', error: err.message })
       return { ok: false, error: err.message }
     }
   })

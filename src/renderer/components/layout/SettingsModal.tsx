@@ -13,6 +13,7 @@ import {
   toAccelerator,
   type ShortcutId,
 } from '../../shortcuts'
+import { HIVE_VERSION } from '../../hiveVersion'
 
 interface SettingsModalProps {
   onClose: () => void
@@ -286,7 +287,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           </div>
 
           <div style={{ padding: '0 8px', fontSize: 11, color: 'var(--text-faint)' }}>
-            Hive Desktop · v0.0.1.1
+            Hive Desktop · v{HIVE_VERSION}
           </div>
         </div>
 
@@ -353,7 +354,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               <>
                 <SettingRow
                   label="Updates"
-                  description="Auto-check and install new updates from GitHub without manual steps."
+                  description="Hive checks GitHub in the background. One click installs and restarts."
                 >
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
@@ -420,7 +421,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                           fontSize: 12,
                         }}
                       >
-                        {updating ? 'Updating…' : 'Update automatically'}
+                        {updating ? 'Updating…' : 'Update and restart'}
                       </button>
                     )}
                   </div>

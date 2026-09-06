@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
-import packageJson from '../../../../package.json'
+import { HIVE_VERSION } from '../../hiveVersion'
 
 export type ThinkingMode = 'fast' | 'auto' | 'heavy' | 'max'
 
@@ -284,8 +284,12 @@ export default function TitleBar({
           WebkitAppRegion: 'no-drag',
         } as React.CSSProperties}
       >
-        <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: "'JetBrains Mono', monospace" }}>
-          v0.0.1.1
+        <span
+          onClick={() => window.dispatchEvent(new Event('hive:whats-new'))}
+          title="What’s New"
+          style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: "'JetBrains Mono', monospace", cursor: 'pointer' }}
+        >
+          v{HIVE_VERSION}
         </span>
         {/* New chat */}
         {onNewChat && (
